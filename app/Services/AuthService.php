@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\OrganizationStatus;
 use App\Models\Organization;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +40,13 @@ class AuthService
                 'default_organization_id' => $organization->id,
             ]);
 
-            $user->organizations()->attach($organization->id, ['role' => 'Owner']);
+            $user->organizations()->attach($organization->id, ['role' => 'Org Owner']);
+
+            setPermissionsTeamId($organization->id);
+
+            app(RolesAndPermissionsSeeder::class)->seedRolesForOrganization($organization);
+
+            $user->assignRole('Org Owner');
 
             return [$user, $organization];
         });

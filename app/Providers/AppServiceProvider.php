@@ -2,14 +2,19 @@
 
 namespace App\Providers;
 
+use App\Models\Organization;
+use App\Policies\OrganizationPolicy;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Exceptions\OAuthServerException;
 use Laravel\Passport\Passport;
+use Spatie\Permission\Exceptions\UnauthorizedException;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class AppServiceProvider extends ServiceProvider
@@ -28,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Passport::enablePasswordGrant();
+
+        Gate::policy(Organization::class, OrganizationPolicy::class);
 
         Response::macro('api', function (mixed $data = null, array $meta = [], int $status = HttpResponse::HTTP_OK) {
             $payload = ['data' => $data];
@@ -69,6 +76,28 @@ class AppServiceProvider extends ServiceProvider
                 'message' => $exception->getMessage() ?: 'Unauthenticated.',
                 'errors' => [],
             ], HttpResponse::HTTP_UNAUTHORIZED);
+        });
+
+        $exceptions->render(function (AuthorizationException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => $exception->getMessage() ?: 'This action is unauthorized.',
+                'errors' => [],
+            ], HttpResponse::HTTP_FORBIDDEN);
+        });
+
+        $exceptions->render(function (UnauthorizedException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'errors' => [],
+            ], HttpResponse::HTTP_FORBIDDEN);
         });
 
         $exceptions->render(function (OAuthServerException $exception, Request $request) {

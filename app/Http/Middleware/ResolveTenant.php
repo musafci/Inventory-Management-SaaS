@@ -50,6 +50,8 @@ class ResolveTenant
 
         app()->instance('currentOrganization', $organization);
 
+        setPermissionsTeamId($organization->id);
+
         return $next($request);
     }
 }

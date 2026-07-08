@@ -28,7 +28,7 @@ test('user can register an organization and receive a passport token', function 
     $response->assertCreated()
         ->assertJsonPath('data.user.email', 'jane@acme.test')
         ->assertJsonPath('data.organizations.0.name', 'Acme Inventory')
-        ->assertJsonPath('data.organizations.0.role', 'Owner')
+        ->assertJsonPath('data.organizations.0.role', 'Org Owner')
         ->assertJsonStructure([
             'data' => [
                 'user' => ['id', 'name', 'email'],
@@ -39,7 +39,7 @@ test('user can register an organization and receive a passport token', function 
 
     $this->assertDatabaseHas('organizations', ['name' => 'Acme Inventory']);
     $this->assertDatabaseHas('users', ['email' => 'jane@acme.test']);
-    $this->assertDatabaseHas('organization_user', ['role' => 'Owner']);
+    $this->assertDatabaseHas('organization_user', ['role' => 'Org Owner']);
 });
 
 test('registering twice with the same email fails validation', function () {
