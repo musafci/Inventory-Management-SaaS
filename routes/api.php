@@ -1,12 +1,16 @@
 <?php
 
-use App\Models\TenantScopeStub;
+use App\Http\Controllers\Api\V1\AuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
-    Route::get('tenant-scope-probe', function () {
-        return response()->json([
-            'data' => TenantScopeStub::query()->get(['id', 'organization_id', 'label']),
-        ]);
-    })->middleware(['auth:api']);
+    Route::prefix('auth')->group(function (): void {
+        Route::post('register', [AuthController::class, 'register']);
+        Route::post('login', [AuthController::class, 'login']);
+        Route::post('refresh', [AuthController::class, 'refresh']);
+
+        Route::middleware('auth:api')->group(function (): void {
+            Route::get('me', [AuthController::class, 'me']);
+        });
+    });
 });
