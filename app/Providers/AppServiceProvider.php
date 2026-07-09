@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Organization;
+use App\Models\Warehouse;
 use App\Policies\OrganizationPolicy;
+use App\Policies\WarehousePolicy;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         Passport::enablePasswordGrant();
 
         Gate::policy(Organization::class, OrganizationPolicy::class);
+        Gate::policy(Warehouse::class, WarehousePolicy::class);
 
         Response::macro('api', function (mixed $data = null, array $meta = [], int $status = HttpResponse::HTTP_OK) {
             $payload = ['data' => $data];

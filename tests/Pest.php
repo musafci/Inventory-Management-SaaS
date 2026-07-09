@@ -31,3 +31,21 @@ pest()->extend(TestCase::class)
 expect()->extend('toBeOne', function () {
     return $this->toBe(1);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
+
+function validRegistrationPayload(array $overrides = []): array
+{
+    return array_merge([
+        'organization_name' => 'Acme Inventory',
+        'name' => 'Jane Owner',
+        'email' => 'jane@acme.test',
+        'password' => 'password123',
+        'password_confirmation' => 'password123',
+        'phone' => '+15551234567',
+    ], $overrides);
+}

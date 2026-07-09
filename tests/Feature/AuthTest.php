@@ -10,18 +10,6 @@ beforeEach(function () {
     $this->setUpPassport();
 });
 
-function validRegistrationPayload(array $overrides = []): array
-{
-    return array_merge([
-        'organization_name' => 'Acme Inventory',
-        'name' => 'Jane Owner',
-        'email' => 'jane@acme.test',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
-        'phone' => '+15551234567',
-    ], $overrides);
-}
-
 test('user can register an organization and receive a passport token', function () {
     $response = $this->postJson('/api/v1/auth/register', validRegistrationPayload());
 

@@ -14,6 +14,8 @@ class ResolveTenant
      */
     public function handle(Request $request, Closure $next): Response
     {
+        app()->forgetInstance('currentOrganization');
+
         $organizationId = $request->header('X-Organization-Id');
 
         if ($organizationId === null || $organizationId === '') {

@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 
 abstract class ApiController extends Controller
 {
+    use AuthorizesRequests;
     protected function success(mixed $data = null, array $meta = [], int $status = 200): JsonResponse
     {
         $payload = ['data' => $data];
