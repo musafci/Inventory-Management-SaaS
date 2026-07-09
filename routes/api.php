@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\ProductAuthorizationProbeController;
+use App\Http\Controllers\Api\V1\UnitController;
 use App\Http\Controllers\Api\V1\WarehouseController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,5 +24,11 @@ Route::prefix('v1')->group(function (): void {
 
         Route::apiResource('warehouses', WarehouseController::class)
             ->parameters(['warehouses' => 'warehouseId']);
+
+        Route::apiResource('categories', CategoryController::class)
+            ->parameters(['categories' => 'categoryId']);
+
+        Route::apiResource('units', UnitController::class)
+            ->parameters(['units' => 'unitId']);
     });
 });
