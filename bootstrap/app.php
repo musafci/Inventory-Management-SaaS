@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnforceIdempotency;
 use App\Http\Middleware\ResolveTenant;
 use App\Providers\AppServiceProvider;
 use Illuminate\Foundation\Application;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'tenant' => ResolveTenant::class,
+            'idempotency' => EnforceIdempotency::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,

@@ -38,6 +38,20 @@ expect()->extend('toBeOne', function () {
 |--------------------------------------------------------------------------
 */
 
+require_once __DIR__.'/helpers/stock.php';
+require_once __DIR__.'/helpers/purchase.php';
+require_once __DIR__.'/helpers/sales.php';
+
+/**
+ * @return array<string, string>
+ */
+function withIdempotencyKey(array $headers, ?string $key = null): array
+{
+    return array_merge($headers, [
+        'Idempotency-Key' => $key ?? (string) \Illuminate\Support\Str::uuid(),
+    ]);
+}
+
 function validRegistrationPayload(array $overrides = []): array
 {
     return array_merge([
