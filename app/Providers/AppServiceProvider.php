@@ -4,10 +4,12 @@ namespace App\Providers;
 
 use App\Models\Category;
 use App\Models\Organization;
+use App\Models\Product;
 use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Policies\CategoryPolicy;
 use App\Policies\OrganizationPolicy;
+use App\Policies\ProductPolicy;
 use App\Policies\UnitPolicy;
 use App\Policies\WarehousePolicy;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -44,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Warehouse::class, WarehousePolicy::class);
         Gate::policy(Category::class, CategoryPolicy::class);
         Gate::policy(Unit::class, UnitPolicy::class);
+        Gate::policy(Product::class, ProductPolicy::class);
 
         Response::macro('api', function (mixed $data = null, array $meta = [], int $status = HttpResponse::HTTP_OK) {
             $payload = ['data' => $data];
