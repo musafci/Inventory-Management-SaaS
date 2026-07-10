@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Events\StockLevelChanged;
+use App\Listeners\CheckLowStock;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Organization;
@@ -33,6 +35,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Response;
@@ -85,6 +88,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(StockMovement::class, StockMovementPolicy::class);
 
         StockMovement::observe(StockMovementObserver::class);
+
+        Event::listen(StockLevelChanged::class, CheckLowStock::class);
 
         Response::macro('api', function (mixed $data = null, array $meta = [], int $status = HttpResponse::HTTP_OK) {
             $payload = ['data' => $data];

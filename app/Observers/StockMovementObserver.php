@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Events\StockLevelChanged;
 use App\Models\Stock;
 use App\Models\StockMovement;
 use Illuminate\Validation\ValidationException;
@@ -29,6 +30,8 @@ class StockMovementObserver
             ]);
         }
 
+        $previousQuantityOnHand = $stock->quantity_on_hand;
+
         Stock::$quantityOnHandUpdateFromMovement = true;
 
         try {
@@ -37,5 +40,14 @@ class StockMovementObserver
         } finally {
             Stock::$quantityOnHandUpdateFromMovement = false;
         }
+
+        $stock->load('product');
+
+        StockLevelChanged::dispatch(
+            $stock,
+            $stock->product,
+            $previousQuantityOnHand,
+            $nextQuantity,
+        );
     }
 }
