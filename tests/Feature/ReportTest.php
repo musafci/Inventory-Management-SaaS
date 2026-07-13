@@ -74,6 +74,7 @@ test('sales summary report aggregates orders and payments', function () {
     $this->postJson("/api/v1/sales-orders/{$order['sales_order_id']}/pay", [
         'amount' => 30,
         'method' => 'cash',
+        'paid_at' => '2026-07-09',
     ], $headers)->assertCreated();
 
     $response = $this->getJson('/api/v1/reports/sales-summary?from=2026-07-09&to=2026-07-09&payment_from=2026-07-09&payment_to=2026-07-09', $headers);
@@ -128,6 +129,7 @@ test('purchase summary report aggregates orders and payments', function () {
     $this->postJson("/api/v1/purchase-orders/{$purchaseOrderId}/pay", [
         'amount' => 50,
         'method' => 'bank_transfer',
+        'paid_at' => '2026-07-09',
     ], $headers)->assertCreated();
 
     $response = $this->getJson('/api/v1/reports/purchase-summary?from=2026-07-09&to=2026-07-09&payment_from=2026-07-09&payment_to=2026-07-09', $headers);

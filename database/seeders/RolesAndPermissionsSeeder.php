@@ -77,8 +77,12 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function seedPermissions(): void
     {
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
         foreach (self::permissions() as $permission) {
-            Permission::findOrCreate($permission, self::GUARD);
+            Permission::query()->firstOrCreate(
+                ['name' => $permission, 'guard_name' => self::GUARD],
+            );
         }
     }
 
