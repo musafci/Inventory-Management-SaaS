@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SalesOrderController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\OrganizationController;
 use App\Http\Controllers\Api\V1\OrganizationMemberController;
 use App\Http\Controllers\Api\V1\ReportExportController;
 use App\Http\Controllers\Api\V1\ProductAuthorizationProbeController;
@@ -47,6 +48,9 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('payments', [PaymentController::class, 'index']);
         Route::get('payments/{paymentId}', [PaymentController::class, 'show']);
+
+        Route::get('organization', [OrganizationController::class, 'show']);
+        Route::patch('organization', [OrganizationController::class, 'update']);
 
         Route::apiResource('users', OrganizationMemberController::class)
             ->parameters(['users' => 'userId'])

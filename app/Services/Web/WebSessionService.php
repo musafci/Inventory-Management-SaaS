@@ -2,7 +2,10 @@
 
 namespace App\Services\Web;
 
+use App\Http\Resources\OrganizationResource;
+use App\Models\Organization;
 use App\Services\AuthService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Session;
 
 class WebSessionService
@@ -16,9 +19,9 @@ class WebSessionService
      *
      * @param  array<string, mixed>  $token
      * @param  array<string, mixed>  $user
-     * @param  array<int, array<string, mixed>>  $organizations
+     * @param  Collection<int, Organization>|array<int, array<string, mixed>>  $organizations
      */
-    public function storeAuthSession(array $token, array $user, array $organizations): void
+    public function storeAuthSession(array $token, array $user, Collection|array $organizations): void
     {
         $expiresIn = (int) ($token['expires_in'] ?? 3600);
 
@@ -28,8 +31,57 @@ class WebSessionService
             'token_expires_at' => now()->addSeconds($expiresIn)->toIso8601String(),
             'user_name' => $user['name'] ?? Session::get('user_name', ''),
             'user_email' => $user['email'] ?? Session::get('user_email', ''),
-            'organizations' => $organizations,
+            'organizations' => $this->normalizeOrganizations($organizations),
         ]);
+    }
+
+    /**
+     * @param  Collection<int, Organization>|array<int, array<string, mixed>>  $organizations
+     * @return array<int, array<string, mixed>>
+     */
+    public function normalizeOrganizations(Collection|array $organizations): array
+    {
+        return collect($organizations)
+            ->map(function (Organization|array $organization): array {
+                if ($organization instanceof Organization) {
+                    return (new OrganizationResource($organization))->resolve(request());
+                }
+
+                return [
+                    'id' => $organization['id'] ?? null,
+                    'name' => $organization['name'] ?? null,
+                    'slug' => $organization['slug'] ?? null,
+                    'email' => $organization['email'] ?? null,
+                    'phone' => $organization['phone'] ?? null,
+                    'plan' => $organization['plan'] ?? null,
+                    'status' => is_object($organization['status'] ?? null)
+                        ? $organization['status']->value
+                        : ($organization['status'] ?? null),
+                    'trial_ends_at' => $organization['trial_ends_at'] ?? null,
+                    'role' => $organization['role']
+                        ?? ($organization['pivot']['role'] ?? null),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    public function normalizeSessionOrganizationsIfNeeded(): void
+    {
+        $organizations = Session::get('organizations', []);
+
+        if ($organizations === []) {
+            return;
+        }
+
+        $needsNormalization = collect($organizations)->contains(
+            fn (array $organization): bool => ! array_key_exists('role', $organization)
+                && isset($organization['pivot']['role']),
+        );
+
+        if ($needsNormalization) {
+            Session::put('organizations', $this->normalizeOrganizations($organizations));
+        }
     }
 
     public function setActiveOrganization(int $organizationId): bool
@@ -43,6 +95,33 @@ class WebSessionService
         Session::put('organization_id', $organizationId);
 
         return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $organization
+     */
+    public function syncOrganization(array $organization): void
+    {
+        $organizationId = (int) ($organization['id'] ?? 0);
+
+        if ($organizationId === 0) {
+            return;
+        }
+
+        $organizations = collect(Session::get('organizations', []))
+            ->map(function (array $org) use ($organization, $organizationId): array {
+                if ((int) ($org['id'] ?? 0) !== $organizationId) {
+                    return $org;
+                }
+
+                return array_merge($org, array_intersect_key($organization, array_flip([
+                    'id', 'name', 'slug', 'email', 'phone', 'plan', 'status', 'trial_ends_at',
+                ])));
+            })
+            ->values()
+            ->all();
+
+        Session::put('organizations', $organizations);
     }
 
     /**
@@ -70,7 +149,7 @@ class WebSessionService
             $this->storeAuthSession(
                 $result['token'],
                 $result['user']->toArray(),
-                $result['organizations']->toArray(),
+                $result['organizations'],
             );
 
             return true;

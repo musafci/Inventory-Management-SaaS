@@ -75,5 +75,19 @@ Route::middleware('web.auth')->group(function (): void {
     Route::get('/reports/sales-summary', \App\Http\Livewire\Reports::class)->name('reports.sales-summary');
     Route::get('/reports/purchase-summary', \App\Http\Livewire\Reports::class)->name('reports.purchase-summary');
 
-    Route::get('/users', \App\Http\Livewire\Users::class)->name('users.index');
+    Route::get('/settings', function () {
+        if (\App\Support\OrganizationSession::canManageOrganization()) {
+            return redirect()->route('settings.organization');
+        }
+
+        if (\App\Support\OrganizationSession::canManageUsers()) {
+            return redirect()->route('settings.team');
+        }
+
+        abort(403);
+    })->name('settings');
+
+    Route::get('/settings/organization', \App\Http\Livewire\OrganizationSettings::class)->name('settings.organization');
+    Route::get('/settings/team', \App\Http\Livewire\Users::class)->name('settings.team');
+    Route::redirect('/users', '/settings/team');
 });

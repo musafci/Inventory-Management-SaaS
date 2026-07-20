@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Http\Livewire\Concerns\InteractsWithOrganizationSession;
 use App\Http\Livewire\Concerns\MapsFormValidationAttributes;
 use App\Services\Web\ApiClient;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -11,6 +12,7 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Users extends Component
 {
+    use InteractsWithOrganizationSession;
     use MapsFormValidationAttributes;
 
     public $items = [];
@@ -35,6 +37,10 @@ class Users extends Component
 
     public function mount()
     {
+        if (! $this->canManageUsers()) {
+            abort(403, 'You do not have permission to manage team members.');
+        }
+
         $this->roles = array_keys(RolesAndPermissionsSeeder::rolePermissionMap());
         $this->loadItems();
     }

@@ -23,6 +23,8 @@ class WebAuth
             return redirect()->guest('/login');
         }
 
+        $this->webSession->normalizeSessionOrganizationsIfNeeded();
+
         return $next($request);
     }
 }

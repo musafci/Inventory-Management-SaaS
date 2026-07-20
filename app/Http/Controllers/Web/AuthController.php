@@ -46,12 +46,10 @@ class AuthController extends Controller
             return back()->withErrors(['email' => $e->getMessage()])->withInput($request->only('email'));
         }
 
-        $organizations = $result['organizations']->toArray();
-
         $this->webSession->storeAuthSession(
             $result['token'],
             $result['user']->toArray(),
-            $organizations,
+            $result['organizations'],
         );
 
         session(['organization_id' => $this->authService->resolvePreferredOrganizationId($result['user'])]);
@@ -77,12 +75,10 @@ class AuthController extends Controller
             return back()->withErrors(['email' => $e->getMessage()])->withInput();
         }
 
-        $organizations = $result['organizations']->toArray();
-
         $this->webSession->storeAuthSession(
             $result['token'],
             $result['user']->toArray(),
-            $organizations,
+            $result['organizations'],
         );
 
         session(['organization_id' => $this->authService->resolvePreferredOrganizationId($result['user'])]);

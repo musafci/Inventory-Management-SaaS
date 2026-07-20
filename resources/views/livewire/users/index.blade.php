@@ -1,4 +1,6 @@
 <div>
+    <x-settings-nav active="team" />
+
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <p class="text-sm text-slate-600">Manage who can access the active organization and their roles.</p>

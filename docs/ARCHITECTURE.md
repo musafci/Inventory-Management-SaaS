@@ -573,7 +573,8 @@ The Livewire frontend consumes the REST API through `ApiClient` (internal sub-re
 | Auth logout | Yes — `POST /api/v1/auth/logout` + web session clear |
 | Auth me | Covered via session user data at login |
 | Organization switch | Yes — `POST /organization/switch` updates session `organization_id` |
-| Team members (`/api/v1/users`) | Yes — `/users` Livewire page (invite, role update, remove) |
+| Organization settings | Yes — `/settings/organization` (Org Owner only) + `GET/PATCH /api/v1/organization` |
+| Team members (`/api/v1/users`) | Yes — `/settings/team` Livewire page (invite, role update, remove) |
 | Products, categories, units, warehouses, suppliers, customers | Full CRUD |
 | Purchase orders | Full lifecycle + detail page at `/purchase-orders/{id}` |
 | Sales orders | Full lifecycle + detail page at `/sales-orders/{id}` |

@@ -105,6 +105,11 @@ class ApiClient
         return $this->makeRequest('PUT', $endpoint, $data);
     }
 
+    public function patch(string $endpoint, array $data = []): array
+    {
+        return $this->makeRequest('PATCH', $endpoint, $data);
+    }
+
     public function delete(string $endpoint): array
     {
         return $this->makeRequest('DELETE', $endpoint);
