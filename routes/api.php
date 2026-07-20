@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SalesOrderController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\OrganizationMemberController;
+use App\Http\Controllers\Api\V1\ReportExportController;
 use App\Http\Controllers\Api\V1\ProductAuthorizationProbeController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\StockController;
@@ -24,6 +26,7 @@ Route::prefix('v1')->group(function (): void {
 
         Route::middleware('auth:api')->group(function (): void {
             Route::get('me', [AuthController::class, 'me']);
+            Route::post('logout', [AuthController::class, 'logout']);
         });
     });
 
@@ -44,6 +47,10 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('payments', [PaymentController::class, 'index']);
         Route::get('payments/{paymentId}', [PaymentController::class, 'show']);
+
+        Route::apiResource('users', OrganizationMemberController::class)
+            ->parameters(['users' => 'userId'])
+            ->except(['show']);
 
         Route::apiResource('customers', CustomerController::class)
             ->parameters(['customers' => 'customerId']);
@@ -81,10 +88,15 @@ Route::prefix('v1')->group(function (): void {
         Route::post('stock-movements', [StockMovementController::class, 'store']);
 
         Route::prefix('reports')->group(function (): void {
+            Route::get('dashboard', [ReportController::class, 'dashboard']);
             Route::get('stock-valuation', [ReportController::class, 'stockValuation']);
             Route::get('low-stock', [ReportController::class, 'lowStock']);
             Route::get('sales-summary', [ReportController::class, 'salesSummary']);
             Route::get('purchase-summary', [ReportController::class, 'purchaseSummary']);
+            Route::get('exports', [ReportExportController::class, 'index']);
+            Route::post('exports', [ReportExportController::class, 'store']);
+            Route::get('exports/{exportId}', [ReportExportController::class, 'show']);
+            Route::get('exports/{exportId}/download', [ReportExportController::class, 'download']);
         });
     });
 });

@@ -209,4 +209,13 @@ class AuthController extends ApiController
             'organizations' => OrganizationResource::collection($result['organizations']),
         ]);
     }
+
+    public function logout(Request $request): \Illuminate\Http\Response
+    {
+        if ($request->user() !== null && $request->bearerToken() !== null) {
+            $this->authService->logout($request->user(), $request->bearerToken());
+        }
+
+        return response()->noContent();
+    }
 }

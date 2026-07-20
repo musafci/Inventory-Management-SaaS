@@ -8,6 +8,7 @@ use App\Models\SalesFulfillmentItem;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
 use App\Support\CanonicalStockLockOrder;
+use App\Support\OrderStatusNotifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -91,9 +92,11 @@ class SalesOrderFulfillmentService
 
             $salesOrder->refresh();
             $salesOrder->load('items');
+            $previousStatus = $salesOrder->status;
             $salesOrder->update([
                 'status' => $this->resolveStatusAfterFulfillment($salesOrder),
             ]);
+            OrderStatusNotifier::salesOrderChanged($salesOrder->fresh(), $previousStatus);
 
             return $salesFulfillment->fresh(['items.salesOrderItem.product', 'salesOrder']);
         });

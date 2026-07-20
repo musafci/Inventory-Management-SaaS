@@ -26,5 +26,10 @@ trait InteractsWithPassport
             'passport.password_grant.client_id' => $client->id,
             'passport.password_grant.client_secret' => $client->plainSecret,
         ]);
+
+        app(ClientRepository::class)->createPersonalAccessGrantClient(
+            'Test Platform Personal Access Client',
+            'platform_admins',
+        );
     }
 }

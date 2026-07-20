@@ -46,6 +46,7 @@ class RolesAndPermissionsSeeder extends Seeder
     {
         return [
             'Org Owner' => self::permissions(),
+            'Admin' => self::permissions(),
             'Manager' => [
                 'products.*',
                 'warehouses.*',

@@ -12,6 +12,13 @@ class ReportController extends ApiController
         protected ReportService $reportService,
     ) {}
 
+    public function dashboard(): JsonResponse
+    {
+        $this->authorize('viewReports');
+
+        return $this->success($this->reportService->dashboard());
+    }
+
     public function stockValuation(Request $request): JsonResponse
     {
         $this->authorize('viewReports');

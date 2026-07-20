@@ -176,11 +176,16 @@ class PaymentService
 
             $remainingPaid = $netPaid - $amount;
 
+            $previousStatus = $salesOrder->status;
             $salesOrder->update([
                 'status' => $remainingPaid <= 0
                     ? SalesOrderStatus::Refunded
                     : $salesOrder->status,
             ]);
+
+            if ($remainingPaid <= 0) {
+                \App\Support\OrderStatusNotifier::salesOrderChanged($salesOrder->fresh(), $previousStatus);
+            }
 
             return $payment->fresh(['payable', 'recordedBy']);
         });

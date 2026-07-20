@@ -47,6 +47,11 @@ return [
             'driver' => 'passport',
             'provider' => 'users',
         ],
+
+        'platform' => [
+            'driver' => 'passport',
+            'provider' => 'platform_admins',
+        ],
     ],
 
     /*
@@ -70,6 +75,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'platform_admins' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\PlatformAdmin::class,
         ],
 
         // 'users' => [

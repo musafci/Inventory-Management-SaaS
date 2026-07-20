@@ -15,8 +15,10 @@ use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Unit;
+use App\Models\User;
 use App\Models\Warehouse;
 use App\Observers\StockMovementObserver;
+use App\Policies\OrganizationMemberPolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\CustomerPolicy;
 use App\Policies\PaymentPolicy;
@@ -39,6 +41,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Exceptions\OAuthServerException;
@@ -61,6 +64,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($appUrl = config('app.url')) {
+            URL::forceRootUrl($appUrl);
+        }
+
         Passport::enablePasswordGrant();
 
         RateLimiter::for('api-tenant', function (Request $request): Limit {
@@ -71,6 +78,7 @@ class AppServiceProvider extends ServiceProvider
                 ->by("org:{$organizationId}:user:{$userId}");
         });
 
+        Gate::policy(User::class, OrganizationMemberPolicy::class);
         Gate::policy(Organization::class, OrganizationPolicy::class);
         Gate::policy(Warehouse::class, WarehousePolicy::class);
         Gate::policy(Category::class, CategoryPolicy::class);

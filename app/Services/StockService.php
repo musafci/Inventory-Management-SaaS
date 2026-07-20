@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -53,6 +54,7 @@ class StockService
             $this->lockStockRow($warehouseId, $productId);
 
             return StockMovement::query()->create([
+                'organization_id' => $this->currentOrganizationId(),
                 'warehouse_id' => $warehouseId,
                 'product_id' => $productId,
                 'type' => $type,
@@ -330,6 +332,7 @@ class StockService
         try {
             DB::transaction(function () use ($warehouseId, $productId): void {
                 Stock::query()->create([
+                    'organization_id' => $this->currentOrganizationId(),
                     'warehouse_id' => $warehouseId,
                     'product_id' => $productId,
                     'quantity_on_hand' => 0,
@@ -347,5 +350,14 @@ class StockService
             ->where('product_id', $productId)
             ->lockForUpdate()
             ->firstOrFail();
+    }
+
+    protected function currentOrganizationId(): int
+    {
+        if (! app()->bound('currentOrganization')) {
+            throw new RuntimeException('Organization context is required for stock operations.');
+        }
+
+        return (int) app('currentOrganization')->id;
     }
 }

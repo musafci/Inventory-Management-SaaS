@@ -24,6 +24,14 @@ docker compose exec app php artisan app:setup --write-env
 
 The `app:setup` command runs migrations, seeds roles/permissions, generates Passport keys, and creates a password-grant OAuth client. Use `--write-env` inside Docker so Passport credentials are saved to `.env`.
 
+If login fails with **"These credentials do not match our records"** after `migrate:fresh` or `db:seed`, your `.env` Passport client ID is probably stale. Fix it with:
+
+```bash
+php artisan passport:ensure-password-client --write-env
+```
+
+Then restart `php artisan serve` if it is running.
+
 ### Register a first user
 
 ```bash
@@ -45,6 +53,28 @@ Authorization: Bearer <access_token>
 X-Organization-Id: <organization_id>
 ```
 
+## Web UI (Livewire frontend)
+
+Run the dev server and use **http://localhost:8000** for every page (login, dashboard, and all routes):
+
+```bash
+php artisan serve --host=localhost --port=8000
+```
+
+Set `APP_URL=http://localhost:8000` in `.env`. Post-login redirects use relative paths so they stay on the same host and port. Always open **http://localhost:8000/login** — do not use `http://localhost/dashboard` without `:8000` (that hits Apache on port 80).
+
+```bash
+php artisan config:clear   # after changing APP_URL
+```
+
+Optional queue worker for notifications:
+
+```bash
+php artisan horizon
+```
+
+> **Apache on port 80:** only needed if you deliberately want `http://localhost/...` without a port. See `deploy/enable-apache.sh` and set `APP_URL=http://localhost` instead.
+
 ## Local development (without Docker)
 
 **Prerequisites:** PHP 8.3+, Composer, PostgreSQL 16, Redis 7.
@@ -57,7 +87,7 @@ cp .env.example .env
 php artisan app:setup --write-env
 
 # Run API + queue worker (or use Horizon)
-php artisan serve
+php artisan serve --host=localhost --port=8000
 php artisan horizon
 ```
 
@@ -99,7 +129,18 @@ RUN_STOCK_PG_CONCURRENCY=1 php artisan test
 
 ### Roles (seeded)
 
-`Org Owner`, `Manager`, `Warehouse Staff`, `Viewer` — permissions defined in `database/seeders/RolesAndPermissionsSeeder.php`.
+`Org Owner`, `Admin`, `Manager`, `Warehouse Staff`, `Sales Staff`, `Viewer` — permissions defined in `database/seeders/RolesAndPermissionsSeeder.php`.
+
+### Demo data (local environment)
+
+When `APP_ENV=local`, `php artisan db:seed` also runs `DemoSeeder` with two organizations and a multi-org consultant account:
+
+| Account | Password | Organizations |
+|---------|----------|---------------|
+| `owner@acme.demo` | `password123` | Acme Warehouse (Owner) |
+| `owner@beta.demo` | `password123` | Beta Retail (Owner) |
+| `consultant@demo.test` | `password123` | Both (Admin / Manager) |
+| `platform@demo.test` | `password123` | Platform admin API (`/api/platform/v1/*`) |
 
 ### API documentation
 

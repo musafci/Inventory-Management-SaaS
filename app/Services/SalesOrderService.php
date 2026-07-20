@@ -9,6 +9,7 @@ use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
 use App\Models\Warehouse;
 use App\Support\CanonicalStockLockOrder;
+use App\Support\OrderStatusNotifier;
 use App\Support\UniqueConstraintViolation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\QueryException;
@@ -137,7 +138,9 @@ class SalesOrderService
                 );
             }
 
+            $previousStatus = $salesOrder->status;
             $salesOrder->update(['status' => SalesOrderStatus::Confirmed]);
+            OrderStatusNotifier::salesOrderChanged($salesOrder->fresh(), $previousStatus);
 
             return $salesOrder->fresh(['customer', 'warehouse', 'items.product']);
         });
@@ -183,7 +186,9 @@ class SalesOrderService
                 }
             }
 
+            $previousStatus = $salesOrder->status;
             $salesOrder->update(['status' => SalesOrderStatus::Cancelled]);
+            OrderStatusNotifier::salesOrderChanged($salesOrder->fresh(), $previousStatus);
 
             return $salesOrder->fresh(['customer', 'warehouse', 'items.product']);
         });
@@ -209,7 +214,9 @@ class SalesOrderService
                 ]);
             }
 
+            $previousStatus = $salesOrder->status;
             $salesOrder->update(['status' => SalesOrderStatus::Delivered]);
+            OrderStatusNotifier::salesOrderChanged($salesOrder->fresh(), $previousStatus);
 
             return $salesOrder->fresh(['customer', 'warehouse', 'items.product']);
         });

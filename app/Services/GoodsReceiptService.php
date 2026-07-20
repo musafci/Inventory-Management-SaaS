@@ -9,6 +9,7 @@ use App\Models\GoodsReceiptItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Support\CanonicalStockLockOrder;
+use App\Support\OrderStatusNotifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -88,9 +89,11 @@ class GoodsReceiptService
 
             $purchaseOrder->refresh();
             $purchaseOrder->load('items');
+            $previousStatus = $purchaseOrder->status;
             $purchaseOrder->update([
                 'status' => $this->resolveStatusAfterReceipt($purchaseOrder),
             ]);
+            OrderStatusNotifier::purchaseOrderChanged($purchaseOrder->fresh(), $previousStatus);
 
             return $goodsReceipt->fresh(['items.purchaseOrderItem.product', 'purchaseOrder']);
         });

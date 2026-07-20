@@ -9,10 +9,76 @@ use App\Models\Payment;
 use App\Models\PurchaseOrder;
 use App\Models\SalesOrder;
 use App\Models\Stock;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ReportService
 {
+    protected int $cacheTtlSeconds = 300;
+
+    protected function cacheKey(string $suffix): string
+    {
+        $organizationId = app('currentOrganization')->id;
+
+        return "org:{$organizationId}:reports:{$suffix}";
+    }
+
+    public function forgetOrganizationCache(?int $organizationId = null): void
+    {
+        $organizationId ??= app('currentOrganization')->id;
+
+        foreach (['stock-valuation', 'low-stock', 'sales-summary', 'purchase-summary', 'dashboard'] as $suffix) {
+            Cache::forget("org:{$organizationId}:reports:{$suffix}");
+        }
+    }
+
+    /**
+     * @return array{
+     *     total_products: int,
+     *     total_stock_items: int,
+     *     stock_value: string,
+     *     low_stock_count: int,
+     *     pending_purchase_orders: int,
+     *     pending_sales_orders: int,
+     * }
+     */
+    public function dashboard(): array
+    {
+        return Cache::remember(
+            $this->cacheKey('dashboard'),
+            $this->cacheTtlSeconds,
+            function (): array {
+                $valuation = $this->stockValuationUncached();
+                $lowStock = $this->lowStockUncached();
+
+                $pendingPurchaseOrders = PurchaseOrder::query()
+                    ->whereIn('status', [
+                        PurchaseOrderStatus::Draft,
+                        PurchaseOrderStatus::Sent,
+                        PurchaseOrderStatus::PartiallyReceived,
+                    ])
+                    ->count();
+
+                $pendingSalesOrders = SalesOrder::query()
+                    ->whereIn('status', [
+                        SalesOrderStatus::Draft,
+                        SalesOrderStatus::Confirmed,
+                        SalesOrderStatus::Shipped,
+                    ])
+                    ->count();
+
+                return [
+                    'total_products' => \App\Models\Product::query()->count(),
+                    'total_stock_items' => Stock::query()->count(),
+                    'stock_value' => $valuation['total_value'],
+                    'low_stock_count' => count($lowStock),
+                    'pending_purchase_orders' => $pendingPurchaseOrders,
+                    'pending_sales_orders' => $pendingSalesOrders,
+                ];
+            },
+        );
+    }
+
     /**
      * @return array{
      *     total_value: string,
@@ -21,6 +87,24 @@ class ReportService
      * }
      */
     public function stockValuation(?int $warehouseId = null): array
+    {
+        $suffix = 'stock-valuation'.($warehouseId !== null ? ":{$warehouseId}" : '');
+
+        return Cache::remember(
+            $this->cacheKey($suffix),
+            $this->cacheTtlSeconds,
+            fn (): array => $this->stockValuationUncached($warehouseId),
+        );
+    }
+
+    /**
+     * @return array{
+     *     total_value: string,
+     *     total_units: int,
+     *     by_warehouse: list<array{warehouse_id: int, warehouse_name: string, total_value: string, total_units: int}>,
+     * }
+     */
+    public function stockValuationUncached(?int $warehouseId = null): array
     {
         $query = Stock::query()
             ->join('products', 'products.id', '=', 'stocks.product_id')
@@ -82,6 +166,29 @@ class ReportService
      */
     public function lowStock(): array
     {
+        return Cache::remember(
+            $this->cacheKey('low-stock'),
+            $this->cacheTtlSeconds,
+            fn (): array => $this->lowStockUncached(),
+        );
+    }
+
+    /**
+     * @return list<array{
+     *     stock_id: int,
+     *     warehouse_id: int,
+     *     warehouse_name: string,
+     *     product_id: int,
+     *     product_name: string,
+     *     sku: string,
+     *     quantity_on_hand: int,
+     *     quantity_reserved: int,
+     *     quantity_available: int,
+     *     reorder_point: int,
+     * }>
+     */
+    public function lowStockUncached(): array
+    {
         return Stock::query()
             ->with(['warehouse', 'product'])
             ->whereHas('product', function ($query): void {
@@ -120,6 +227,33 @@ class ReportService
      * }
      */
     public function salesSummary(
+        ?string $orderFrom = null,
+        ?string $orderTo = null,
+        ?string $paymentFrom = null,
+        ?string $paymentTo = null,
+    ): array {
+        $suffix = md5(json_encode([$orderFrom, $orderTo, $paymentFrom, $paymentTo]) ?: '');
+
+        return Cache::remember(
+            $this->cacheKey("sales-summary:{$suffix}"),
+            $this->cacheTtlSeconds,
+            fn (): array => $this->salesSummaryUncached($orderFrom, $orderTo, $paymentFrom, $paymentTo),
+        );
+    }
+
+    /**
+     * @return array{
+     *     filters: array{
+     *         order_date: array{from: string|null, to: string|null},
+     *         payment_date: array{from: string|null, to: string|null},
+     *     },
+     *     order_count: int,
+     *     total_amount: string,
+     *     by_status: list<array{status: string, order_count: int, total_amount: string}>,
+     *     payments_received: string,
+     * }
+     */
+    public function salesSummaryUncached(
         ?string $orderFrom = null,
         ?string $orderTo = null,
         ?string $paymentFrom = null,
@@ -211,6 +345,33 @@ class ReportService
      * }
      */
     public function purchaseSummary(
+        ?string $orderFrom = null,
+        ?string $orderTo = null,
+        ?string $paymentFrom = null,
+        ?string $paymentTo = null,
+    ): array {
+        $suffix = md5(json_encode([$orderFrom, $orderTo, $paymentFrom, $paymentTo]) ?: '');
+
+        return Cache::remember(
+            $this->cacheKey("purchase-summary:{$suffix}"),
+            $this->cacheTtlSeconds,
+            fn (): array => $this->purchaseSummaryUncached($orderFrom, $orderTo, $paymentFrom, $paymentTo),
+        );
+    }
+
+    /**
+     * @return array{
+     *     filters: array{
+     *         order_date: array{from: string|null, to: string|null},
+     *         payment_date: array{from: string|null, to: string|null},
+     *     },
+     *     order_count: int,
+     *     total_amount: string,
+     *     by_status: list<array{status: string, order_count: int, total_amount: string}>,
+     *     payments_made: string,
+     * }
+     */
+    public function purchaseSummaryUncached(
         ?string $orderFrom = null,
         ?string $orderTo = null,
         ?string $paymentFrom = null,

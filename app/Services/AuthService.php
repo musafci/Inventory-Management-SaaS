@@ -9,7 +9,10 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Request as RequestFacade;
 use Illuminate\Support\Str;
+use Lcobucci\JWT\Encoding\JoseEncoder;
+use Lcobucci\JWT\Token\Parser;
 use RuntimeException;
 
 class AuthService
@@ -51,13 +54,32 @@ class AuthService
             return [$user, $organization];
         });
 
+        try {
+            $token = $this->issuePasswordGrantToken($data['email'], $data['password']);
+        } catch (AuthenticationException $exception) {
+            $this->rollbackRegistration($user, $organization);
+
+            throw $exception;
+        }
+
         $user->load('organizations');
 
         return [
             'user' => $user,
             'organizations' => $user->organizations,
-            'token' => $this->issuePasswordGrantToken($data['email'], $data['password']),
+            'token' => $token,
         ];
+    }
+
+    protected function rollbackRegistration(User $user, Organization $organization): void
+    {
+        DB::transaction(function () use ($user, $organization): void {
+            setPermissionsTeamId($organization->id);
+            $user->syncRoles([]);
+            $user->organizations()->detach($organization->id);
+            $user->delete();
+            $organization->delete();
+        });
     }
 
     /**
@@ -116,6 +138,73 @@ class AuthService
     }
 
     /**
+     * Revoke the current access token for the authenticated user.
+     */
+    public function logout(User $user, ?string $accessToken = null): void
+    {
+        if ($accessToken !== null) {
+            $this->revokeAccessToken($accessToken);
+
+            return;
+        }
+
+        $token = $user->token();
+
+        if ($token !== null) {
+            $token->revoke();
+        }
+    }
+
+    /**
+     * Pick the organization to activate after login/register.
+     */
+    public function resolvePreferredOrganizationId(User $user): ?int
+    {
+        $user->loadMissing('organizations');
+
+        if (
+            $user->default_organization_id !== null
+            && $user->organizations->contains('id', $user->default_organization_id)
+        ) {
+            return (int) $user->default_organization_id;
+        }
+
+        return $user->organizations->sortBy('name')->first()?->id;
+    }
+
+    /**
+     * Revoke a bearer access token without an authenticated request context.
+     */
+    public function revokeAccessToken(string $accessToken): void
+    {
+        $tokenId = $this->extractTokenId($accessToken);
+
+        if ($tokenId === null) {
+            return;
+        }
+
+        \Laravel\Passport\Token::query()
+            ->whereKey($tokenId)
+            ->update(['revoked' => true]);
+
+        \Laravel\Passport\RefreshToken::query()
+            ->where('access_token_id', $tokenId)
+            ->update(['revoked' => true]);
+    }
+
+    protected function extractTokenId(string $accessToken): ?string
+    {
+        try {
+            $token = (new Parser(new JoseEncoder()))->parse($accessToken);
+            $tokenId = $token->claims()->get('jti');
+
+            return $tokenId !== null ? (string) $tokenId : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * @return array<string, mixed>
      */
     protected function issuePasswordGrantToken(string $email, string $password): array
@@ -135,6 +224,7 @@ class AuthService
     protected function requestOAuthToken(array $params): array
     {
         $credentials = $this->passwordClientCredentials();
+        $originalRequest = app('request');
 
         $request = Request::create('/oauth/token', 'POST', array_merge([
             'client_id' => $credentials['client_id'],
@@ -143,11 +233,27 @@ class AuthService
 
         $request->headers->set('Accept', 'application/json');
 
-        $response = app()->handle($request);
+        try {
+            $response = app()->handle($request);
+        } finally {
+            app()->instance('request', $originalRequest);
+            RequestFacade::clearResolvedInstance();
+
+            if ($url = app()->bound('url') ? app('url') : null) {
+                $url->setRequest($originalRequest);
+            }
+        }
+
         $body = json_decode($response->getContent(), true) ?? [];
 
         if ($response->getStatusCode() !== 200) {
-            throw new AuthenticationException($body['message'] ?? 'These credentials do not match our records.');
+            $message = match ($body['error'] ?? null) {
+                'invalid_client' => 'OAuth client is misconfigured. Run: php artisan passport:ensure-password-client --write-env',
+                'invalid_grant' => 'These credentials do not match our records.',
+                default => $body['message'] ?? $body['error_description'] ?? 'Authentication failed.',
+            };
+
+            throw new AuthenticationException($message);
         }
 
         return $body;

@@ -8,6 +8,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Supplier;
 use App\Models\Warehouse;
+use App\Support\OrderStatusNotifier;
 use App\Support\UniqueConstraintViolation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\QueryException;
@@ -108,7 +109,9 @@ class PurchaseOrderService
             ]);
         }
 
+        $previousStatus = $purchaseOrder->status;
         $purchaseOrder->update(['status' => PurchaseOrderStatus::Sent]);
+        OrderStatusNotifier::purchaseOrderChanged($purchaseOrder->fresh(), $previousStatus);
 
         return $purchaseOrder->fresh(['supplier', 'warehouse', 'items.product']);
     }
@@ -121,7 +124,9 @@ class PurchaseOrderService
             ]);
         }
 
+        $previousStatus = $purchaseOrder->status;
         $purchaseOrder->update(['status' => PurchaseOrderStatus::Cancelled]);
+        OrderStatusNotifier::purchaseOrderChanged($purchaseOrder->fresh(), $previousStatus);
 
         return $purchaseOrder->fresh(['supplier', 'warehouse', 'items.product']);
     }
