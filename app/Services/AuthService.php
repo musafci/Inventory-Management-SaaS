@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\OrganizationStatus;
+use App\Jobs\SendOrganizationRegisteredNotificationJob;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\OrganizationSubscriptionService;
@@ -70,6 +71,8 @@ class AuthService
         }
 
         $user->load('organizations');
+
+        SendOrganizationRegisteredNotificationJob::dispatch($organization->id, $user->id);
 
         return [
             'user' => $user,

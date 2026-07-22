@@ -1,8 +1,10 @@
 <?php
 
+use App\Mail\OrganizationRegisteredMail;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
@@ -28,6 +30,38 @@ test('user can register an organization and receive a passport token', function 
     $this->assertDatabaseHas('organizations', ['name' => 'Acme Inventory']);
     $this->assertDatabaseHas('users', ['email' => 'jane@acme.test']);
     $this->assertDatabaseHas('organization_user', ['role' => 'Org Owner']);
+});
+
+test('organization registration sends notification email to platform admin', function () {
+    Mail::fake();
+
+    $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'notify-owner@acme.test',
+        'organization_name' => 'Notify Corp',
+    ]))->assertCreated();
+
+    Mail::assertSent(OrganizationRegisteredMail::class, function (OrganizationRegisteredMail $mail): bool {
+        return $mail->hasTo('oneapp.com.bd@gmail.com')
+            && $mail->organization->name === 'Notify Corp'
+            && $mail->owner->email === 'notify-owner@acme.test';
+    });
+});
+
+test('organization registration does not send email when registration fails', function () {
+    Mail::fake();
+
+    $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'jane@acme.test',
+    ]))->assertCreated();
+
+    Mail::fake();
+
+    $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'organization_name' => 'Duplicate Org',
+        'email' => 'jane@acme.test',
+    ]))->assertUnprocessable();
+
+    Mail::assertNothingSent();
 });
 
 test('registering twice with the same email fails validation', function () {
