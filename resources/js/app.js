@@ -54,3 +54,10 @@ document.addEventListener('alpine:init', () => {
         },
     });
 });
+
+document.addEventListener('livewire:load', () => {
+    const bar = document.getElementById('livewire-loading-bar');
+    Livewire.hook('message.sent', () => { bar.style.display = 'block'; });
+    Livewire.hook('message.received', () => { bar.style.display = 'none'; });
+    Livewire.hook('request.failed', () => { bar.style.display = 'none'; });
+});

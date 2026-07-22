@@ -9,6 +9,7 @@
     @livewireStyles
 </head>
 <body class="h-full app-bg" x-data="{ mobileMenu: false, userName: @js(session('user_name', '')), userEmail: @js(session('user_email', '')) }" x-on:toast.window="$store.toast.add($event.detail.message, $event.detail.type || 'success')">
+    <div id="livewire-loading-bar" class="loading-bar" style="display:none"></div>
     <div class="min-h-full">
         {{-- Mobile sidebar --}}
         <aside class="sidebar-panel sidebar-transition fixed inset-y-0 left-0 z-50 flex w-72 flex-col lg:hidden"

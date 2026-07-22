@@ -9,7 +9,7 @@
                 <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                     <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
                 </div>
-                <input type="text" wire:model.live.debounce.300ms="search" class="search-input" placeholder="Search products...">
+                <input type="text" wire:model.live.debounce.300ms="search" class="search-input" placeholder="Search products..." wire:loading.class="search-loading" wire:target="search">
             </div>
         </div>
         @canaccess('inventory.create')
@@ -21,7 +21,7 @@
     </div>
 
     {{-- Table --}}
-    <div class="card overflow-hidden">
+    <div class="card overflow-hidden" wire:loading.class="wire-loading-dim" wire:target="items">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -43,7 +43,7 @@
                         <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 bg-white">
+                <tbody class="divide-y divide-gray-200 bg-white" wire:transition.opacity.duration.300ms>
                     @forelse($items as $item)
                         <tr class="table-row-hover">
                             <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
