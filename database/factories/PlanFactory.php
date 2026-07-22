@@ -19,14 +19,18 @@ class PlanFactory extends Factory
         return [
             'slug' => $slug,
             'name' => ucfirst(str_replace('-', ' ', $slug)),
-            'price' => fake()->randomFloat(2, 0, 99),
+            'price_monthly' => fake()->randomFloat(2, 10, 99),
+            'price_annual' => fake()->randomFloat(2, 100, 999),
             'limits' => [
                 'max_warehouses' => 3,
                 'max_users' => 5,
                 'max_products' => 50,
                 'max_orders_per_month' => 100,
-                'api_rate_limit' => 120,
+                'api_rate_limit_per_minute' => 120,
             ],
+            'is_custom' => false,
+            'grace_buffer_percent' => 10,
+            'sort_order' => 1,
             'is_active' => true,
         ];
     }

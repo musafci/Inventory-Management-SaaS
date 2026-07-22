@@ -46,7 +46,7 @@ test('platform admin token cannot access tenant routes', function () {
     ])->assertUnauthorized();
 });
 
-test('plan limit blocks warehouse creation on trial plan', function () {
+test('plan limit blocks warehouse creation on growth trial plan', function () {
     $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
         'email' => 'plan-limit@acme.test',
     ]))->assertCreated();
@@ -55,17 +55,19 @@ test('plan limit blocks warehouse creation on trial plan', function () {
     $token = $register->json('data.token.access_token');
     $headers = $this->organizationHeaders($token, $organizationId);
 
-    $this->postJson('/api/v1/warehouses', [
-        'name' => 'First Warehouse',
-        'address' => '1 Main St',
-    ], $headers)->assertCreated();
+    foreach (['First', 'Second', 'Third', 'Fourth'] as $index => $label) {
+        $this->postJson('/api/v1/warehouses', [
+            'name' => "{$label} Warehouse",
+            'address' => ($index + 1).' Main St',
+        ], $headers)->assertCreated();
+    }
 
     $this->postJson('/api/v1/warehouses', [
-        'name' => 'Second Warehouse',
-        'address' => '2 Main St',
+        'name' => 'Fifth Warehouse',
+        'address' => '5 Main St',
     ], $headers)
         ->assertStatus(422)
-        ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'Plan limit reached'));
+        ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'Upgrade required'));
 });
 
 test('platform admin can manage subscription plans', function () {
@@ -73,16 +75,16 @@ test('platform admin can manage subscription plans', function () {
     Passport::actingAs($admin, [], 'platform');
 
     $org = $this->registerOrganizationWithOwner(['email' => 'sub-org@acme.test']);
-    $proPlan = Plan::query()->where('slug', 'pro')->firstOrFail();
+    $businessPlan = Plan::query()->where('slug', 'business')->firstOrFail();
 
     $this->patchJson("/api/platform/v1/organizations/{$org['organization_id']}/subscription", [
-        'plan_id' => $proPlan->id,
+        'plan_id' => $businessPlan->id,
         'status' => 'active',
     ])->assertOk()
-        ->assertJsonPath('data.plan.slug', 'pro');
+        ->assertJsonPath('data.plan.slug', 'business');
 
     $organization = Organization::query()->findOrFail($org['organization_id']);
-    expect($organization->plan)->toBe('pro');
+    expect($organization->plan)->toBe('business');
 });
 
 test('platform admin can add support notes and toggle feature flags', function () {
@@ -178,7 +180,7 @@ test('cancelled subscription blocks tenant api access', function () {
     );
 
     $this->patchJson("/api/platform/v1/organizations/{$organizationId}/subscription", [
-        'plan_id' => Plan::query()->where('slug', 'trial')->value('id'),
+        'plan_id' => Plan::query()->where('slug', 'growth')->value('id'),
         'status' => 'cancelled',
     ])->assertOk();
 
@@ -187,7 +189,7 @@ test('cancelled subscription blocks tenant api access', function () {
         ->assertJsonPath('message', 'This organization subscription has been cancelled.');
 });
 
-test('expired trial blocks tenant api and marks subscription past due', function () {
+test('expired trial allows reads and marks subscription expired', function () {
     $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
         'email' => 'expired-trial@acme.test',
     ]))->assertCreated();
@@ -203,14 +205,12 @@ test('expired trial blocks tenant api and marks subscription past due', function
         'current_period_ends_at' => now()->subDay(),
     ])->save();
 
-    $this->getJson('/api/v1/products', $headers)
-        ->assertForbidden()
-        ->assertJsonPath('message', 'Your trial or subscription period has ended. Please upgrade to continue.');
+    $this->getJson('/api/v1/products', $headers)->assertOk();
 
-    expect($subscription->fresh()->status->value)->toBe('past_due');
+    expect($subscription->fresh()->status)->toBe(SubscriptionStatus::Expired);
 });
 
-test('starter plan allows two warehouses then blocks the third', function () {
+test('starter plan allows one warehouse then blocks the second', function () {
     $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
         'email' => 'starter-plan@acme.test',
     ]))->assertCreated();
@@ -238,5 +238,5 @@ test('starter plan allows two warehouses then blocks the third', function () {
 
     $this->postJson('/api/v1/warehouses', ['name' => 'WH 3', 'address' => 'C'], $headers)
         ->assertStatus(422)
-        ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'Plan limit reached'));
+        ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'Upgrade required'));
 });

@@ -17,10 +17,18 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->string('email');
             $table->string('phone')->nullable();
-            $table->string('plan')->default('trial');
+            $table->string('plan')->default('growth');
             $table->string('status')->default('trial');
             $table->timestamp('trial_ends_at')->nullable();
+            $table->string('stripe_customer_id')->nullable();
             $table->timestamps();
+        });
+
+        Schema::table('users', function (Blueprint $table): void {
+            $table->string('phone')->nullable()->after('password');
+            $table->string('status')->default('active')->after('phone');
+            $table->timestamp('last_login_at')->nullable()->after('status');
+            $table->foreignId('default_organization_id')->nullable()->after('last_login_at')->constrained('organizations')->nullOnDelete();
         });
     }
 
@@ -29,6 +37,11 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table): void {
+            $table->dropConstrainedForeignId('default_organization_id');
+            $table->dropColumn(['phone', 'status', 'last_login_at']);
+        });
+
         Schema::dropIfExists('organizations');
     }
 };

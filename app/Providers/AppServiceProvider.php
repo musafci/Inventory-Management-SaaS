@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\StockLevelChanged;
 use App\Exceptions\PlanLimitExceededException;
 use App\Exceptions\SubscriptionAccessDeniedException;
+use App\Exceptions\SubscriptionPaymentRequiredException;
 use App\Listeners\CheckLowStock;
 use App\Models\Category;
 use App\Models\Customer;
@@ -22,6 +23,7 @@ use App\Models\User;
 use App\Models\Warehouse;
 use App\Observers\StockMovementObserver;
 use App\Services\OrganizationSubscriptionService;
+use App\Support\PlanWarningCollector;
 use App\Permission\PermissionCatalog;
 use App\Policies\OrganizationMemberPolicy;
 use App\Policies\CategoryPolicy;
@@ -62,7 +64,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(PlanWarningCollector::class);
     }
 
     /**
@@ -162,6 +164,17 @@ class AppServiceProvider extends ServiceProvider
 
     public static function registerApiExceptionRendering(Exceptions $exceptions): void
     {
+        $exceptions->render(function (SubscriptionPaymentRequiredException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'errors' => [],
+            ], HttpResponse::HTTP_PAYMENT_REQUIRED);
+        });
+
         $exceptions->render(function (SubscriptionAccessDeniedException $exception, Request $request) {
             if (! $request->is('api/*')) {
                 return null;

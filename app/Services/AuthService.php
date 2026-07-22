@@ -35,9 +35,9 @@ class AuthService
                 'slug' => $this->uniqueSlug($data['organization_name']),
                 'email' => $data['email'],
                 'phone' => $data['phone'] ?? null,
-                'plan' => 'trial',
+                'plan' => config('subscription.trial_plan_slug', 'growth'),
                 'status' => OrganizationStatus::Trial,
-                'trial_ends_at' => now()->addDays(14),
+                'trial_ends_at' => now()->addDays((int) config('subscription.trial_days', 14)),
             ]);
 
             $user = User::query()->create([

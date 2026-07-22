@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\SubscriptionStatus;
 use App\Exceptions\SubscriptionAccessDeniedException;
+use App\Exceptions\SubscriptionPaymentRequiredException;
 use App\Models\Organization;
 use App\Models\OrganizationSubscription;
 use App\Models\Plan;
@@ -11,9 +12,13 @@ use Illuminate\Support\Facades\DB;
 
 class OrganizationSubscriptionService
 {
-    public function assignTrialPlan(Organization $organization, ?int $trialDays = 14): OrganizationSubscription
+    public function assignTrialPlan(Organization $organization, ?int $trialDays = null): OrganizationSubscription
     {
-        $plan = Plan::query()->where('slug', 'trial')->firstOrFail();
+        $trialDays ??= (int) config('subscription.trial_days', 14);
+
+        $plan = Plan::query()
+            ->where('slug', config('subscription.trial_plan_slug', 'growth'))
+            ->firstOrFail();
 
         return DB::transaction(function () use ($organization, $plan, $trialDays): OrganizationSubscription {
             $subscription = OrganizationSubscription::query()->updateOrCreate(
@@ -51,20 +56,31 @@ class OrganizationSubscriptionService
             return [];
         }
 
-        if (! $this->subscriptionPermitsAccess($subscription)) {
+        if (! in_array($subscription->status, [
+            SubscriptionStatus::Trial,
+            SubscriptionStatus::Active,
+            SubscriptionStatus::Expired,
+        ], true)) {
             return [];
         }
 
         return $subscription->plan->limits ?? [];
     }
 
+    public function graceBufferPercent(Organization $organization): int
+    {
+        $subscription = $this->activeSubscription($organization);
+
+        return max(0, (int) ($subscription?->plan?->grace_buffer_percent ?? 10));
+    }
+
     public function apiRateLimitPerMinute(Organization $organization): int
     {
-        $limits = $this->activeLimits($organization);
-        $planLimit = $limits['api_rate_limit'] ?? null;
+        $subscription = $this->activeSubscription($organization);
+        $planLimit = $subscription?->plan?->apiRateLimitPerMinute();
 
         if ($planLimit !== null) {
-            return max(1, (int) $planLimit);
+            return max(1, $planLimit);
         }
 
         return (int) config('api.rate_limit_per_minute', 120);
@@ -73,7 +89,7 @@ class OrganizationSubscriptionService
     /**
      * @throws SubscriptionAccessDeniedException
      */
-    public function assertAllowsTenantAccess(Organization $organization): void
+    public function assertAllowsTenantRead(Organization $organization): void
     {
         $subscription = $this->activeSubscription($organization);
 
@@ -84,12 +100,7 @@ class OrganizationSubscriptionService
         }
 
         $this->expireTrialIfNeeded($subscription);
-
-        if ($subscription->status === SubscriptionStatus::PastDue) {
-            throw new SubscriptionAccessDeniedException(
-                'Your trial or subscription period has ended. Please upgrade to continue.',
-            );
-        }
+        $subscription = $subscription->fresh(['plan']) ?? $subscription;
 
         if ($subscription->status === SubscriptionStatus::Cancelled) {
             throw new SubscriptionAccessDeniedException(
@@ -97,18 +108,62 @@ class OrganizationSubscriptionService
             );
         }
 
-        if (! $subscription->isActive()) {
+        if ($subscription->status === SubscriptionStatus::PastDue) {
+            throw new SubscriptionAccessDeniedException(
+                'Your subscription payment is past due. Please update billing to continue.',
+            );
+        }
+
+        if (! $subscription->permitsReadAccess()) {
             throw new SubscriptionAccessDeniedException(
                 'This organization subscription is not active.',
             );
         }
     }
 
+    /**
+     * @throws SubscriptionAccessDeniedException
+     * @throws SubscriptionPaymentRequiredException
+     */
+    public function assertAllowsTenantWrite(Organization $organization): void
+    {
+        $this->assertAllowsTenantRead($organization);
+
+        $subscription = $this->activeSubscription($organization);
+
+        if ($subscription === null) {
+            throw new SubscriptionAccessDeniedException(
+                'This organization has no subscription. Contact platform support.',
+            );
+        }
+
+        if ($subscription->status === SubscriptionStatus::Expired) {
+            throw new SubscriptionPaymentRequiredException(
+                'Your trial has ended. Choose a plan to continue making changes.',
+            );
+        }
+
+        if (! $subscription->permitsWriteAccess()) {
+            throw new SubscriptionAccessDeniedException(
+                'This organization subscription does not allow changes.',
+            );
+        }
+    }
+
+    /**
+     * @throws SubscriptionAccessDeniedException
+     * @throws SubscriptionPaymentRequiredException
+     */
+    public function assertAllowsTenantAccess(Organization $organization): void
+    {
+        $this->assertAllowsTenantWrite($organization);
+    }
+
     public function subscriptionPermitsAccess(OrganizationSubscription $subscription): bool
     {
         $subscription = $this->expireTrialIfNeeded($subscription);
 
-        return $subscription->isActive();
+        return $subscription->permitsWriteAccess();
     }
 
     public function expireTrialIfNeeded(OrganizationSubscription $subscription): OrganizationSubscription
@@ -121,9 +176,25 @@ class OrganizationSubscriptionService
             return $subscription;
         }
 
-        $subscription->forceFill(['status' => SubscriptionStatus::PastDue])->save();
+        $subscription->forceFill(['status' => SubscriptionStatus::Expired])->save();
 
         return $subscription->fresh(['plan']) ?? $subscription;
+    }
+
+    public function expireDueTrials(): int
+    {
+        $expired = 0;
+
+        OrganizationSubscription::query()
+            ->where('status', SubscriptionStatus::Trial)
+            ->whereNotNull('trial_ends_at')
+            ->where('trial_ends_at', '<=', now())
+            ->each(function (OrganizationSubscription $subscription) use (&$expired): void {
+                $subscription->forceFill(['status' => SubscriptionStatus::Expired])->save();
+                $expired++;
+            });
+
+        return $expired;
     }
 
     public function updateSubscription(
@@ -174,7 +245,7 @@ class OrganizationSubscriptionService
         Organization::query()
             ->whereDoesntHave('subscription')
             ->each(function (Organization $organization) use (&$created): void {
-                $trialDays = 14;
+                $trialDays = (int) config('subscription.trial_days', 14);
 
                 if ($organization->trial_ends_at !== null && $organization->trial_ends_at->isFuture()) {
                     $trialDays = max(1, (int) now()->diffInDays($organization->trial_ends_at));

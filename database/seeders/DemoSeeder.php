@@ -77,9 +77,9 @@ class DemoSeeder extends Seeder
             [
                 'name' => $name,
                 'email' => $ownerEmail,
-                'plan' => 'trial',
+                'plan' => 'growth',
                 'status' => OrganizationStatus::Trial,
-                'trial_ends_at' => now()->addDays(30),
+                'trial_ends_at' => now()->addDays(14),
             ],
         );
 
@@ -88,7 +88,7 @@ class DemoSeeder extends Seeder
 
         app(RolesAndPermissionsSeeder::class)->seedRolesForOrganization($organization);
 
-        app(OrganizationSubscriptionService::class)->assignTrialPlan($organization, 30);
+        app(OrganizationSubscriptionService::class)->assignTrialPlan($organization);
 
         $owner = User::query()->firstOrCreate(
             ['email' => $ownerEmail],

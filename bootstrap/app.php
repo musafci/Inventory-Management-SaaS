@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AppendPlanWarningMeta;
 use App\Http\Middleware\EnforceIdempotency;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\WebAuth;
@@ -38,6 +39,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->prependToPriorityList(SubstituteBindings::class, ResolveTenant::class);
+
+        $middleware->api(append: [
+            AppendPlanWarningMeta::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

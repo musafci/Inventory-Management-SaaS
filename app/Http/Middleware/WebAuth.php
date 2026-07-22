@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\OrganizationStatus;
 use App\Exceptions\SubscriptionAccessDeniedException;
+use App\Exceptions\SubscriptionPaymentRequiredException;
 use App\Models\Organization;
 use App\Services\OrganizationSubscriptionService;
 use App\Services\Web\WebSessionService;
@@ -44,19 +45,31 @@ class WebAuth
                 ]);
             }
 
-            if ($organization !== null) {
+            if ($organization !== null && ! $this->isBillingExemptRoute($request)) {
                 try {
-                    $this->subscriptionService->assertAllowsTenantAccess($organization);
+                    if ($request->isMethodSafe()) {
+                        $this->subscriptionService->assertAllowsTenantRead($organization);
+                    } else {
+                        $this->subscriptionService->assertAllowsTenantWrite($organization);
+                    }
+                } catch (SubscriptionPaymentRequiredException $exception) {
+                    return redirect('/settings/billing')->withErrors([
+                        'billing' => $exception->getMessage(),
+                    ]);
                 } catch (SubscriptionAccessDeniedException $exception) {
-                    $this->webSession->clearAuthSession();
-
-                    return redirect('/login')->withErrors([
-                        'email' => $exception->getMessage(),
+                    return redirect('/settings/billing')->withErrors([
+                        'billing' => $exception->getMessage(),
                     ]);
                 }
             }
         }
 
         return $next($request);
+    }
+
+    protected function isBillingExemptRoute(Request $request): bool
+    {
+        return $request->is('settings/billing*')
+            || $request->is('logout');
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\BillingController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CustomerController;
@@ -18,7 +19,10 @@ use App\Http\Controllers\Api\V1\StockController;
 use App\Http\Controllers\Api\V1\StockMovementController;
 use App\Http\Controllers\Api\V1\UnitController;
 use App\Http\Controllers\Api\V1\WarehouseController;
+use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
 
 Route::prefix('v1')->group(function (): void {
     Route::prefix('auth')->group(function (): void {
@@ -57,6 +61,12 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('organization', [OrganizationController::class, 'show']);
         Route::patch('organization', [OrganizationController::class, 'update']);
+
+        Route::prefix('billing')->group(function (): void {
+            Route::get('/', [BillingController::class, 'show']);
+            Route::post('checkout', [BillingController::class, 'checkout']);
+            Route::post('portal', [BillingController::class, 'portal']);
+        });
 
         Route::apiResource('users', OrganizationMemberController::class)
             ->parameters(['users' => 'userId'])

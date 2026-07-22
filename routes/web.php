@@ -97,6 +97,7 @@ Route::middleware('web.auth')->group(function (): void {
     })->name('settings');
 
     Route::get('/settings/organization', \App\Http\Livewire\OrganizationSettings::class)->name('settings.organization');
+    Route::get('/settings/billing', \App\Http\Livewire\BillingSettings::class)->name('settings.billing');
     Route::get('/settings/team', \App\Http\Livewire\Users::class)->name('settings.team');
     Route::get('/settings/roles', \App\Http\Livewire\Roles::class)->name('settings.roles');
     Route::redirect('/users', '/settings/team');

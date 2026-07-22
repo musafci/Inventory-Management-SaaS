@@ -14,7 +14,7 @@ test('web session normalizes organization role from pivot data', function () {
         'slug' => 'acme-warehouse',
         'email' => 'owner@acme.demo',
         'phone' => null,
-        'plan' => 'trial',
+        'plan' => 'growth',
         'status' => 'trial',
         'trial_ends_at' => null,
         'pivot' => [

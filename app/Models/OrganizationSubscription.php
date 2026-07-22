@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['organization_id', 'plan_id', 'status', 'trial_ends_at', 'current_period_ends_at'])]
+#[Fillable(['organization_id', 'plan_id', 'status', 'trial_ends_at', 'current_period_ends_at', 'stripe_subscription_id', 'billing_interval'])]
 class OrganizationSubscription extends Model
 {
     protected function casts(): array
@@ -32,5 +32,22 @@ class OrganizationSubscription extends Model
     public function isActive(): bool
     {
         return in_array($this->status, [SubscriptionStatus::Trial, SubscriptionStatus::Active], true);
+    }
+
+    public function permitsReadAccess(): bool
+    {
+        return in_array($this->status, [
+            SubscriptionStatus::Trial,
+            SubscriptionStatus::Active,
+            SubscriptionStatus::Expired,
+        ], true);
+    }
+
+    public function permitsWriteAccess(): bool
+    {
+        return in_array($this->status, [
+            SubscriptionStatus::Trial,
+            SubscriptionStatus::Active,
+        ], true);
     }
 }

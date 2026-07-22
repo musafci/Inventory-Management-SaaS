@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\OrganizationStatus;
 use App\Exceptions\SubscriptionAccessDeniedException;
+use App\Exceptions\SubscriptionPaymentRequiredException;
 use App\Models\Organization;
 use App\Services\OrganizationSubscriptionService;
 use Closure;
@@ -63,12 +64,24 @@ class ResolveTenant
             ], Response::HTTP_FORBIDDEN);
         }
 
-        try {
-            $this->subscriptionService->assertAllowsTenantAccess($organization);
-        } catch (SubscriptionAccessDeniedException $exception) {
-            return response()->json([
-                'message' => $exception->getMessage(),
-            ], Response::HTTP_FORBIDDEN);
+        if (! $this->isBillingExemptRoute($request)) {
+            try {
+                if ($request->isMethodSafe()) {
+                    $this->subscriptionService->assertAllowsTenantRead($organization);
+                } else {
+                    $this->subscriptionService->assertAllowsTenantWrite($organization);
+                }
+            } catch (SubscriptionPaymentRequiredException $exception) {
+                return response()->json([
+                    'message' => $exception->getMessage(),
+                    'errors' => [],
+                ], Response::HTTP_PAYMENT_REQUIRED);
+            } catch (SubscriptionAccessDeniedException $exception) {
+                return response()->json([
+                    'message' => $exception->getMessage(),
+                    'errors' => [],
+                ], Response::HTTP_FORBIDDEN);
+            }
         }
 
         app()->instance('currentOrganization', $organization);
@@ -76,5 +89,11 @@ class ResolveTenant
         setPermissionsTeamId($organization->id);
 
         return $next($request);
+    }
+
+    protected function isBillingExemptRoute(Request $request): bool
+    {
+        return $request->is('api/v1/billing')
+            || $request->is('api/v1/billing/*');
     }
 }

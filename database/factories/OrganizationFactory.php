@@ -28,7 +28,7 @@ class OrganizationFactory extends Factory
             'slug' => Str::slug($name).'-'.fake()->unique()->numerify('###'),
             'email' => fake()->companyEmail(),
             'phone' => fake()->phoneNumber(),
-            'plan' => 'trial',
+            'plan' => 'growth',
             'status' => OrganizationStatus::Trial,
             'trial_ends_at' => now()->addDays(14),
         ];

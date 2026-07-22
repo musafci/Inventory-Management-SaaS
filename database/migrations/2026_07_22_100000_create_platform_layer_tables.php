@@ -12,8 +12,12 @@ return new class extends Migration
             $table->id();
             $table->string('slug')->unique();
             $table->string('name');
-            $table->decimal('price', 10, 2)->default(0);
+            $table->decimal('price_monthly', 10, 2)->nullable();
+            $table->decimal('price_annual', 10, 2)->nullable();
             $table->json('limits');
+            $table->boolean('is_custom')->default(false);
+            $table->unsignedTinyInteger('grace_buffer_percent')->default(10);
+            $table->unsignedSmallInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
@@ -25,6 +29,8 @@ return new class extends Migration
             $table->string('status');
             $table->timestamp('trial_ends_at')->nullable();
             $table->timestamp('current_period_ends_at')->nullable();
+            $table->string('stripe_subscription_id')->nullable();
+            $table->string('billing_interval')->nullable();
             $table->timestamps();
 
             $table->unique('organization_id');

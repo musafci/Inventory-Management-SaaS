@@ -16,8 +16,12 @@ class PlanResource extends JsonResource
             'id' => $this->id,
             'slug' => $this->slug,
             'name' => $this->name,
-            'price' => $this->price,
+            'price_monthly' => $this->price_monthly,
+            'price_annual' => $this->price_annual,
             'limits' => $this->limits,
+            'is_custom' => $this->is_custom,
+            'grace_buffer_percent' => $this->grace_buffer_percent,
+            'sort_order' => $this->sort_order,
             'is_active' => $this->is_active,
         ];
     }

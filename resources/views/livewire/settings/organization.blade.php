@@ -73,6 +73,9 @@
                         </div>
                     @endif
                 </dl>
+                <a href="/settings/billing" class="mt-4 inline-flex text-sm font-semibold text-primary-600 hover:text-primary-500">
+                    Manage billing →
+                </a>
             </div>
 
             <div class="card p-6">

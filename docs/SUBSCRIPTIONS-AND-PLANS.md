@@ -5,6 +5,7 @@ This document describes how **subscription plans**, **usage limits**, and **acce
 | Document | Purpose |
 |----------|---------|
 | **This file** | Plans, subscriptions, limits, enforcement, and operations |
+| [PRICING_PLAN.md](../PRICING_PLAN.md) | Authoritative pricing spec and seed values |
 | [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md) | Super-admin portal & platform API for managing subscriptions |
 | [ARCHITECTURE.md §14](./ARCHITECTURE.md#14-platform-admin-layer) | Condensed platform layer overview |
 | [PROJECT_BRIEF_FOR_SUPERADMIN.md](../PROJECT_BRIEF_FOR_SUPERADMIN.md) | Product requirements checklist |
@@ -29,12 +30,12 @@ flowchart LR
 
 | Concept | Source of truth | Notes |
 |---------|-----------------|-------|
-| Which plan an org is on | `organization_subscriptions.plan_id` | Changed via platform admin only |
+| Which plan an org is on | `organization_subscriptions.plan_id` | Changed via Stripe checkout or platform admin |
 | Plan limits | `plans.limits` JSON | Enforced on tenant writes + API rate limit |
-| Billing/access status | `organization_subscriptions.status` | `trial`, `active`, `past_due`, `cancelled` |
+| Billing/access status | `organization_subscriptions.status` | `trial`, `active`, `expired`, `past_due`, `cancelled` |
 | Display plan name | `organizations.plan` | **Cache only** — synced from subscription |
 
-There is **no Stripe or self-service billing** yet. Platform operators assign plans and statuses manually through the super-admin portal or API.
+There is **no separate "Trial" plan row**. New organizations get a **14-day Growth trial** on registration. After that, org owners can subscribe from **Settings → Billing** via Stripe Checkout (Starter, Growth, or Business). Platform admins can still override plans manually. Enterprise is contact-sales only.
 
 ---
 
@@ -44,9 +45,13 @@ There is **no Stripe or self-service billing** yet. Platform operators assign pl
 
 | Column | Type | Purpose |
 |--------|------|---------|
-| `slug` | string | Unique identifier: `trial`, `starter`, `pro`, `enterprise` |
+| `slug` | string | Unique identifier: `starter`, `growth`, `business`, `enterprise` |
 | `name` | string | Display name |
-| `price` | decimal | Informational price (not charged automatically) |
+| `price_monthly` | decimal | Monthly price |
+| `price_annual` | decimal, nullable | Total annual price (nullable for Enterprise) |
+| `is_custom` | boolean | True for Enterprise — hidden from self-serve checkout |
+| `grace_buffer_percent` | integer | How far over a limit before hard block (default 10) |
+| `sort_order` | integer | Display ordering |
 | `limits` | JSON | Usage caps (see below) |
 | `is_active` | boolean | Available for assignment |
 
@@ -56,9 +61,11 @@ There is **no Stripe or self-service billing** yet. Platform operators assign pl
 |--------|------|---------|
 | `organization_id` | FK | One subscription per org (unique) |
 | `plan_id` | FK | Current plan |
-| `status` | enum | `trial`, `active`, `past_due`, `cancelled` |
+| `status` | enum | `trial`, `active`, `expired`, `past_due`, `cancelled` |
 | `trial_ends_at` | timestamp | When trial access ends |
-| `current_period_ends_at` | timestamp | Billing period end (manual use today) |
+| `current_period_ends_at` | timestamp | Billing period end |
+| `stripe_subscription_id` | string | Stripe subscription reference |
+| `billing_interval` | string | `monthly` or `yearly` |
 
 ### Limit keys (`plans.limits`)
 
@@ -68,7 +75,7 @@ There is **no Stripe or self-service billing** yet. Platform operators assign pl
 | `max_users` | `POST /api/v1/users` | Max team members |
 | `max_products` | `POST /api/v1/products` | Max products in catalog |
 | `max_orders_per_month` | `POST /api/v1/purchase-orders`, `POST /api/v1/sales-orders` | Combined PO + SO count in current calendar month |
-| `api_rate_limit` | All tenant API routes | Requests per minute per org+user |
+| `api_rate_limit_per_minute` | All tenant API routes | Requests per minute per org+user (`null` = no API access) |
 
 `null` in limits JSON means **unlimited** (used on enterprise tier).
 
@@ -78,12 +85,14 @@ There is **no Stripe or self-service billing** yet. Platform operators assign pl
 
 Seeded by `database/seeders/PlanSeeder.php`:
 
-| Plan | Price | Warehouses | Users | Products | Orders/mo | API req/min |
-|------|-------|------------|-------|----------|-----------|-------------|
-| **trial** | $0 | 1 | 3 | 25 | 50 | 60 |
-| **starter** | $29 | 2 | 5 | 100 | 200 | 120 |
-| **pro** | $79 | 5 | 15 | 500 | 1,000 | 240 |
-| **enterprise** | $199 | ∞ | ∞ | ∞ | ∞ | 600 |
+| Plan | Monthly | Annual | Warehouses | Users | Products | Orders/mo | API req/min |
+|------|---------|--------|------------|-------|----------|-----------|-------------|
+| **starter** | $29 | $288 | 1 | 3 | 200 | 300 | — |
+| **growth** | $79 | $780 | 3 | 10 | 2,000 | 2,000 | 60 |
+| **business** | $199 | $1,980 | 10 | 25 | ∞ | 10,000 | 300 |
+| **enterprise** | — | — | ∞ | ∞ | ∞ | ∞ | ∞ |
+
+All self-serve plans use `grace_buffer_percent = 10`. Enterprise has `is_custom = true`.
 
 ```bash
 php artisan db:seed --class=PlanSeeder
@@ -99,14 +108,40 @@ When a new organization registers via `POST /api/v1/auth/register`:
 
 1. Organization row is created (`status = trial`)
 2. `OrganizationSubscriptionService::assignTrialPlan()` creates a subscription:
-   - Plan: `trial`
+   - Plan: **Growth** (`config('subscription.trial_plan_slug')`)
    - Status: `trial`
    - `trial_ends_at`: 14 days from registration
-3. `organizations.plan` is synced to `trial`
+3. `organizations.plan` is synced to `growth`
 
 **Key file:** `app/Services/AuthService.php`
 
-### 2. Platform admin assignment
+### 2. Self-service upgrade (Stripe)
+
+Org owners with `settings.update` can subscribe from **Settings → Billing** (`/settings/billing`):
+
+| Plan | Monthly | Yearly | Stripe env vars |
+|------|---------|--------|-----------------|
+| Starter | $29 | $288 | `STRIPE_STARTER_PRICE_MONTHLY`, `STRIPE_STARTER_PRICE_YEARLY` |
+| Growth | $79 | $780 | `STRIPE_GROWTH_PRICE_MONTHLY`, `STRIPE_GROWTH_PRICE_YEARLY` |
+| Business | $199 | $1,980 | `STRIPE_BUSINESS_PRICE_MONTHLY`, `STRIPE_BUSINESS_PRICE_YEARLY` |
+
+**Tenant API**
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/v1/billing` | Current subscription + available plans |
+| POST | `/api/v1/billing/checkout` | Start Stripe Checkout (`plan_slug` + `interval`) |
+| POST | `/api/v1/billing/portal` | Open Stripe Customer Portal |
+
+**Webhook:** `POST /api/stripe/webhook` — handles `checkout.session.completed`, subscription updates, and payment failures.
+
+When a trial expires, **read** endpoints continue to work but **writes** return **402 Payment Required**. Billing routes remain accessible so the org can pay.
+
+### 3. Trial expiry (scheduled)
+
+Daily command `subscriptions:expire-trials` flips `status = trial` → `expired` when `trial_ends_at` has passed. Converted (paid) orgs are not affected.
+
+### 4. Platform admin assignment
 
 Operators change plans through:
 
@@ -124,7 +159,7 @@ Optional: `trial_ends_at`, `current_period_ends_at`.
 
 After update, `organizations.plan` cache is synced automatically.
 
-### 3. Organization access status (separate from subscription)
+### 5. Organization access status (separate from subscription)
 
 `organizations.status` controls **platform suspension** (independent of subscription):
 
@@ -151,12 +186,15 @@ sequenceDiagram
 
     C->>RT: Request with org context
     RT->>RT: Org suspended? → 403
-    RT->>Sub: assertAllowsTenantAccess()
-    Sub->>Sub: Trial expired? → mark past_due
-    Sub->>Sub: Status cancelled/past_due? → 403
+    alt GET / safe read
+        RT->>Sub: assertAllowsTenantRead()
+    else POST / PUT / DELETE
+        RT->>Sub: assertAllowsTenantWrite()
+        Sub->>Sub: Expired? → 402
+    end
     RT->>App: Continue
     App->>Sub: PlanLimitService on writes
-    Sub-->>App: 422 if limit exceeded
+    Sub-->>App: 422 if past grace buffer
 ```
 
 ### Subscription access rules
@@ -165,19 +203,30 @@ sequenceDiagram
 |-----------|------|-----------------|
 | No subscription row | 403 | No subscription — contact support |
 | `status = cancelled` | 403 | Subscription cancelled |
-| `status = past_due` | 403 | Trial/subscription period ended |
-| Trial `trial_ends_at` passed | 403 | Auto-marked `past_due`, then blocked |
-| `status = trial` or `active` (valid dates) | OK | Access granted |
+| `status = past_due` | 403 | Payment past due |
+| `status = expired` + write request | 402 | Trial ended — choose a plan |
+| `status = expired` + read request | OK | Read-only access |
+| Trial `trial_ends_at` passed | — | Auto-marked `expired` on next request or daily job |
+| `status = trial` or `active` (valid dates) | OK | Full access |
 
 **Key files:**
 
-- `app/Services/OrganizationSubscriptionService.php` — `assertAllowsTenantAccess()`, `expireTrialIfNeeded()`
+- `app/Services/OrganizationSubscriptionService.php` — read/write access checks, `expireTrialIfNeeded()`
 - `app/Http/Middleware/ResolveTenant.php` — API enforcement
 - `app/Http/Middleware/WebAuth.php` — Web portal enforcement
 
-### Plan limit rules
+### Plan limit rules (graduated response)
 
-When a tenant tries to create a limited resource, `PlanLimitService` checks the current count against the active plan:
+When a tenant tries to create a limited resource, `PlanLimitService` checks the current count against the active plan with a **grace buffer**:
+
+| Usage vs. limit | Behavior |
+|-----------------|----------|
+| Under 90% | Normal |
+| 90%–100% | Normal + `meta.plan_warning: "approaching_limit"` |
+| 100%–(100 + grace_buffer_percent)% | Allowed + `meta.plan_warning: "over_limit_grace"` |
+| Beyond grace buffer | **422** — "Upgrade required" |
+
+Checks are **per resource** — being over on products does not block order creation.
 
 | Action | Service hook |
 |--------|--------------|
@@ -186,20 +235,11 @@ When a tenant tries to create a limited resource, `PlanLimitService` checks the 
 | Invite team member | `OrganizationMemberService::store()` |
 | Create purchase/sales order | `PurchaseOrderService::create()`, `SalesOrderService::create()` |
 
-Exceeded limits return **422**:
-
-```json
-{
-  "message": "Plan limit reached: this organization cannot create more warehouses (limit 1).",
-  "errors": []
-}
-```
-
-**Key file:** `app/Services/PlanLimitService.php`
+**Key files:** `app/Services/PlanLimitService.php`, `app/Http/Middleware/AppendPlanWarningMeta.php`
 
 ### API rate limiting
 
-Tenant API routes use the `api-tenant` rate limiter. The per-minute cap comes from the org's active plan `api_rate_limit`, falling back to `config('api.rate_limit_per_minute', 120)` when no plan limit is set.
+Tenant API routes use the `api-tenant` rate limiter. The per-minute cap comes from the org's active plan `api_rate_limit_per_minute`, falling back to `config('api.rate_limit_per_minute', 120)` when no plan limit is set. Starter has no API access (`null` limit).
 
 **Key file:** `app/Providers/AppServiceProvider.php`
 
@@ -216,21 +256,6 @@ All routes require `auth:platform`. Base path: `/api/platform/v1`.
 | PATCH | `/organizations/{id}/subscription` | Assign plan + status |
 | PATCH | `/organizations/{id}` | Update org `status` only (suspend/activate) — **not plan** |
 
-### Example: upgrade org to Pro
-
-```bash
-# 1. Get plan ID
-curl -s -H "Authorization: Bearer $PLATFORM_TOKEN" \
-  http://localhost:8000/api/platform/v1/plans | jq '.data[] | select(.slug=="pro")'
-
-# 2. Assign subscription
-curl -s -X PATCH \
-  -H "Authorization: Bearer $PLATFORM_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"plan_id": 3, "status": "active"}' \
-  http://localhost:8000/api/platform/v1/organizations/1/subscription
-```
-
 ---
 
 ## Artisan commands
@@ -238,15 +263,18 @@ curl -s -X PATCH \
 | Command | Purpose |
 |---------|---------|
 | `php artisan db:seed --class=PlanSeeder` | Seed/update plan tiers and limits |
+| `php artisan subscriptions:expire-trials` | Expire past-due trial subscriptions |
 | `php artisan platform:subscriptions:backfill` | Assign trial subscriptions to orgs missing a row |
 
-Run backfill after migrating existing databases:
+Run after migrating existing databases:
 
 ```bash
 php artisan migrate
 php artisan db:seed --class=PlanSeeder
 php artisan platform:subscriptions:backfill
 ```
+
+The trial expiry command runs daily via the Laravel scheduler.
 
 ---
 
@@ -259,21 +287,30 @@ php artisan platform:subscriptions:backfill
 | Subscription status enum | `app/Enums/SubscriptionStatus.php` |
 | Core service | `app/Services/OrganizationSubscriptionService.php` |
 | Limit enforcement | `app/Services/PlanLimitService.php` |
+| Stripe billing | `app/Services/StripeBillingService.php` |
+| Trial expiry command | `app/Console/Commands/ExpireTrialsCommand.php` |
 | Access denied exception | `app/Exceptions/SubscriptionAccessDeniedException.php` |
+| Payment required exception | `app/Exceptions/SubscriptionPaymentRequiredException.php` |
 | Limit exceeded exception | `app/Exceptions/PlanLimitExceededException.php` |
 | Plan seeder | `database/seeders/PlanSeeder.php` |
 | Backfill command | `app/Console/Commands/BackfillOrganizationSubscriptionsCommand.php` |
 | Platform subscription API | `app/Http/Controllers/Api/Platform/V1/PlatformOrganizationSubscriptionController.php` |
 | Platform subscription UI | `app/Http/Livewire/Platform/OrganizationShow.php` |
-| Tests | `tests/Feature/PlatformLayerTest.php` |
+| Tests | `tests/Feature/PricingPlanTest.php`, `tests/Feature/PlatformLayerTest.php`, `tests/Feature/BillingTest.php` |
 
 ---
 
 ## Testing
 
 ```bash
+# Pricing plan & subscription tests
+php artisan test --filter=PricingPlanTest
+
 # Subscription & limit tests
 php artisan test --filter=PlatformLayerTest
+
+# Billing / Stripe tests
+php artisan test --filter=BillingTest
 
 # Full suite
 php artisan test
@@ -281,27 +318,26 @@ php artisan test
 
 Coverage includes:
 
-- Trial warehouse limit (1 max)
-- Starter warehouse limit (2 max)
-- Cancelled subscription blocks API
-- Expired trial → `past_due` + block
-- Pro plan assignment syncs `organizations.plan`
+- Seeded plan values match PRICING_PLAN.md
+- 14-day Growth trial on registration
+- Daily trial expiry command
+- Graduated limit warnings and grace buffer blocks
+- Expired trial: reads OK, writes 402
+- Multi-plan Stripe checkout
 - Plan-based API rate limiting
 
 ---
 
 ## Common operations
 
-### Upgrade a customer from trial to starter
+### Upgrade a customer from trial to Starter
 
-1. Sign in to `/platform/login`
-2. Open **Organizations** → select the tenant
-3. In **Subscription**, choose **Starter** and set status to **active**
-4. Save
+1. Customer pays via **Settings → Billing**, or
+2. Platform admin: `/platform/organizations/{id}` → **Subscription** → Starter + active
 
 ### End a trial without suspending the org
 
-Set subscription status to **past_due** or wait for `trial_ends_at` to pass (auto-marked `past_due` on next request).
+Wait for `trial_ends_at` to pass (auto-marked `expired` by daily job or next request). Writes are blocked with 402; reads continue.
 
 ### Fully block a tenant
 
@@ -313,15 +349,25 @@ Assign the **enterprise** plan with status **active**.
 
 ---
 
-## Out of scope (today)
+## Stripe configuration
 
-| Feature | Status |
-|---------|--------|
-| Stripe / payment webhooks | Not implemented |
-| Self-service plan upgrade in tenant UI | Not implemented |
-| Automatic downgrade on failed payment | Not implemented |
-| Feature flags tied to plan tier | Flags are per-org overrides, independent of plan |
-| Limits on categories, suppliers, stock transfers, etc. | Only the four resource types listed above |
+Add to `.env` (dummy defaults ship in `.env.example`):
+
+```env
+STRIPE_KEY=pk_test_...
+STRIPE_SECRET=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_STARTER_PRICE_MONTHLY=price_...
+STRIPE_STARTER_PRICE_YEARLY=price_...
+STRIPE_GROWTH_PRICE_MONTHLY=price_...
+STRIPE_GROWTH_PRICE_YEARLY=price_...
+STRIPE_BUSINESS_PRICE_MONTHLY=price_...
+STRIPE_BUSINESS_PRICE_YEARLY=price_...
+SUBSCRIPTION_TRIAL_DAYS=14
+SUBSCRIPTION_TRIAL_PLAN_SLUG=growth
+```
+
+Create matching recurring prices in the Stripe Dashboard for each plan and interval.
 
 ---
 
@@ -331,9 +377,10 @@ Assign the **enterprise** plan with status **active**.
 
 | Value | Meaning |
 |-------|---------|
-| `trial` | Trial period — access allowed until `trial_ends_at` |
+| `trial` | Trial period — full access until `trial_ends_at` |
 | `active` | Paid/active subscription |
-| `past_due` | Trial expired or payment overdue — access blocked |
+| `expired` | Trial ended without payment — read-only access |
+| `past_due` | Payment overdue — access blocked |
 | `cancelled` | Subscription ended — access blocked |
 
 ### `OrganizationStatus` (`organizations.status`)
@@ -344,4 +391,4 @@ Assign the **enterprise** plan with status **active**.
 | `active` | Normal operating org |
 | `suspended` | Operator block — overrides subscription access |
 
-Both checks apply: an org must be **not suspended** and have an **active subscription** to use the tenant app.
+Both checks apply: an org must be **not suspended** and have a **valid subscription** to use the tenant app.

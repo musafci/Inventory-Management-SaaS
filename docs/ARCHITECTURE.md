@@ -116,7 +116,8 @@ sequenceDiagram
 - Header required on all tenant API routes: `X-Organization-Id: <id>`
 - Models use `BelongsToOrganization` + `OrganizationScope` — queries without tenant context return **nothing** (fail-closed)
 - **Suspended organizations** are rejected by `ResolveTenant` (403) and blocked on the web portal (`WebAuth`)
-- **Plan limits** enforced on warehouse, product, team member, and order creation via `PlanLimitService`
+- **Plan limits** enforced on warehouse, product, team member, and order creation via `PlanLimitService` — graduated response with 90% warning, 10% grace buffer, then 422
+- **Expired trials** allow read-only access (GET); writes return **402 Payment Required**
 - Rate limit: per org + per user (`throttle:api-tenant`)
 
 **Key files:** `app/Http/Middleware/ResolveTenant.php`, `app/Traits/BelongsToOrganization.php`, `app/Models/Scopes/OrganizationScope.php`, `app/Permission/OrganizationTeamResolver.php`, `app/Services/PlanLimitService.php`
@@ -611,8 +612,8 @@ Cross-tenant operations for **platform operators** — separate from tenant RBAC
 | Feature | Implementation |
 |---------|------------------|
 | Organization directory | List/search/suspend tenants |
-| Subscriptions | `plans` + `organization_subscriptions` — trial on registration |
-| Plan limits | Max warehouses, users, products, orders/month on tenant writes |
+| Subscriptions | `plans` + `organization_subscriptions` — 14-day **Growth** trial on registration; self-serve Stripe checkout (Starter/Growth/Business) |
+| Plan limits | Graduated enforcement: warning at 90%, grace buffer, then 422 on warehouse/product/user/order writes |
 | Suspension | Blocks all tenant API + web access for suspended orgs |
 | Feature flags | Global flags with per-org overrides |
 | Support notes | Internal operator notes (never on tenant API) |
@@ -634,6 +635,8 @@ Cross-tenant operations for **platform operators** — separate from tenant RBAC
 See **[PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md)** for the full API reference and schema.
 
 See **[SUBSCRIPTIONS-AND-PLANS.md](./SUBSCRIPTIONS-AND-PLANS.md)** for plan tiers, limits, lifecycle, and enforcement detail.
+
+See **[PRICING_PLAN.md](../PRICING_PLAN.md)** for the authoritative pricing spec and seed values.
 
 ---
 

@@ -13,10 +13,10 @@ beforeEach(function (): void {
     RateLimiter::clear('api-tenant');
     config(['api.rate_limit_per_minute' => 3]);
 
-    $trial = Plan::query()->where('slug', 'trial')->firstOrFail();
-    $limits = $trial->limits;
-    $limits['api_rate_limit'] = 3;
-    $trial->forceFill(['limits' => $limits])->save();
+    $growth = Plan::query()->where('slug', 'growth')->firstOrFail();
+    $limits = $growth->limits;
+    $limits['api_rate_limit_per_minute'] = 3;
+    $growth->forceFill(['limits' => $limits])->save();
 });
 
 test('tenant api rate limit is keyed per organization not ip', function () {

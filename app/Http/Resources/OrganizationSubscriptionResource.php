@@ -19,6 +19,7 @@ class OrganizationSubscriptionResource extends JsonResource
             'status' => $this->status,
             'trial_ends_at' => $this->trial_ends_at?->toISOString(),
             'current_period_ends_at' => $this->current_period_ends_at?->toISOString(),
+            'billing_interval' => $this->billing_interval,
             'plan' => new PlanResource($this->whenLoaded('plan')),
         ];
     }

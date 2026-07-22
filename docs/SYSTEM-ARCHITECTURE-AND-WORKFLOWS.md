@@ -8,6 +8,7 @@ This document is the **detailed** architecture and workflow guide for **Oneapp**
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Condensed architecture with diagrams |
 | [RBAC-PERMISSIONS.md](./RBAC-PERMISSIONS.md) | Tenant permission catalog, generation, and how to add permissions |
 | [SUBSCRIPTIONS-AND-PLANS.md](./SUBSCRIPTIONS-AND-PLANS.md) | Plans, subscriptions, limits, and enforcement |
+| [PRICING_PLAN.md](../PRICING_PLAN.md) | Authoritative pricing spec & seed values |
 | [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md) | Super-admin portal & platform API |
 | [PROJECT_BRIEF_FOR_SUPERADMIN.md](../PROJECT_BRIEF_FOR_SUPERADMIN.md) | Platform layer product requirements |
 
@@ -259,13 +260,13 @@ sequenceDiagram
     U->>Web: POST /register (form)
     Web->>Auth: register(data)
     Auth->>DB: BEGIN TRANSACTION
-    Auth->>DB: Create Organization (trial, 14 days)
+    Auth->>DB: Create Organization (trial status, 14-day trial)
     Auth->>DB: Create User
     Auth->>DB: Attach user to org (pivot role: Org Owner)
     Auth->>Seed: seedRolesForOrganization(org)
     Note over Seed: Creates roles, permissions,<br/>assigns defaults
     Auth->>DB: assignRole('Org Owner')
-    Auth->>DB: assignTrialPlan(org) → organization_subscriptions
+    Auth->>DB: assignTrialPlan(org) → Growth plan, organization_subscriptions
     Auth->>DB: COMMIT
     Auth->>OAuth: Password grant → access + refresh token
     OAuth-->>Auth: tokens
@@ -280,7 +281,7 @@ sequenceDiagram
 | Artifact | Details |
 |----------|---------|
 | Organization | Name, slug, trial status, 14-day trial |
-| Subscription | Trial plan row in `organization_subscriptions`; `organizations.plan` synced as cache |
+| Subscription | **Growth** plan in `organization_subscriptions` (`status = trial`); `organizations.plan` synced as cache |
 | User | Owner account |
 | Default roles | System Owner, Org Owner, Admin, Manager, Warehouse Staff, Sales Staff, Viewer |
 | Permissions | Global catalog from `PermissionCatalog.php` |
@@ -867,10 +868,13 @@ Portal pages call these via `PlatformApiClient` (internal sub-requests with plat
 
 ### Subscriptions & plan limits
 
-- Registration assigns a **trial** subscription (`OrganizationSubscriptionService::assignTrialPlan`)
+- Registration assigns a **14-day Growth trial** (`OrganizationSubscriptionService::assignTrialPlan`) — no separate "trial" plan row
 - `organization_subscriptions` is the source of truth; `organizations.plan` is a synced cache
-- `PlanLimitService` enforces limits before tenant writes (warehouses, users, products, orders/month)
-- Exceeding a limit returns **422** with a clear message
+- Four plan tiers: **starter**, **growth**, **business**, **enterprise** — see [PRICING_PLAN.md](../PRICING_PLAN.md)
+- `PlanLimitService` enforces limits with a **graduated response**: 90% warning → 10% grace buffer → 422 beyond grace
+- API responses may include `meta.plan_warning` (`approaching_limit` or `over_limit_grace`)
+- Expired trials: reads allowed, writes return **402 Payment Required**
+- Self-serve Stripe checkout for Starter, Growth, and Business from Settings → Billing
 
 ### Suspension & impersonation
 
@@ -901,11 +905,13 @@ Models using `LogsModelActivity` write to Spatie `activity_log` on create/update
 
 ### 18.3 Rate limiting
 
-`throttle:api-tenant` — per organization + per user limits on tenant API routes. Plan-based limits (`plans.limits.api_rate_limit`) are reserved for future use.
+`throttle:api-tenant` — per organization + per user limits on tenant API routes. The per-minute cap comes from the active plan's `api_rate_limit_per_minute` (Starter has no API access; Growth 60/min; Business 300/min), falling back to `config('api.rate_limit_per_minute', 120)`.
 
 ### 18.4 Plan limit errors
 
-`PlanLimitExceededException` → **422** with message describing which limit was hit. Thrown by `PlanLimitService` before warehouse, product, user, or order creation.
+`PlanLimitExceededException` → **422** with an "Upgrade required" message. Thrown by `PlanLimitService` when usage exceeds the grace buffer (default 110% of limit). Before the hard block, responses include `meta.plan_warning` for approaching (90%+) or grace-period (100%+) usage.
+
+`SubscriptionPaymentRequiredException` → **402** when an expired-trial org attempts a write operation.
 
 ### 18.5 Error handling (API)
 
@@ -913,6 +919,7 @@ Centralized in `AppServiceProvider::registerApiExceptionRendering()`:
 
 - `ValidationException` → 422 + field errors
 - `PlanLimitExceededException` → 422 + message
+- `SubscriptionPaymentRequiredException` → 402 + message (expired trial writes)
 - `AuthenticationException` → 401
 - `AuthorizationException` → 403
 - OAuth errors → appropriate status + message
