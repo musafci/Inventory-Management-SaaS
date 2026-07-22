@@ -4,6 +4,7 @@ Platform operators manage **all tenants** from a layer that sits above organizat
 
 | Document | Purpose |
 |----------|---------|
+| **[GETTING-STARTED.md](./GETTING-STARTED.md)** | How to run the project (includes Stripe webhook setup) |
 | **This file** | Platform API, portal, impersonation, operator workflows |
 | [SUBSCRIPTIONS-AND-PLANS.md](./SUBSCRIPTIONS-AND-PLANS.md) | Plans, subscriptions, limits & enforcement (detailed) |
 | [PRICING_PLAN.md](../PRICING_PLAN.md) | Authoritative pricing spec & seed values |
@@ -11,6 +12,7 @@ Platform operators manage **all tenants** from a layer that sits above organizat
 | [ARCHITECTURE.md §14](./ARCHITECTURE.md#14-platform-admin-layer) | Condensed platform overview |
 | [SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md §17](./SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md#17-platform-admin-api--portal) | End-to-end platform workflows |
 | [RBAC-PERMISSIONS.md](./RBAC-PERMISSIONS.md) | Tenant RBAC only (not platform auth) |
+| [PRELAUNCH_READINESS.MD](../PRELAUNCH_READINESS.MD) | Pre-launch checklist & implementation reference |
 
 ---
 
@@ -220,12 +222,17 @@ When `organizations.status = suspended`:
 
 | Condition | Behavior |
 |-----------|----------|
-| `subscription.status = cancelled` | **403** on all tenant API + web access |
-| `subscription.status = past_due` | **403** — payment overdue message |
+| `subscription.status = cancelled` + write | **402** — subscription cancelled |
+| `subscription.status = cancelled` + read | **OK** — read-only access |
+| `subscription.status = past_due` within grace + write | **OK** — grace period (`SUBSCRIPTION_PAST_DUE_GRACE_DAYS`) |
+| `subscription.status = past_due` past grace + write | **402** — update billing |
+| `subscription.status = past_due` + read | **OK** |
 | `subscription.status = expired` + write | **402** — trial ended; choose a plan |
 | `subscription.status = expired` + read | **OK** — read-only access to existing data |
 | Trial `trial_ends_at` in the past | Auto-marked `expired` (daily job or next request) |
 | Missing subscription row | **403** — run `platform:subscriptions:backfill` for legacy orgs |
+| Stripe `invoice.payment_failed` | Marks `past_due`, sends dunning email |
+| Stripe `invoice.paid` after past due | Restores `active`, clears `past_due_at` |
 
 ### Plan limits (graduated)
 
@@ -285,6 +292,12 @@ php artisan platform:subscriptions:backfill
 # Expire past-due trials (also runs daily via scheduler)
 php artisan subscriptions:expire-trials
 
+# Trial-ending reminder emails (also scheduled daily)
+php artisan subscriptions:notify-trial-ending
+
+# Hard-delete orgs past deletion grace (also scheduled daily)
+php artisan organizations:process-deletions
+
 # Full bootstrap (includes PlanSeeder via DatabaseSeeder)
 php artisan app:setup --write-env
 ```
@@ -304,4 +317,7 @@ php artisan app:setup --write-env
 | Stripe self-serve checkout | Implemented — Starter, Growth, Business via Settings → Billing |
 | Enterprise checkout | Contact sales only (`is_custom = true`) |
 | Plan-based API rate limiting | Implemented via `api_rate_limit_per_minute` per plan |
+| Auth rate limiting (login/register/forgot) | Implemented — IP + email limiters |
+| Stripe webhook idempotency | Implemented — `stripe_events` table |
+| Tenant GDPR export / deletion | Implemented — owner-only API; see [PRELAUNCH_READINESS.MD](../PRELAUNCH_READINESS.MD) |
 | Tenant-visible support notes | Internal only by design |

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\OrganizationStatus;
 use App\Jobs\SendOrganizationRegisteredNotificationJob;
+use App\Jobs\SendWelcomeEmailJob;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\OrganizationSubscriptionService;
@@ -73,6 +74,7 @@ class AuthService
         $user->load('organizations');
 
         SendOrganizationRegisteredNotificationJob::dispatch($organization->id, $user->id);
+        SendWelcomeEmailJob::dispatch($organization->id, $user->id);
 
         return [
             'user' => $user,
@@ -193,13 +195,20 @@ class AuthService
             return;
         }
 
-        \Laravel\Passport\Token::query()
-            ->whereKey($tokenId)
-            ->update(['revoked' => true]);
+        $token = \Laravel\Passport\Token::query()->find($tokenId);
 
-        \Laravel\Passport\RefreshToken::query()
-            ->where('access_token_id', $tokenId)
-            ->update(['revoked' => true]);
+        if ($token !== null) {
+            $token->revoke();
+        }
+    }
+
+    public function extractTokenIdFromBearer(?string $accessToken): ?string
+    {
+        if ($accessToken === null) {
+            return null;
+        }
+
+        return $this->extractTokenId($accessToken);
     }
 
     protected function extractTokenId(string $accessToken): ?string

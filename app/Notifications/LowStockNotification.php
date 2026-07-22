@@ -3,9 +3,11 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class LowStockNotification extends Notification
+class LowStockNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -23,7 +25,17 @@ class LowStockNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail'];
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject('Low stock alert')
+            ->line('A product has fallen at or below its reorder point.')
+            ->line("Quantity on hand: {$this->quantityOnHand}")
+            ->line("Reorder point: {$this->reorderPoint}")
+            ->action('View inventory', url('/stocks'));
     }
 
     /**

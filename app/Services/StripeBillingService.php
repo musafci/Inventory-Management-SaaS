@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use App\Enums\SubscriptionStatus;
+use App\Jobs\SendPaymentFailedNotificationJob;
 use App\Models\Organization;
 use App\Models\Plan;
+use App\Models\StripeEvent;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -131,10 +134,20 @@ class StripeBillingService
 
         $event = Webhook::constructEvent($payload, $signature, $secret);
 
+        try {
+            StripeEvent::query()->create([
+                'event_id' => $event->id,
+                'type' => $event->type,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            return;
+        }
+
         match ($event->type) {
             'checkout.session.completed' => $this->handleCheckoutCompleted($event->data->object),
             'customer.subscription.updated' => $this->handleSubscriptionUpdated($event->data->object),
             'customer.subscription.deleted' => $this->handleSubscriptionDeleted($event->data->object),
+            'invoice.paid' => $this->handleInvoicePaid($event->data->object),
             'invoice.payment_failed' => $this->handlePaymentFailed($event->data->object),
             default => null,
         };
@@ -169,6 +182,7 @@ class StripeBillingService
             $subscription->forceFill([
                 'stripe_subscription_id' => $stripeSubscription->id,
                 'billing_interval' => $interval,
+                'past_due_at' => null,
             ])->save();
 
             $organization->forceFill([
@@ -187,7 +201,12 @@ class StripeBillingService
             return;
         }
 
-        $subscription->forceFill(['status' => SubscriptionStatus::PastDue])->save();
+        $subscription->forceFill([
+            'status' => SubscriptionStatus::PastDue,
+            'past_due_at' => $subscription->past_due_at ?? now(),
+        ])->save();
+
+        SendPaymentFailedNotificationJob::dispatch($organization->id);
     }
 
     public function markCancelled(Organization $organization): void
@@ -262,6 +281,25 @@ class StripeBillingService
         }
 
         $this->markCancelled($organization);
+    }
+
+    protected function handleInvoicePaid(object $invoice): void
+    {
+        if ($invoice->subscription === null) {
+            return;
+        }
+
+        $stripeSubscription = $this->stripe->subscriptions->retrieve($invoice->subscription);
+        $organization = $this->resolveOrganizationFromStripeSubscription($stripeSubscription);
+
+        if ($organization === null) {
+            return;
+        }
+
+        $planSlug = $stripeSubscription->metadata['plan_slug'] ?? null;
+        $plan = $planSlug ? Plan::query()->where('slug', $planSlug)->first() : null;
+
+        $this->activateFromStripeSubscription($organization, $stripeSubscription, $plan);
     }
 
     protected function handlePaymentFailed(object $invoice): void

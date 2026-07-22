@@ -23,4 +23,25 @@ class OrganizationPolicy
         return $user->can('settings.update')
             || $user->hasRole(PermissionCatalog::SYSTEM_OWNER_ROLE);
     }
+
+    public function exportData(User $user, Organization $organization): bool
+    {
+        setPermissionsTeamId($organization->id);
+
+        return $user->hasRole(PermissionCatalog::ORG_OWNER_ROLE);
+    }
+
+    public function requestDeletion(User $user, Organization $organization): bool
+    {
+        setPermissionsTeamId($organization->id);
+
+        return $user->hasRole(PermissionCatalog::ORG_OWNER_ROLE);
+    }
+
+    public function cancelDeletion(User $user, Organization $organization): bool
+    {
+        setPermissionsTeamId($organization->id);
+
+        return $user->hasRole(PermissionCatalog::ORG_OWNER_ROLE);
+    }
 }

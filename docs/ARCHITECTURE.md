@@ -4,9 +4,13 @@ Multi-tenant inventory, purchasing, and sales platform built with Laravel 13, Po
 
 > **Detailed guide:** See [SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md](./SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md) for the full system architecture, layer breakdown, and end-to-end workflows.
 >
+> **Run the project:** See [GETTING-STARTED.md](./GETTING-STARTED.md) for Docker/local setup, Horizon, scheduler, Stripe, and troubleshooting.
+>
 > **Platform admin:** See [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md) for the super-admin portal and cross-tenant operations.
 >
 > **Subscriptions:** See [SUBSCRIPTIONS-AND-PLANS.md](./SUBSCRIPTIONS-AND-PLANS.md) for plans, limits, and enforcement.
+>
+> **Pre-launch:** See [PRELAUNCH_READINESS.MD](../PRELAUNCH_READINESS.MD) for password reset, auth hardening, email, webhooks, GDPR, sessions, health, and CI.
 
 ---
 
@@ -118,7 +122,8 @@ sequenceDiagram
 - **Suspended organizations** are rejected by `ResolveTenant` (403) and blocked on the web portal (`WebAuth`)
 - **Plan limits** enforced on warehouse, product, team member, and order creation via `PlanLimitService` — graduated response with 90% warning, 10% grace buffer, then 422
 - **Expired trials** allow read-only access (GET); writes return **402 Payment Required**
-- Rate limit: per org + per user (`throttle:api-tenant`)
+- **Past due / cancelled** subscriptions: reads allowed; writes blocked with **402** (past due allows writes during configurable grace)
+- Rate limit: per org + per user (`throttle:api-tenant`); auth routes have separate IP+email limiters
 
 **Key files:** `app/Http/Middleware/ResolveTenant.php`, `app/Traits/BelongsToOrganization.php`, `app/Models/Scopes/OrganizationScope.php`, `app/Permission/OrganizationTeamResolver.php`, `app/Services/PlanLimitService.php`
 
@@ -171,7 +176,21 @@ sequenceDiagram
 
 **Bootstrap:** `php artisan app:setup --write-env` creates Passport keys + password-grant client.
 
-**Key files:** `app/Services/AuthService.php`, `app/Http/Controllers/Web/AuthController.php`, `app/Http/Middleware/WebAuth.php`, `app/Console/Commands/SetupApplication.php`
+### Auth endpoints (API)
+
+| Method | Path | Notes |
+|--------|------|-------|
+| POST | `/api/v1/auth/register` | Creates org + owner + trial subscription |
+| POST | `/api/v1/auth/login` | Rate limited (IP + email) |
+| POST | `/api/v1/auth/refresh` | Refresh token exchange |
+| POST | `/api/v1/auth/forgot-password` | Generic success; queues reset email |
+| POST | `/api/v1/auth/reset-password` | Revokes all existing tokens |
+| GET | `/api/v1/auth/me` | Includes impersonation metadata when active |
+| POST | `/api/v1/auth/logout` | Revokes current token only |
+| GET | `/api/v1/auth/sessions` | List active Passport sessions |
+| DELETE | `/api/v1/auth/sessions/{tokenId}` | Revoke one session |
+
+**Key files:** `app/Services/AuthService.php`, `app/Services/PasswordResetService.php`, `app/Services/SessionService.php`, `app/Http/Controllers/Web/AuthController.php`, `app/Http/Middleware/WebAuth.php`, `app/Console/Commands/SetupApplication.php`
 
 ---
 
@@ -619,6 +638,17 @@ Cross-tenant operations for **platform operators** — separate from tenant RBAC
 | Support notes | Internal operator notes (never on tenant API) |
 | Impersonation | Short-lived tenant token + append-only audit log |
 | Platform admin CRUD | No public registration; `platform:admin:create` or `/platform/admins` |
+| Stripe webhooks | Idempotent processing via `stripe_events`; signature required |
+
+### Tenant billing & GDPR (API)
+
+| Feature | Path |
+|---------|------|
+| Billing overview / checkout / portal | `/api/v1/billing/*` |
+| Stripe webhook | `POST /api/stripe/webhook` |
+| GDPR data export | `POST /api/v1/organization/export` |
+| Account deletion request / cancel | `POST /api/v1/organization/request-deletion`, `cancel-deletion` |
+| Health check | `GET /api/health` |
 
 ### Web portal pages
 
@@ -649,7 +679,10 @@ See **[PRICING_PLAN.md](../PRICING_PLAN.md)** for the authoritative pricing spec
 | Platform routes | `routes/platform.php` |
 | Livewire UI | `app/Http/Livewire/*` |
 | API bridge | `app/Services/Web/ApiClient.php`, `app/Services/Web/PlatformApiClient.php` |
-| Auth | `app/Services/AuthService.php`, `app/Http/Controllers/Web/AuthController.php` |
+| Auth | `app/Services/AuthService.php`, `app/Services/PasswordResetService.php`, `app/Services/SessionService.php`, `app/Http/Controllers/Web/AuthController.php` |
+| Billing / Stripe | `app/Services/StripeBillingService.php`, `app/Http/Controllers/StripeWebhookController.php` |
+| GDPR | `app/Services/OrganizationDataExportService.php`, `app/Services/OrganizationDeletionService.php` |
+| Health | `app/Http/Controllers/HealthController.php` |
 | Platform auth | `app/Http/Controllers/Web/PlatformAuthController.php`, `app/Services/Web/PlatformSessionService.php` |
 | Tenant middleware | `app/Http/Middleware/ResolveTenant.php`, `app/Http/Middleware/WebAuth.php` |
 | RBAC | `app/Permission/PermissionCatalog.php`, `app/Services/PermissionAuthorizationService.php`, `app/Services/RoleManagementService.php` |
@@ -675,9 +708,13 @@ The Livewire frontend consumes the REST API through `ApiClient` (internal sub-re
 | Auth register/login | Yes — `AuthController` → `AuthService` (session stores tokens) |
 | Auth refresh | Yes — `WebSessionService::refreshIfNeeded()` in `WebAuth` + `ApiClient` |
 | Auth logout | Yes — `POST /api/v1/auth/logout` + web session clear |
+| Auth forgot/reset password | API only — web UI can be wired to same endpoints |
+| Auth sessions | API only — list/revoke device tokens |
 | Auth me | Covered via session user data at login |
 | Organization switch | Yes — `POST /organization/switch` updates session `organization_id` |
 | Organization settings | Yes — `/settings/organization` (`settings.update`) + `GET/PATCH /api/v1/organization` |
+| GDPR export / deletion | API only — `POST /api/v1/organization/export`, `request-deletion`, `cancel-deletion` |
+| Billing (Stripe) | Yes — `/settings/billing` + `/api/v1/billing/*` |
 | Team members (`/api/v1/users`) | Yes — `/settings/team` (`settings.manage_users`) |
 | Roles & permissions | Yes — `/settings/roles` (`settings.manage_roles`) + `GET/POST/PATCH/DELETE /api/v1/roles` |
 | Products, categories, units, warehouses, suppliers, customers | Full CRUD |

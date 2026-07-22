@@ -6,6 +6,8 @@ This document explains how **tenant** permissions are defined and generated in O
 
 For broader RBAC architecture (roles, policies, session auth), see [ARCHITECTURE.md §13](./ARCHITECTURE.md#13-roles-and-permissions-rbac).
 
+Related: [PRELAUNCH_READINESS.MD](../PRELAUNCH_READINESS.MD) (auth, GDPR — separate from RBAC).
+
 ---
 
 ## How the permission list is generated

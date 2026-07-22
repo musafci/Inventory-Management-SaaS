@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['name', 'slug', 'email', 'phone', 'plan', 'status', 'trial_ends_at', 'stripe_customer_id'])]
+#[Fillable(['name', 'slug', 'email', 'phone', 'plan', 'status', 'trial_ends_at', 'stripe_customer_id', 'deletion_requested_at', 'deletion_scheduled_for'])]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
@@ -22,6 +22,8 @@ class Organization extends Model
         return [
             'status' => OrganizationStatus::class,
             'trial_ends_at' => 'datetime',
+            'deletion_requested_at' => 'datetime',
+            'deletion_scheduled_for' => 'datetime',
         ];
     }
 

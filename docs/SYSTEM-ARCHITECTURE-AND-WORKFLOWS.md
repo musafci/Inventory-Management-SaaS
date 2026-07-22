@@ -2,8 +2,9 @@
 
 This document is the **detailed** architecture and workflow guide for **Oneapp** (Inventory Management SaaS). It expands on the summary in [ARCHITECTURE.md](./ARCHITECTURE.md) with end-to-end flows, layer responsibilities, and operational detail.
 
-| Document | Purpose |
+| Doc | Purpose |
 |----------|---------|
+| **[GETTING-STARTED.md](./GETTING-STARTED.md)** | **How to run the project** (setup, Docker, queues, cron, Stripe, tests) |
 | **This file** | Full system design, workflows, and layer breakdown |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Condensed architecture with diagrams |
 | [RBAC-PERMISSIONS.md](./RBAC-PERMISSIONS.md) | Tenant permission catalog, generation, and how to add permissions |
@@ -11,6 +12,7 @@ This document is the **detailed** architecture and workflow guide for **Oneapp**
 | [PRICING_PLAN.md](../PRICING_PLAN.md) | Authoritative pricing spec & seed values |
 | [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md) | Super-admin portal & platform API |
 | [PROJECT_BRIEF_FOR_SUPERADMIN.md](../PROJECT_BRIEF_FOR_SUPERADMIN.md) | Platform layer product requirements |
+| [PRELAUNCH_READINESS.MD](../PRELAUNCH_READINESS.MD) | Pre-launch checklist (L0–L8) |
 
 ---
 
@@ -36,6 +38,8 @@ This document is the **detailed** architecture and workflow guide for **Oneapp**
 18. [Cross-cutting concerns](#18-cross-cutting-concerns)
 19. [Deployment & operations](#19-deployment--operations)
 20. [Related files index](#20-related-files-index)
+
+> **Pre-launch features** (password reset, auth rate limits, transactional email, Stripe webhook idempotency, dunning, GDPR export/deletion, session management, health check, CI) are documented in §§6, 15, 16, 18, 19 and [PRELAUNCH_READINESS.MD](../PRELAUNCH_READINESS.MD).
 
 ---
 
@@ -270,6 +274,7 @@ sequenceDiagram
     Auth->>DB: COMMIT
     Auth->>OAuth: Password grant → access + refresh token
     OAuth-->>Auth: tokens
+    Auth->>Auth: Queue welcome + platform registration emails
     Auth-->>Web: user + organizations + token
     Web->>Web: WebSessionService.storeAuthSession()
     Web->>Web: syncPermissionsForActiveOrganization()
@@ -340,15 +345,41 @@ POST /organization/switch  { organization_id: N }
 
 ### 6.6 API auth endpoints
 
-| Method | Path | Auth | Purpose |
-|--------|------|------|---------|
-| POST | `/api/v1/auth/register` | Public | Create org + owner |
-| POST | `/api/v1/auth/login` | Public | Issue tokens |
-| POST | `/api/v1/auth/refresh` | Public | Refresh access token |
-| GET | `/api/v1/auth/me` | Bearer | Current user |
-| POST | `/api/v1/auth/logout` | Bearer | Revoke token |
+| Method | Path | Auth | Rate limit | Purpose |
+|--------|------|------|------------|---------|
+| POST | `/api/v1/auth/register` | Public | `auth-register` | Create org + owner |
+| POST | `/api/v1/auth/login` | Public | `auth-login` | Issue tokens |
+| POST | `/api/v1/auth/refresh` | Public | — | Refresh access token |
+| POST | `/api/v1/auth/forgot-password` | Public | `auth-forgot-password` | Send reset link (generic response) |
+| POST | `/api/v1/auth/reset-password` | Public | `auth-forgot-password` | Reset password; revokes all tokens |
+| GET | `/api/v1/auth/me` | Bearer | — | Current user (+ impersonation metadata) |
+| POST | `/api/v1/auth/logout` | Bearer | — | Revoke current token only |
+| GET | `/api/v1/auth/sessions` | Bearer | — | List active Passport tokens |
+| DELETE | `/api/v1/auth/sessions/{tokenId}` | Bearer | — | Revoke a specific session |
 
-**Key files:** `app/Services/AuthService.php`, `app/Http/Controllers/Web/AuthController.php`, `app/Services/Web/WebSessionService.php`, `app/Http/Middleware/WebAuth.php`
+Auth rate limiters use **IP + email** (5 attempts per 15 minutes) to reduce brute-force and enumeration abuse without locking an email globally from all IPs.
+
+### 6.7 Password reset flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant API as AuthController
+    participant PR as PasswordResetService
+    participant Mail as Queued mail
+
+    U->>API: POST /auth/forgot-password { email }
+    API->>PR: sendResetLink(email)
+    PR->>Mail: PasswordResetMail (if user exists)
+    API-->>U: 200 generic success
+
+    U->>API: POST /auth/reset-password { email, token, password }
+    API->>PR: resetPassword(...)
+    PR->>PR: Revoke all Passport tokens for user
+    API-->>U: 200 password reset
+```
+
+**Key files:** `app/Services/AuthService.php`, `app/Services/PasswordResetService.php`, `app/Services/SessionService.php`, `app/Http/Controllers/Web/AuthController.php`, `app/Services/Web/WebSessionService.php`, `app/Http/Middleware/WebAuth.php`
 
 ---
 
@@ -807,16 +838,36 @@ API: GET/POST/PATCH/DELETE /roles
 
 See [RBAC-PERMISSIONS.md](./RBAC-PERMISSIONS.md) for CRUD rules and safety checks (protected roles, delete when users assigned).
 
+### 15.5 GDPR data export & account deletion
+
+Owner-only (`Org Owner` role). Tenant-scoped paths (no org ID in URL — uses `X-Organization-Id`):
+
+| Action | API | Behavior |
+|--------|-----|----------|
+| Request data export | `POST /api/v1/organization/export` | Queues JSON bundle; emails signed download link when ready |
+| Request deletion | `POST /api/v1/organization/request-deletion` | Sets `deletion_requested_at` + scheduled date (default 30-day grace) |
+| Cancel deletion | `POST /api/v1/organization/cancel-deletion` | Clears deletion timestamps within grace period |
+
+Hard delete runs via scheduled `organizations:process-deletions`.
+
+**Key files:** `app/Services/OrganizationDataExportService.php`, `app/Jobs/ProcessOrganizationDataExportJob.php`, `app/Services/OrganizationDeletionService.php`
+
 ---
 
 ## 16. Notifications & background jobs
 
 | Trigger | Job / Notification | Recipients |
 |---------|-------------------|------------|
-| Stock ≤ reorder point | `SendLowStockNotificationJob` → `LowStockNotification` | Org Owner, Manager |
+| Registration | `SendWelcomeEmailJob` → `WelcomeMail` | New org owner |
+| Platform signup | `SendOrganizationRegisteredNotificationJob` | `ORGANIZATION_REGISTRATION_NOTIFICATION_EMAIL` |
+| Password reset | `PasswordResetMail` (queued) | Requesting user |
+| Trial ending soon | `subscriptions:notify-trial-ending` → `TrialEndingSoonMail` | Organization email |
+| Payment failed (Stripe) | `SendPaymentFailedNotificationJob` → `PaymentFailedMail` | Organization email |
+| Stock ≤ reorder point | `SendLowStockNotificationJob` → `LowStockNotification` (database + mail) | Org Owner, Manager |
 | PO status change | `SendOrderStatusNotificationJob` → `OrderStatusNotification` | Configured roles |
 | SO status change | Same | Configured roles |
 | Report export ready | Stored in `report_exports`; user downloads | Requesting user |
+| GDPR data export ready | `OrganizationDataExportReadyMail` | Requesting owner |
 
 Jobs run via **Laravel Horizon** (Redis queue). Start with:
 
@@ -874,7 +925,10 @@ Portal pages call these via `PlatformApiClient` (internal sub-requests with plat
 - `PlanLimitService` enforces limits with a **graduated response**: 90% warning → 10% grace buffer → 422 beyond grace
 - API responses may include `meta.plan_warning` (`approaching_limit` or `over_limit_grace`)
 - Expired trials: reads allowed, writes return **402 Payment Required**
+- Past due: reads always; writes during grace (`SUBSCRIPTION_PAST_DUE_GRACE_DAYS`), then **402**
+- Cancelled: reads allowed, writes **402**
 - Self-serve Stripe checkout for Starter, Growth, and Business from Settings → Billing
+- Webhook idempotency via `stripe_events` table
 
 ### Suspension & impersonation
 
@@ -905,15 +959,21 @@ Models using `LogsModelActivity` write to Spatie `activity_log` on create/update
 
 ### 18.3 Rate limiting
 
-`throttle:api-tenant` — per organization + per user limits on tenant API routes. The per-minute cap comes from the active plan's `api_rate_limit_per_minute` (Starter has no API access; Growth 60/min; Business 300/min), falling back to `config('api.rate_limit_per_minute', 120)`.
+**Tenant API:** `throttle:api-tenant` — per organization + per user limits on tenant routes. The per-minute cap comes from the active plan's `api_rate_limit_per_minute` (Starter has no API access; Growth 60/min; Business 300/min), falling back to `config('api.rate_limit_per_minute', 120)`.
 
-### 18.4 Plan limit errors
+**Auth endpoints:** Separate limiters on login, register, and forgot/reset-password — keyed by **IP + email** (5 per 15 minutes): `auth-login`, `auth-register`, `auth-forgot-password`.
+
+### 18.4 Stripe webhooks
+
+`POST /api/stripe/webhook` — **no** tenant middleware or Passport guard. Trust is established via Stripe signature verification (`Stripe-Signature` header). Processed event IDs are stored in `stripe_events`; duplicate deliveries are ignored.
+
+### 18.5 Plan limit errors
 
 `PlanLimitExceededException` → **422** with an "Upgrade required" message. Thrown by `PlanLimitService` when usage exceeds the grace buffer (default 110% of limit). Before the hard block, responses include `meta.plan_warning` for approaching (90%+) or grace-period (100%+) usage.
 
-`SubscriptionPaymentRequiredException` → **402** when an expired-trial org attempts a write operation.
+`SubscriptionPaymentRequiredException` → **402** when an expired-trial, past-due (post-grace), or cancelled org attempts a write.
 
-### 18.5 Error handling (API)
+### 18.6 Error handling (API)
 
 Centralized in `AppServiceProvider::registerApiExceptionRendering()`:
 
@@ -935,9 +995,23 @@ Centralized in `AppServiceProvider::registerApiExceptionRendering()`:
 | app | 8080 | Laravel (`php artisan serve`) |
 | postgres | 5433 | Database |
 | redis | 6379 | Cache, session, queue |
-| horizon | — | Queue worker |
+| horizon | — | Queue worker (see also `deploy/horizon.conf` for supervisord) |
 
-### 19.2 Bootstrap
+### 19.2 Health & monitoring
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /up` | Laravel default liveness |
+| `GET /api/health` | JSON breakdown: database, Redis (when used), queue — returns **503** if any check fails |
+
+### 19.3 CI
+
+GitHub Actions workflow `.github/workflows/tests.yml`:
+
+- **pest-sqlite** — full Pest suite on every push/PR
+- **pest-postgres-concurrency** — manual/scheduled Postgres concurrency tests
+
+### 19.4 Bootstrap
 
 ```bash
 # Docker
@@ -958,19 +1032,23 @@ php artisan horizon
 php artisan platform:admin:create platform@demo.test "Platform Admin" --password=password123
 ```
 
-### 19.3 Useful commands
+### 19.5 Useful commands
 
 | Command | Purpose |
 |---------|---------|
 | `php artisan app:setup --write-env` | Full bootstrap |
 | `php artisan db:seed --class=PlanSeeder` | Seed plans & feature flags |
+| `php artisan subscriptions:expire-trials` | Expire past-due trials |
+| `php artisan subscriptions:notify-trial-ending` | Trial-ending reminder emails |
+| `php artisan organizations:process-deletions` | Hard-delete orgs past deletion grace |
 | `php artisan platform:admin:create {email} {name}` | Bootstrap platform admin |
 | `php artisan rbac:migrate-organizations` | Sync RBAC for existing orgs |
 | `php artisan passport:ensure-password-client --write-env` | Fix stale OAuth client after fresh seed |
 | `php artisan horizon` | Start queue workers |
 | `php artisan test` | Run Pest test suite |
+| `php artisan test --filter=PrelaunchReadiness` | Pre-launch feature tests |
 
-### 19.4 URLs
+### 19.6 URLs
 
 | Environment | Web UI | Platform portal | API |
 |-------------|--------|-----------------|-----|
@@ -979,6 +1057,7 @@ php artisan platform:admin:create platform@demo.test "Platform Admin" --password
 | Platform API | — | — | `/api/platform/v1` |
 | API docs | — | — | `/docs/api` |
 | Horizon | — | — | `/horizon` |
+| Health | — | — | `/api/health`, `/up` |
 
 Set `APP_URL` in `.env` to match how you access the app.
 
@@ -989,7 +1068,9 @@ Set `APP_URL` in `.env` to match how you access the app.
 | Area | Primary files |
 |------|---------------|
 | **Routes** | `routes/web.php`, `routes/api.php`, `routes/platform.php` |
-| **Auth** | `app/Services/AuthService.php`, `app/Http/Controllers/Web/AuthController.php` |
+| **Auth** | `app/Services/AuthService.php`, `app/Services/PasswordResetService.php`, `app/Services/SessionService.php` |
+| **Billing** | `app/Services/StripeBillingService.php`, `app/Models/StripeEvent.php` |
+| **GDPR** | `app/Services/OrganizationDataExportService.php`, `app/Services/OrganizationDeletionService.php` |
 | **Platform** | `app/Http/Controllers/Api/Platform/V1/*`, `app/Http/Livewire/Platform/*`, `docs/PLATFORM-ADMIN.md` |
 | **Web session** | `app/Services/Web/WebSessionService.php`, `app/Services/Web/PlatformSessionService.php` |
 | **API bridge** | `app/Services/Web/ApiClient.php`, `app/Services/Web/PlatformApiClient.php` |

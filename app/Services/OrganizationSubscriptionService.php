@@ -102,18 +102,6 @@ class OrganizationSubscriptionService
         $this->expireTrialIfNeeded($subscription);
         $subscription = $subscription->fresh(['plan']) ?? $subscription;
 
-        if ($subscription->status === SubscriptionStatus::Cancelled) {
-            throw new SubscriptionAccessDeniedException(
-                'This organization subscription has been cancelled.',
-            );
-        }
-
-        if ($subscription->status === SubscriptionStatus::PastDue) {
-            throw new SubscriptionAccessDeniedException(
-                'Your subscription payment is past due. Please update billing to continue.',
-            );
-        }
-
         if (! $subscription->permitsReadAccess()) {
             throw new SubscriptionAccessDeniedException(
                 'This organization subscription is not active.',
@@ -140,6 +128,18 @@ class OrganizationSubscriptionService
         if ($subscription->status === SubscriptionStatus::Expired) {
             throw new SubscriptionPaymentRequiredException(
                 'Your trial has ended. Choose a plan to continue making changes.',
+            );
+        }
+
+        if ($subscription->status === SubscriptionStatus::Cancelled) {
+            throw new SubscriptionPaymentRequiredException(
+                'Your subscription has been cancelled. Choose a plan to continue making changes.',
+            );
+        }
+
+        if ($subscription->status === SubscriptionStatus::PastDue && $subscription->pastDueGraceExpired()) {
+            throw new SubscriptionPaymentRequiredException(
+                'Your subscription payment is past due. Please update billing to continue making changes.',
             );
         }
 

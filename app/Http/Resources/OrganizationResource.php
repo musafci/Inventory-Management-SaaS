@@ -21,6 +21,8 @@ class OrganizationResource extends JsonResource
             'plan' => $this->plan,
             'status' => $this->status,
             'trial_ends_at' => $this->trial_ends_at?->toISOString(),
+            'deletion_requested_at' => $this->deletion_requested_at?->toISOString(),
+            'deletion_scheduled_for' => $this->deletion_scheduled_for?->toISOString(),
             'users_count' => $this->when(isset($this->users_count), $this->users_count),
             'role' => $this->whenPivotLoaded('organization_user', fn () => $this->pivot->role),
             'subscription' => new OrganizationSubscriptionResource($this->whenLoaded('subscription')),

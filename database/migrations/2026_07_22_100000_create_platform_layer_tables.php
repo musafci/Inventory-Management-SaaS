@@ -31,6 +31,8 @@ return new class extends Migration
             $table->timestamp('current_period_ends_at')->nullable();
             $table->string('stripe_subscription_id')->nullable();
             $table->string('billing_interval')->nullable();
+            $table->timestamp('past_due_at')->nullable();
+            $table->timestamp('trial_reminder_sent_at')->nullable();
             $table->timestamps();
 
             $table->unique('organization_id');
@@ -73,10 +75,30 @@ return new class extends Migration
             $table->timestamp('ended_at')->nullable();
             $table->timestamps();
         });
+
+        Schema::create('stripe_events', function (Blueprint $table): void {
+            $table->id();
+            $table->string('event_id')->unique();
+            $table->string('type');
+            $table->timestamps();
+        });
+
+        Schema::create('organization_data_exports', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('status')->default('pending');
+            $table->string('file_path')->nullable();
+            $table->text('error_message')->nullable();
+            $table->timestamp('completed_at')->nullable();
+            $table->timestamps();
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('organization_data_exports');
+        Schema::dropIfExists('stripe_events');
         Schema::dropIfExists('impersonation_logs');
         Schema::dropIfExists('support_notes');
         Schema::dropIfExists('organization_feature_flags');

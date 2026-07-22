@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RefreshTokenRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\AuthTokenResource;
 use App\Http\Resources\OrganizationResource;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use App\Services\ImpersonationService;
+use App\Services\PasswordResetService;
+use App\Services\SessionService;
 use Dedoc\Scramble\Attributes\Endpoint;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
@@ -22,6 +26,8 @@ class AuthController extends ApiController
     public function __construct(
         protected AuthService $authService,
         protected ImpersonationService $impersonationService,
+        protected PasswordResetService $passwordResetService,
+        protected SessionService $sessionService,
     ) {}
 
     #[Endpoint(operationId: 'auth.register', title: 'Register organization and owner', description: 'Creates a new organization, owner user, and returns Passport OAuth tokens.')]
@@ -221,6 +227,44 @@ class AuthController extends ApiController
         if ($request->user() !== null && $request->bearerToken() !== null) {
             $this->authService->logout($request->user(), $request->bearerToken());
         }
+
+        return response()->noContent();
+    }
+
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
+    {
+        $this->passwordResetService->sendResetLink($request->validated('email'));
+
+        return $this->success([
+            'message' => 'If an account exists for that email, a password reset link has been sent.',
+        ]);
+    }
+
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $this->passwordResetService->resetPassword(
+            $request->validated('email'),
+            $request->validated('token'),
+            $request->validated('password'),
+        );
+
+        return $this->success([
+            'message' => 'Your password has been reset.',
+        ]);
+    }
+
+    public function sessions(Request $request): JsonResponse
+    {
+        $currentTokenId = $this->authService->extractTokenIdFromBearer($request->bearerToken());
+
+        return $this->success(
+            $this->sessionService->listActiveSessions($request->user(), $currentTokenId)->values(),
+        );
+    }
+
+    public function revokeSession(Request $request, string $tokenId): \Illuminate\Http\Response
+    {
+        $this->sessionService->revokeSession($request->user(), $tokenId);
 
         return response()->noContent();
     }

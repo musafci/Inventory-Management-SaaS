@@ -4,6 +4,7 @@ This document describes how **subscription plans**, **usage limits**, and **acce
 
 | Document | Purpose |
 |----------|---------|
+| **[GETTING-STARTED.md](./GETTING-STARTED.md)** | How to run the project locally or with Docker |
 | **This file** | Plans, subscriptions, limits, enforcement, and operations |
 | [PRICING_PLAN.md](../PRICING_PLAN.md) | Authoritative pricing spec and seed values |
 | [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md) | Super-admin portal & platform API for managing subscriptions |
@@ -66,6 +67,22 @@ There is **no separate "Trial" plan row**. New organizations get a **14-day Grow
 | `current_period_ends_at` | timestamp | Billing period end |
 | `stripe_subscription_id` | string | Stripe subscription reference |
 | `billing_interval` | string | `monthly` or `yearly` |
+| `past_due_at` | timestamp | When payment first failed (starts dunning grace) |
+| `trial_reminder_sent_at` | timestamp | Prevents duplicate trial-ending emails |
+
+### Supporting tables
+
+| Table | Purpose |
+|-------|---------|
+| `stripe_events` | Idempotent Stripe webhook processing (`event_id` unique) |
+| `organization_data_exports` | Async GDPR data export jobs |
+
+### `organizations` (GDPR)
+
+| Column | Purpose |
+|--------|---------|
+| `deletion_requested_at` | Owner requested account deletion |
+| `deletion_scheduled_for` | Hard-delete scheduled after grace period |
 
 ### Limit keys (`plans.limits`)
 
@@ -133,15 +150,39 @@ Org owners with `settings.update` can subscribe from **Settings → Billing** (`
 | POST | `/api/v1/billing/checkout` | Start Stripe Checkout (`plan_slug` + `interval`) |
 | POST | `/api/v1/billing/portal` | Open Stripe Customer Portal |
 
-**Webhook:** `POST /api/stripe/webhook` — handles `checkout.session.completed`, subscription updates, and payment failures.
+**Webhook:** `POST /api/stripe/webhook` — verifies Stripe signature on every request; stores processed event IDs in `stripe_events` to skip duplicates. Handles:
+
+| Event | Effect |
+|-------|--------|
+| `checkout.session.completed` | Activate subscription from Checkout |
+| `customer.subscription.updated` | Sync plan/status |
+| `customer.subscription.deleted` | Mark subscription `cancelled` |
+| `invoice.paid` | Restore `active`, clear `past_due_at` |
+| `invoice.payment_failed` | Mark `past_due`, set `past_due_at`, queue dunning email |
 
 When a trial expires, **read** endpoints continue to work but **writes** return **402 Payment Required**. Billing routes remain accessible so the org can pay.
 
-### 3. Trial expiry (scheduled)
+### 3. Trial-ending reminder (scheduled)
+
+Daily command `subscriptions:notify-trial-ending` emails org owners when `trial_ends_at` is within `config('subscription.trial_ending_reminder_days')` (default 3 days). Each subscription is reminded at most once (`trial_reminder_sent_at`).
+
+### 4. Dunning (past due)
+
+When Stripe sends `invoice.payment_failed`:
+
+1. Subscription status → `past_due`, `past_due_at` set (if not already)
+2. `PaymentFailedMail` queued to organization email
+3. During **past-due grace** (`SUBSCRIPTION_PAST_DUE_GRACE_DAYS`, default 7): reads and writes allowed
+4. After grace expires: writes return **402**; reads continue
+5. `invoice.paid` restores `active` and clears `past_due_at`
+
+**Cancelled** subscriptions (`customer.subscription.deleted`): reads allowed, writes return **402** (same mechanism as expired trial).
+
+### 5. Trial expiry (scheduled)
 
 Daily command `subscriptions:expire-trials` flips `status = trial` → `expired` when `trial_ends_at` has passed. Converted (paid) orgs are not affected.
 
-### 4. Platform admin assignment
+### 6. Platform admin assignment
 
 Operators change plans through:
 
@@ -159,7 +200,7 @@ Optional: `trial_ends_at`, `current_period_ends_at`.
 
 After update, `organizations.plan` cache is synced automatically.
 
-### 5. Organization access status (separate from subscription)
+### 7. Organization access status (separate from subscription)
 
 `organizations.status` controls **platform suspension** (independent of subscription):
 
@@ -202,8 +243,11 @@ sequenceDiagram
 | Condition | HTTP | Message (typical) |
 |-----------|------|-----------------|
 | No subscription row | 403 | No subscription — contact support |
-| `status = cancelled` | 403 | Subscription cancelled |
-| `status = past_due` | 403 | Payment past due |
+| `status = cancelled` + write request | 402 | Subscription cancelled — choose a plan |
+| `status = cancelled` + read request | OK | Read-only access |
+| `status = past_due` within grace + write | OK | Full access during grace |
+| `status = past_due` past grace + write | 402 | Payment past due — update billing |
+| `status = past_due` + read request | OK | Read-only or grace writes |
 | `status = expired` + write request | 402 | Trial ended — choose a plan |
 | `status = expired` + read request | OK | Read-only access |
 | Trial `trial_ends_at` passed | — | Auto-marked `expired` on next request or daily job |
@@ -264,17 +308,11 @@ All routes require `auth:platform`. Base path: `/api/platform/v1`.
 |---------|---------|
 | `php artisan db:seed --class=PlanSeeder` | Seed/update plan tiers and limits |
 | `php artisan subscriptions:expire-trials` | Expire past-due trial subscriptions |
+| `php artisan subscriptions:notify-trial-ending` | Send trial-ending-soon emails |
+| `php artisan organizations:process-deletions` | Hard-delete orgs past deletion grace |
 | `php artisan platform:subscriptions:backfill` | Assign trial subscriptions to orgs missing a row |
 
-Run after migrating existing databases:
-
-```bash
-php artisan migrate
-php artisan db:seed --class=PlanSeeder
-php artisan platform:subscriptions:backfill
-```
-
-The trial expiry command runs daily via the Laravel scheduler.
+Scheduled daily via `routes/console.php`: `expire-trials`, `notify-trial-ending`, `process-deletions`.
 
 ---
 
@@ -288,7 +326,11 @@ The trial expiry command runs daily via the Laravel scheduler.
 | Core service | `app/Services/OrganizationSubscriptionService.php` |
 | Limit enforcement | `app/Services/PlanLimitService.php` |
 | Stripe billing | `app/Services/StripeBillingService.php` |
+| Stripe event model | `app/Models/StripeEvent.php` |
 | Trial expiry command | `app/Console/Commands/ExpireTrialsCommand.php` |
+| Trial reminder command | `app/Console/Commands/NotifyTrialEndingCommand.php` |
+| Deletion processor | `app/Console/Commands/ProcessOrganizationDeletionsCommand.php` |
+| Transactional mail | `app/Mail/*`, `resources/views/mail/*` |
 | Access denied exception | `app/Exceptions/SubscriptionAccessDeniedException.php` |
 | Payment required exception | `app/Exceptions/SubscriptionPaymentRequiredException.php` |
 | Limit exceeded exception | `app/Exceptions/PlanLimitExceededException.php` |
@@ -296,7 +338,7 @@ The trial expiry command runs daily via the Laravel scheduler.
 | Backfill command | `app/Console/Commands/BackfillOrganizationSubscriptionsCommand.php` |
 | Platform subscription API | `app/Http/Controllers/Api/Platform/V1/PlatformOrganizationSubscriptionController.php` |
 | Platform subscription UI | `app/Http/Livewire/Platform/OrganizationShow.php` |
-| Tests | `tests/Feature/PricingPlanTest.php`, `tests/Feature/PlatformLayerTest.php`, `tests/Feature/BillingTest.php` |
+| Tests | `tests/Feature/PricingPlanTest.php`, `tests/Feature/PlatformLayerTest.php`, `tests/Feature/BillingTest.php`, `tests/Feature/PrelaunchReadinessTest.php` |
 
 ---
 
@@ -312,6 +354,9 @@ php artisan test --filter=PlatformLayerTest
 # Billing / Stripe tests
 php artisan test --filter=BillingTest
 
+# Pre-launch readiness (auth, webhooks, GDPR, sessions, health)
+php artisan test --filter=PrelaunchReadiness
+
 # Full suite
 php artisan test
 ```
@@ -323,7 +368,9 @@ Coverage includes:
 - Daily trial expiry command
 - Graduated limit warnings and grace buffer blocks
 - Expired trial: reads OK, writes 402
-- Multi-plan Stripe checkout
+- Multi-plan Stripe checkout + webhook idempotency
+- Past-due grace period and dunning email
+- Cancelled subscription read-only access
 - Plan-based API rate limiting
 
 ---
@@ -365,6 +412,9 @@ STRIPE_BUSINESS_PRICE_MONTHLY=price_...
 STRIPE_BUSINESS_PRICE_YEARLY=price_...
 SUBSCRIPTION_TRIAL_DAYS=14
 SUBSCRIPTION_TRIAL_PLAN_SLUG=growth
+SUBSCRIPTION_TRIAL_ENDING_REMINDER_DAYS=3
+SUBSCRIPTION_PAST_DUE_GRACE_DAYS=7
+ORGANIZATION_DELETION_GRACE_DAYS=30
 ```
 
 Create matching recurring prices in the Stripe Dashboard for each plan and interval.
@@ -380,8 +430,8 @@ Create matching recurring prices in the Stripe Dashboard for each plan and inter
 | `trial` | Trial period — full access until `trial_ends_at` |
 | `active` | Paid/active subscription |
 | `expired` | Trial ended without payment — read-only access |
-| `past_due` | Payment overdue — access blocked |
-| `cancelled` | Subscription ended — access blocked |
+| `past_due` | Payment overdue — read always; writes allowed during grace, then 402 |
+| `cancelled` | Subscription ended — read-only; writes return 402 |
 
 ### `OrganizationStatus` (`organizations.status`)
 

@@ -97,6 +97,24 @@ class AppServiceProvider extends ServiceProvider
                 ->by("org:{$organizationId}:user:{$userId}");
         });
 
+        RateLimiter::for('auth-login', function (Request $request): Limit {
+            $email = strtolower((string) $request->input('email', ''));
+
+            return Limit::perMinutes(15, 5)->by($request->ip().'|'.$email);
+        });
+
+        RateLimiter::for('auth-register', function (Request $request): Limit {
+            $email = strtolower((string) $request->input('email', ''));
+
+            return Limit::perMinutes(15, 5)->by($request->ip().'|'.$email);
+        });
+
+        RateLimiter::for('auth-forgot-password', function (Request $request): Limit {
+            $email = strtolower((string) $request->input('email', ''));
+
+            return Limit::perMinutes(15, 5)->by($request->ip().'|'.$email);
+        });
+
         Gate::before(function (User $user, string $ability): ?bool {
             if (! app()->bound('currentOrganization')) {
                 return null;

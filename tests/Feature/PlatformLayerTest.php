@@ -163,7 +163,7 @@ test('platform admin can create another platform admin', function () {
         ->assertJsonPath('data.email', 'second-admin@acme.test');
 });
 
-test('cancelled subscription blocks tenant api access', function () {
+test('cancelled subscription allows reads but blocks writes', function () {
     $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
         'email' => 'cancelled-sub@acme.test',
     ]))->assertCreated();
@@ -184,9 +184,21 @@ test('cancelled subscription blocks tenant api access', function () {
         'status' => 'cancelled',
     ])->assertOk();
 
-    $this->getJson('/api/v1/products', $headers)
-        ->assertForbidden()
-        ->assertJsonPath('message', 'This organization subscription has been cancelled.');
+    $this->getJson('/api/v1/products', $headers)->assertOk();
+
+    $categoryId = \App\Models\Category::factory()->create(['organization_id' => $organizationId])->id;
+    $unitId = \App\Models\Unit::factory()->create(['organization_id' => $organizationId])->id;
+
+    $this->postJson('/api/v1/products', [
+        'category_id' => $categoryId,
+        'unit_id' => $unitId,
+        'name' => 'Cancelled Block',
+        'sku' => 'CANCEL-001',
+        'cost_price' => 10,
+        'selling_price' => 20,
+    ], $headers)
+        ->assertPaymentRequired()
+        ->assertJsonPath('message', 'Your subscription has been cancelled. Choose a plan to continue making changes.');
 });
 
 test('expired trial allows reads and marks subscription expired', function () {

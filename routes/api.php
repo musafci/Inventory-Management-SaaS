@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\BillingController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\OrganizationDataExportController;
 use App\Http\Controllers\Api\V1\PurchaseOrderController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SalesOrderController;
@@ -20,19 +21,33 @@ use App\Http\Controllers\Api\V1\StockMovementController;
 use App\Http\Controllers\Api\V1\UnitController;
 use App\Http\Controllers\Api\V1\WarehouseController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\HealthController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('health', HealthController::class);
+
+Route::get('organization-exports/{export}/download', [OrganizationDataExportController::class, 'download'])
+    ->name('organization-export.download');
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
 
 Route::prefix('v1')->group(function (): void {
     Route::prefix('auth')->group(function (): void {
-        Route::post('register', [AuthController::class, 'register']);
-        Route::post('login', [AuthController::class, 'login']);
+        Route::post('register', [AuthController::class, 'register'])
+            ->middleware('throttle:auth-register');
+        Route::post('login', [AuthController::class, 'login'])
+            ->middleware('throttle:auth-login');
         Route::post('refresh', [AuthController::class, 'refresh']);
+        Route::post('forgot-password', [AuthController::class, 'forgotPassword'])
+            ->middleware('throttle:auth-forgot-password');
+        Route::post('reset-password', [AuthController::class, 'resetPassword'])
+            ->middleware('throttle:auth-forgot-password');
 
         Route::middleware('auth:api')->group(function (): void {
             Route::get('me', [AuthController::class, 'me']);
             Route::post('logout', [AuthController::class, 'logout']);
+            Route::get('sessions', [AuthController::class, 'sessions']);
+            Route::delete('sessions/{tokenId}', [AuthController::class, 'revokeSession']);
         });
     });
 
@@ -61,6 +76,9 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('organization', [OrganizationController::class, 'show']);
         Route::patch('organization', [OrganizationController::class, 'update']);
+        Route::post('organization/export', [OrganizationDataExportController::class, 'store']);
+        Route::post('organization/request-deletion', [OrganizationController::class, 'requestDeletion']);
+        Route::post('organization/cancel-deletion', [OrganizationController::class, 'cancelDeletion']);
 
         Route::prefix('billing')->group(function (): void {
             Route::get('/', [BillingController::class, 'show']);

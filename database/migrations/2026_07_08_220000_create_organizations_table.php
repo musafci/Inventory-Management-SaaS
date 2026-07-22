@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('status')->default('trial');
             $table->timestamp('trial_ends_at')->nullable();
             $table->string('stripe_customer_id')->nullable();
+            $table->timestamp('deletion_requested_at')->nullable();
+            $table->timestamp('deletion_scheduled_for')->nullable();
             $table->timestamps();
         });
 
