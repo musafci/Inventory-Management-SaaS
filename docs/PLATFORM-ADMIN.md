@@ -76,7 +76,8 @@ Existing platform admins can create others via `POST /api/platform/v1/platform-a
 | `/platform/login` | Sign in |
 | `/platform/dashboard` | Tenant counts, recent organizations |
 | `/platform/organizations` | Search, filter, paginate all tenants |
-| `/platform/organizations/{id}` | Status, subscription, feature flags, support notes, impersonation |
+| `/platform/organizations/{id}` | Status, subscription, feature flags, support notes, activity audit, impersonation |
+| `/platform/activity-logs` | Cross-tenant activity analysis |
 | `/platform/admins` | Create / remove platform admin accounts |
 
 Portal UI matches tenant styling (sidebar, cards, toasts, confirm dialogs). Internal API calls use `PlatformApiClient` with the platform session token.
@@ -102,6 +103,16 @@ Base path: `/api/platform/v1` · Middleware: `auth:platform`
 | GET | `/plans` | List active plans and limit JSON |
 | GET | `/organizations/{id}/subscription` | Current subscription for tenant |
 | PATCH | `/organizations/{id}/subscription` | Assign plan, set subscription status |
+
+### Activity audit
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/organizations/{id}/activity-logs` | Paginated audit trail for tenant (filter by event, resource type, dates) |
+| GET | `/activity-logs` | Cross-tenant activity feed with filters |
+| GET | `/activity-logs/summary` | Aggregate counts by event, resource type, and top organizations |
+
+Activity logs store `organization_id` on every tenant audit entry (sales orders, purchase orders, payments, stock movements, roles). Portal UI: `/platform/activity-logs` and per-org section on organization detail.
 
 **Plans (seeded):** `starter`, `growth`, `business`, `enterprise` — see [PRICING_PLAN.md](../PRICING_PLAN.md) for exact values. There is no separate "trial" plan row; new orgs trial on **Growth** for 14 days.
 

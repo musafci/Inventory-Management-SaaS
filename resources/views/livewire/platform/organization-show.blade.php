@@ -209,4 +209,95 @@
             </div>
         </div>
     </div>
+
+    <div class="mt-8 card p-6">
+        <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900">Activity audit</h3>
+                <p class="mt-1 text-sm text-slate-500">Organization-scoped audit trail for orders, payments, stock movements, and roles.</p>
+            </div>
+            <a href="{{ route('platform.activity-logs.index', ['organization_id' => $organizationId]) }}" class="btn-secondary">Open full analysis</a>
+        </div>
+
+        <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Total events</p>
+                <p class="mt-1 text-2xl font-bold text-slate-900">{{ number_format($activitySummary['total'] ?? 0) }}</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Last 24 hours</p>
+                <p class="mt-1 text-2xl font-bold text-slate-900">{{ number_format($activitySummary['last_24_hours'] ?? 0) }}</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Last 7 days</p>
+                <p class="mt-1 text-2xl font-bold text-slate-900">{{ number_format($activitySummary['last_7_days'] ?? 0) }}</p>
+            </div>
+        </div>
+
+        <div class="mb-6 grid gap-4 md:grid-cols-2">
+            <div>
+                <label class="form-label">Event</label>
+                <select wire:model.live="activityFilters.event" class="form-input">
+                    <option value="">All events</option>
+                    <option value="created">Created</option>
+                    <option value="updated">Updated</option>
+                    <option value="deleted">Deleted</option>
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Resource type</label>
+                <select wire:model.live="activityFilters.subject_type" class="form-input">
+                    <option value="">All types</option>
+                    @foreach($activitySubjectTypes as $key => $label)
+                        <option value="{{ $key }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="table-modern min-w-full">
+                <thead>
+                    <tr>
+                        <th>When</th>
+                        <th>Event</th>
+                        <th>Resource</th>
+                        <th>Actor</th>
+                        <th>Changes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($activityLogs as $item)
+                        <tr wire:key="org-activity-{{ $item['id'] }}">
+                            <td class="whitespace-nowrap text-sm text-slate-600">
+                                {{ \Illuminate\Support\Carbon::parse($item['created_at'])->format('M j, Y g:i A') }}
+                            </td>
+                            <td><span class="badge badge-info capitalize">{{ $item['event'] ?? '—' }}</span></td>
+                            <td class="text-sm text-slate-700">
+                                <span class="font-medium">{{ $item['subject']['type'] ?? '—' }}</span>
+                                @if(! empty($item['subject']['label']))
+                                    <span class="block text-xs text-slate-500">{{ $item['subject']['label'] }}</span>
+                                @endif
+                            </td>
+                            <td class="text-sm text-slate-700">{{ $item['causer']['name'] ?? 'System' }}</td>
+                            <td class="max-w-xs text-xs text-slate-500">
+                                @php $attributes = $item['changes']['attributes'] ?? null; @endphp
+                                @if(is_array($attributes) && count($attributes) > 0)
+                                    @foreach(collect($attributes)->take(2) as $field => $value)
+                                        <div><span class="font-medium text-slate-600">{{ $field }}:</span> {{ is_scalar($value) ? $value : json_encode($value) }}</div>
+                                    @endforeach
+                                @else
+                                    {{ $item['description'] ?? '—' }}
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="py-8 text-center text-sm text-slate-500">No activity recorded for this organization yet.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>

@@ -19,8 +19,17 @@ trait LogsModelActivity
 
     public function tapActivity(\Spatie\Activitylog\Contracts\Activity $activity, string $eventName): void
     {
-        if (isset($this->organization_id)) {
-            $activity->properties = $activity->properties->put('organization_id', $this->organization_id);
+        $organizationId = $this->organization_id ?? null;
+
+        if ($organizationId === null && app()->bound('currentOrganization')) {
+            $organizationId = app('currentOrganization')->id;
         }
+
+        if ($organizationId === null) {
+            return;
+        }
+
+        $activity->organization_id = $organizationId;
+        $activity->properties = $activity->properties->put('organization_id', $organizationId);
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Platform\V1\PlatformActivityLogController;
 use App\Http\Controllers\Api\Platform\V1\PlatformAdminController;
 use App\Http\Controllers\Api\Platform\V1\PlatformAuthController;
 use App\Http\Controllers\Api\Platform\V1\PlatformFeatureFlagController;
@@ -19,6 +20,9 @@ Route::prefix('platform/v1')->group(function (): void {
 
         Route::get('plans', [PlatformPlanController::class, 'index']);
 
+        Route::get('activity-logs/summary', [PlatformActivityLogController::class, 'summary']);
+        Route::get('activity-logs', [PlatformActivityLogController::class, 'index']);
+
         Route::get('platform-admins', [PlatformAdminController::class, 'index']);
         Route::post('platform-admins', [PlatformAdminController::class, 'store']);
         Route::delete('platform-admins/{adminId}', [PlatformAdminController::class, 'destroy']);
@@ -31,6 +35,8 @@ Route::prefix('platform/v1')->group(function (): void {
 
         Route::get('organizations/{organizationId}/support-notes', [PlatformSupportNoteController::class, 'index']);
         Route::post('organizations/{organizationId}/support-notes', [PlatformSupportNoteController::class, 'store']);
+
+        Route::get('organizations/{organizationId}/activity-logs', [PlatformActivityLogController::class, 'indexForOrganization']);
 
         Route::get('organizations/{organizationId}/feature-flags', [PlatformFeatureFlagController::class, 'index']);
         Route::patch('organizations/{organizationId}/feature-flags/{featureFlagId}', [PlatformFeatureFlagController::class, 'update']);

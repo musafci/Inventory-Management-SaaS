@@ -4,11 +4,11 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\SalesOrderStatus;
 use App\Enums\StockMovementType;
+use App\Models\Activity;
 use App\Models\Payment;
 use App\Models\SalesOrder;
 use App\Models\StockMovement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Activitylog\Models\Activity;
 
 uses(RefreshDatabase::class);
 
@@ -39,6 +39,7 @@ test('sales order creation is written to the activity log with actor and changed
         ->first();
 
     expect($activity)->not->toBeNull()
+        ->and($activity->organization_id)->toBe($org['organization_id'])
         ->and($activity->causer_id)->toBe($org['response']->json('data.user.id'))
         ->and(data_get($activity->properties, 'attributes.status'))->toBe(SalesOrderStatus::Draft->value)
         ->and(data_get($activity->properties, 'attributes.order_number'))->toBe('SO-000001')
@@ -65,6 +66,7 @@ test('stock movement and payment mutations are audited with dirty attribute trac
         ->first();
 
     expect($paymentActivity)->not->toBeNull()
+        ->and($paymentActivity->organization_id)->toBe($org['organization_id'])
         ->and(data_get($paymentActivity->properties, 'attributes.amount'))->toBe('75.00')
         ->and(data_get($paymentActivity->properties, 'attributes.status'))->toBe(PaymentStatus::Completed->value);
 

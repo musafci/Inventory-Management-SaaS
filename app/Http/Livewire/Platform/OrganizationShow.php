@@ -17,6 +17,17 @@ class OrganizationShow extends Component
 
     public $featureFlags = [];
 
+    public $activityLogs = [];
+
+    public $activitySummary = [];
+
+    public $activityFilters = [
+        'event' => '',
+        'subject_type' => '',
+    ];
+
+    public $activitySubjectTypes = [];
+
     public $form = [
         'status' => '',
     ];
@@ -42,6 +53,7 @@ class OrganizationShow extends Component
         $this->loadOrganization();
         $this->loadSupportNotes();
         $this->loadFeatureFlags();
+        $this->loadActivityLogs();
     }
 
     public function loadPlans(): void
@@ -90,6 +102,34 @@ class OrganizationShow extends Component
         $api = new PlatformApiClient();
         $response = $api->get("/organizations/{$this->organizationId}/feature-flags");
         $this->featureFlags = $response['data'] ?? [];
+    }
+
+    public function loadActivityLogs(): void
+    {
+        $api = new PlatformApiClient();
+        $query = array_filter([
+            'per_page' => 15,
+            'event' => $this->activityFilters['event'] !== '' ? $this->activityFilters['event'] : null,
+            'subject_type' => $this->activityFilters['subject_type'] !== '' ? $this->activityFilters['subject_type'] : null,
+        ], fn ($value): bool => $value !== null && $value !== '');
+
+        $response = $api->get("/organizations/{$this->organizationId}/activity-logs", $query);
+
+        if (isset($response['error'])) {
+            $this->activityLogs = [];
+            $this->activitySummary = [];
+
+            return;
+        }
+
+        $this->activityLogs = $response['data'] ?? [];
+        $this->activitySummary = $response['meta']['summary'] ?? [];
+        $this->activitySubjectTypes = $response['meta']['filters']['subject_types'] ?? [];
+    }
+
+    public function updatedActivityFilters(): void
+    {
+        $this->loadActivityLogs();
     }
 
     public function applyStatus(string $status): void
