@@ -9,26 +9,26 @@ class SupplierPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('purchase_orders.view');
+        return $user->can('suppliers.view');
     }
 
     public function view(User $user, Supplier $supplier): bool
     {
-        return $user->can('purchase_orders.view');
+        return $user->can('suppliers.view');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('purchase_orders.create');
+        return $user->can('suppliers.create');
     }
 
     public function update(User $user, Supplier $supplier): bool
     {
-        return $user->can('purchase_orders.update');
+        return $user->can('suppliers.update');
     }
 
     public function delete(User $user, Supplier $supplier): bool
     {
-        return $user->can('purchase_orders.delete');
+        return $user->can('suppliers.delete');
     }
 }

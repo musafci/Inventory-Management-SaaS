@@ -9,16 +9,16 @@ class StockMovementPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('warehouses.view');
+        return $user->can('inventory.view');
     }
 
     public function view(User $user, StockMovement $stockMovement): bool
     {
-        return $user->can('warehouses.view');
+        return $user->can('inventory.view');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('warehouses.update');
+        return $user->can('inventory.update');
     }
 }

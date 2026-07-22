@@ -24,6 +24,7 @@ class WebAuth
         }
 
         $this->webSession->normalizeSessionOrganizationsIfNeeded();
+        $this->webSession->syncPermissionsForActiveOrganization();
 
         return $next($request);
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Http\Livewire\Concerns\EnsuresPermission;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use App\Services\Web\ApiClient;
@@ -9,6 +10,8 @@ use App\Services\Web\ApiClient;
 #[Layout('layouts.app')]
 class Stocks extends Component
 {
+    use EnsuresPermission;
+
     public $items = [];
     public $pagination = [];
     public $search = '';
@@ -16,6 +19,8 @@ class Stocks extends Component
 
     public function mount()
     {
+        $this->ensurePermission('inventory.view');
+
         $this->loadItems();
     }
 

@@ -41,9 +41,9 @@ test('org owner can update organization profile', function () {
     ]);
 });
 
-test('admin cannot update organization profile', function () {
+test('admin with settings permissions can view and update organization profile', function () {
     $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
-        'email' => 'org-admin-blocked@acme.test',
+        'email' => 'org-admin-allowed@acme.test',
     ]))->assertCreated();
 
     $organizationId = $register->json('data.organizations.0.id');
@@ -56,30 +56,26 @@ test('admin cannot update organization profile', function () {
         'role' => 'Admin',
     ], $headers)->assertCreated();
 
-    $admin = User::query()->where('email', 'org-admin@acme.test')->firstOrFail();
-    setPermissionsTeamId($organizationId);
-    expect($admin->hasRole('Admin'))->toBeTrue();
-    expect($admin->hasRole('Org Owner'))->toBeFalse();
-
     $adminLogin = $this->postJson('/api/v1/auth/login', [
         'email' => 'org-admin@acme.test',
         'password' => 'password123',
-    ])->assertOk()
-        ->assertJsonPath('data.user.email', 'org-admin@acme.test');
+    ])->assertOk();
 
     $adminHeaders = $this->organizationContextHeaders(
         $adminLogin->json('data.token.access_token'),
         $organizationId,
     );
 
-    $this->getJson('/api/v1/organization', $adminHeaders)->assertForbidden();
+    $this->getJson('/api/v1/organization', $adminHeaders)->assertOk();
 
     $this->patchJson('/api/v1/organization', [
-        'name' => 'Blocked Rename',
-    ], $adminHeaders)->assertForbidden();
+        'name' => 'Admin Updated Co',
+    ], $adminHeaders)
+        ->assertOk()
+        ->assertJsonPath('data.name', 'Admin Updated Co');
 });
 
-test('manager cannot view or update organization settings', function () {
+test('manager can view but cannot update organization settings', function () {
     $org = $this->registerOrganizationWithOwner(['email' => 'org-manager-blocked@acme.test']);
     $headers = $this->organizationHeaders($org['token'], $org['organization_id']);
 
@@ -101,6 +97,6 @@ test('manager cannot view or update organization settings', function () {
         $org['organization_id'],
     );
 
-    $this->getJson('/api/v1/organization', $managerHeaders)->assertForbidden();
+    $this->getJson('/api/v1/organization', $managerHeaders)->assertOk();
     $this->patchJson('/api/v1/organization', ['name' => 'Blocked'], $managerHeaders)->assertForbidden();
 });

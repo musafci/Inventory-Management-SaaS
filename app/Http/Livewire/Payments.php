@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Http\Livewire\Concerns\EnsuresPermission;
 use App\Http\Livewire\Concerns\HasApiDetailView;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
@@ -10,6 +11,7 @@ use App\Services\Web\ApiClient;
 #[Layout('layouts.app')]
 class Payments extends Component
 {
+    use EnsuresPermission;
     use HasApiDetailView;
     public $items = [];
     public $pagination = [];
@@ -18,6 +20,8 @@ class Payments extends Component
 
     public function mount()
     {
+        $this->ensurePermission('payments.view');
+
         $this->mountDetailRoute('payments.show', '/v1/payments', '/payments');
 
         if (! $this->isDetailView()) {

@@ -53,6 +53,7 @@ class AuthController extends Controller
         );
 
         session(['organization_id' => $this->authService->resolvePreferredOrganizationId($result['user'])]);
+        $this->webSession->syncPermissionsForActiveOrganization();
 
         return $this->redirectAfterAuth();
     }
@@ -82,6 +83,7 @@ class AuthController extends Controller
         );
 
         session(['organization_id' => $this->authService->resolvePreferredOrganizationId($result['user'])]);
+        $this->webSession->syncPermissionsForActiveOrganization();
 
         return $this->redirectAfterAuth();
     }
@@ -106,6 +108,8 @@ class AuthController extends Controller
         if (! $this->webSession->setActiveOrganization($request->integer('organization_id'))) {
             abort(403, 'You do not belong to that organization.');
         }
+
+        $this->webSession->syncPermissionsForActiveOrganization();
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Organization switched.']);

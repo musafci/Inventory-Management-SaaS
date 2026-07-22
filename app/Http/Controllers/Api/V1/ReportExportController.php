@@ -18,7 +18,7 @@ class ReportExportController extends ApiController
 
     public function index(): JsonResponse
     {
-        $this->authorize('viewReports');
+        $this->authorize('exportReports');
 
         $exports = ReportExport::query()
             ->where('user_id', request()->user()->id)
@@ -40,7 +40,7 @@ class ReportExportController extends ApiController
 
     public function store(StoreReportExportRequest $request): JsonResponse
     {
-        $this->authorize('viewReports');
+        $this->authorize('exportReports');
 
         $export = $this->reportExportService->queueExport(
             $request->user(),
@@ -52,7 +52,7 @@ class ReportExportController extends ApiController
 
     public function show(int $exportId): JsonResponse
     {
-        $this->authorize('viewReports');
+        $this->authorize('exportReports');
 
         $export = ReportExport::query()
             ->where('user_id', request()->user()->id)
@@ -63,7 +63,7 @@ class ReportExportController extends ApiController
 
     public function download(int $exportId): StreamedResponse
     {
-        $this->authorize('viewReports');
+        $this->authorize('exportReports');
 
         $export = ReportExport::query()
             ->where('user_id', request()->user()->id)

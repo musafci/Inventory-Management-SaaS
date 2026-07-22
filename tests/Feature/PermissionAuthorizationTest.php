@@ -10,7 +10,7 @@ beforeEach(function () {
     $this->setUpPassport();
 });
 
-test('viewer cannot access endpoint gated by products.create', function () {
+test('viewer cannot access endpoint gated by inventory.create', function () {
     $registerResponse = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
         'email' => 'owner@acme.test',
     ]))->assertCreated();
@@ -39,7 +39,7 @@ test('viewer cannot access endpoint gated by products.create', function () {
         ->assertJsonStructure(['message', 'errors']);
 });
 
-test('org owner can access endpoint gated by products.create', function () {
+test('org owner can access endpoint gated by inventory.create', function () {
     $registerResponse = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
         'email' => 'owner-products@acme.test',
     ]))->assertCreated();

@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Http\Livewire\Concerns\EnsuresPermission;
 use App\Http\Livewire\Concerns\HasApiDetailView;
 use App\Http\Livewire\Concerns\MapsFormValidationAttributes;
 use Livewire\Component;
@@ -11,6 +12,7 @@ use App\Services\Web\ApiClient;
 #[Layout('layouts.app')]
 class SalesOrders extends Component
 {
+    use EnsuresPermission;
     use HasApiDetailView;
     use MapsFormValidationAttributes;
 
@@ -56,6 +58,8 @@ class SalesOrders extends Component
 
     public function mount()
     {
+        $this->ensurePermission('orders.sales.view');
+
         $this->mountDetailRoute('sales-orders.show', '/v1/sales-orders', '/sales-orders');
 
         if (! $this->isDetailView()) {

@@ -9,26 +9,26 @@ class UnitPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('products.view');
+        return $user->can('inventory.view');
     }
 
     public function view(User $user, Unit $unit): bool
     {
-        return $user->can('products.view');
+        return $user->can('inventory.view');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('products.create');
+        return $user->can('inventory.create');
     }
 
     public function update(User $user, Unit $unit): bool
     {
-        return $user->can('products.update');
+        return $user->can('inventory.update');
     }
 
     public function delete(User $user, Unit $unit): bool
     {
-        return $user->can('products.delete');
+        return $user->can('inventory.delete');
     }
 }

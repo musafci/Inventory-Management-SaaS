@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Http\Livewire\Concerns\EnsuresPermission;
 use App\Http\Livewire\Concerns\InteractsWithOrganizationSession;
 use App\Http\Livewire\Concerns\MapsFormValidationAttributes;
 use App\Services\Web\ApiClient;
@@ -12,6 +13,7 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Users extends Component
 {
+    use EnsuresPermission;
     use InteractsWithOrganizationSession;
     use MapsFormValidationAttributes;
 
@@ -33,16 +35,27 @@ class Users extends Component
 
     public $roles = [];
 
-    protected $listeners = ['deleteConfirmed' => 'destroy'];
-
     public function mount()
     {
-        if (! $this->canManageUsers()) {
-            abort(403, 'You do not have permission to manage team members.');
-        }
+        $this->ensurePermission('settings.manage_users');
 
-        $this->roles = array_keys(RolesAndPermissionsSeeder::rolePermissionMap());
+        $this->loadRoles();
         $this->loadItems();
+    }
+
+    public function loadRoles()
+    {
+        try {
+            $api = new ApiClient();
+            $response = $api->get('/v1/roles');
+            $this->roles = collect($response['data'] ?? [])
+                ->reject(fn (array $role): bool => (bool) ($role['is_protected'] ?? false))
+                ->pluck('name')
+                ->values()
+                ->all();
+        } catch (\Exception) {
+            $this->roles = array_keys(RolesAndPermissionsSeeder::rolePermissionMap());
+        }
     }
 
     public function loadItems()
@@ -142,27 +155,22 @@ class Users extends Component
         $this->loadItems();
     }
 
-    public function confirmDelete($id)
-    {
-        $member = collect($this->items)->firstWhere('id', (int) $id);
-        $name = $member['name'] ?? 'this user';
-
-        $this->dispatch('confirm', [
-            'title' => 'Remove member',
-            'message' => "Remove {$name} from this organization?",
-            'confirmEvent' => 'deleteConfirmed',
-            'confirmPayload' => $id,
-            'type' => 'danger',
-        ]);
-    }
-
     public function destroy($id)
     {
         $api = new ApiClient();
         $response = $api->delete("/v1/users/{$id}");
 
         if (isset($response['error'])) {
-            $this->dispatch('toast', message: $response['error'], type: 'error');
+            $message = $response['error'];
+
+            if (! empty($response['errors'])) {
+                $first = collect($response['errors'])->flatten()->first();
+                if (is_string($first) && $first !== '') {
+                    $message = $first;
+                }
+            }
+
+            $this->dispatch('toast', message: $message, type: 'error');
 
             return;
         }

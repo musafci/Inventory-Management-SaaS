@@ -114,6 +114,14 @@ RUN_STOCK_PG_CONCURRENCY=1 php artisan test
 - **Idempotency:** `POST /api/v1/purchase-orders` and `POST /api/v1/sales-orders` require an `Idempotency-Key` header.
 - **Rate limiting:** Tenant routes use `throttle:api-tenant` keyed by `org:{X-Organization-Id}:user:{user_id}`.
 
+**Documentation:**
+
+| Doc | Description |
+|-----|-------------|
+| [docs/SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md](docs/SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md) | Full system architecture & detailed workflows |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Condensed architecture with diagrams |
+| [docs/RBAC-PERMISSIONS.md](docs/RBAC-PERMISSIONS.md) | Permission catalog & how to add permissions |
+
 ### Main domain areas
 
 | Area | Key paths |
@@ -140,7 +148,7 @@ When `APP_ENV=local`, `php artisan db:seed` also runs `DemoSeeder` with two orga
 | `owner@acme.demo` | `password123` | Acme Warehouse (Owner) |
 | `owner@beta.demo` | `password123` | Beta Retail (Owner) |
 | `consultant@demo.test` | `password123` | Both (Admin / Manager) |
-| `platform@demo.test` | `password123` | Platform admin API (`/api/platform/v1/*`) |
+| `platform@demo.test` | `password123` | Platform admin API + **web portal** at `/platform/login` |
 
 ### API documentation
 

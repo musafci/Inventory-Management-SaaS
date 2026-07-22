@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\RoleManagementService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -138,11 +139,7 @@ class OrganizationMemberService
 
     protected function assertAssignableRole(string $role): void
     {
-        if (! array_key_exists($role, RolesAndPermissionsSeeder::rolePermissionMap())) {
-            throw ValidationException::withMessages([
-                'role' => ['Invalid organization role.'],
-            ]);
-        }
+        app(RoleManagementService::class)->assertAssignableRole($role);
     }
 
     protected function assertMemberBelongsToOrganization(User $member, Organization $organization): void

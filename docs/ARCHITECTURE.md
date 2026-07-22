@@ -2,6 +2,8 @@
 
 Multi-tenant inventory, purchasing, and sales platform built with Laravel 13, PostgreSQL, Redis, Laravel Passport, and Livewire.
 
+> **Detailed guide:** See [SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md](./SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md) for the full system architecture, layer breakdown, and end-to-end workflows.
+
 ---
 
 ## 1. System overview
@@ -525,19 +527,57 @@ flowchart TB
 
 ---
 
-## 13. Roles and permissions
+## 13. Roles and permissions (RBAC)
 
-Seeded roles (per organization via Spatie teams):
+Multi-tenant RBAC uses [Spatie Laravel Permission](https://github.com/spatie/laravel-permission) with **teams** (`organization_id`). Each organization has isolated roles and permission assignments.
 
-| Role | Typical access |
-|------|----------------|
-| Org Owner | Full access |
-| Manager | Manage catalog, orders, reports |
-| Warehouse Staff | Stock, receipts, fulfillments |
-| Sales Staff | Customers, sales orders |
+### Schema
+
+| Table | Purpose |
+|-------|---------|
+| `roles` | Per-org roles (`organization_id`, `description`, `is_protected`, `is_system`) |
+| `permissions` | Global permission catalog (guard: `api`) |
+| `role_has_permissions` | Role ↔ permission pivot |
+| `model_has_roles` | User ↔ role pivot (scoped by `organization_id`) |
+| `model_has_permissions` | Direct user permissions (rare; team-scoped) |
+
+### Permission catalog
+
+Single source of truth: `app/Permission/PermissionCatalog.php` — permissions grouped by module (Inventory, Orders, Customers, Suppliers, Payments, Reports, Settings).
+
+### Default roles (seeded per organization)
+
+| Role | Notes |
+|------|-------|
+| **System Owner** | Protected (`is_protected=true`); always has full access; cannot be edited or deleted |
+| **Org Owner** | Shop owner; **configurable** permissions (not hard-coded super-admin) |
+| Admin | Full operational access by default; customizable |
+| Manager | Day-to-day inventory and orders |
+| Warehouse Staff | Receipts and fulfillments |
+| Sales Staff | Customers and sales orders |
 | Viewer | Read-only |
 
-**Key file:** `database/seeders/RolesAndPermissionsSeeder.php`
+Registration assigns **Org Owner** to the registering user. **System Owner** is seeded but not auto-assigned.
+
+### Authorization layers
+
+| Layer | Implementation |
+|-------|------------------|
+| API | Spatie `permission` middleware + resource **policies**; `Gate::before` bypass for System Owner |
+| Web session | `PermissionAuthorizationService` resolves permissions (30-min cache); stored in session as `permissions[]` |
+| Livewire pages | `EnsuresPermission` trait — aborts 403 on direct URL access |
+| Blade UI | `@canaccess('permission.name')` directive via `OrganizationSession::can()` |
+
+### Role management
+
+- **API:** `GET/POST/PATCH/DELETE /api/v1/roles`, `GET /api/v1/roles/permissions`
+- **Service:** `app/Services/RoleManagementService.php` — CRUD, safety checks (protected roles, users assigned)
+- **Web UI:** `/settings/roles` (requires `settings.manage_roles`)
+- **Migrate existing orgs:** `php artisan rbac:migrate-organizations`
+
+**Key files:** `app/Permission/PermissionCatalog.php`, `database/seeders/RolesAndPermissionsSeeder.php`, `app/Services/PermissionAuthorizationService.php`, `app/Services/RoleManagementService.php`, `app/Policies/RolePolicy.php`, `app/Support/OrganizationSession.php`
+
+See **[RBAC-PERMISSIONS.md](./RBAC-PERMISSIONS.md)** for how the permission list is generated and how to add new permissions.
 
 ---
 
@@ -551,6 +591,7 @@ Seeded roles (per organization via Spatie teams):
 | API bridge | `app/Services/Web/ApiClient.php` |
 | Auth | `app/Services/AuthService.php`, `app/Http/Controllers/Web/AuthController.php` |
 | Tenant middleware | `app/Http/Middleware/ResolveTenant.php` |
+| RBAC | `app/Permission/PermissionCatalog.php`, `app/Services/PermissionAuthorizationService.php`, `app/Services/RoleManagementService.php` |
 | Stock core | `app/Services/StockService.php`, `app/Observers/StockMovementObserver.php` |
 | Purchase orders | `app/Services/PurchaseOrderService.php`, `app/Services/GoodsReceiptService.php` |
 | Sales orders | `app/Services/SalesOrderService.php`, `app/Services/SalesOrderFulfillmentService.php` |
@@ -573,8 +614,9 @@ The Livewire frontend consumes the REST API through `ApiClient` (internal sub-re
 | Auth logout | Yes — `POST /api/v1/auth/logout` + web session clear |
 | Auth me | Covered via session user data at login |
 | Organization switch | Yes — `POST /organization/switch` updates session `organization_id` |
-| Organization settings | Yes — `/settings/organization` (Org Owner only) + `GET/PATCH /api/v1/organization` |
-| Team members (`/api/v1/users`) | Yes — `/settings/team` Livewire page (invite, role update, remove) |
+| Organization settings | Yes — `/settings/organization` (`settings.update`) + `GET/PATCH /api/v1/organization` |
+| Team members (`/api/v1/users`) | Yes — `/settings/team` (`settings.manage_users`) |
+| Roles & permissions | Yes — `/settings/roles` (`settings.manage_roles`) + `GET/POST/PATCH/DELETE /api/v1/roles` |
 | Products, categories, units, warehouses, suppliers, customers | Full CRUD |
 | Purchase orders | Full lifecycle + detail page at `/purchase-orders/{id}` |
 | Sales orders | Full lifecycle + detail page at `/sales-orders/{id}` |
@@ -582,7 +624,8 @@ The Livewire frontend consumes the REST API through `ApiClient` (internal sub-re
 | Stock movements | Index + create |
 | Payments | Index + detail page at `/payments/{id}` |
 | Reports | All report endpoints + dashboard aggregates + CSV export queue |
-| Platform admin API | `/api/platform/v1/*` — separate `platform` guard (not wired to web UI) |
+| Platform admin API | `/api/platform/v1/*` — separate `platform` guard |
+| Platform admin portal | **`/platform/*`** — Livewire UI for cross-tenant org management |
 | `POST products/authorization-probe` | API/test only — not used in web UI |
 
 **Idempotency:** `ApiClient` automatically sends `Idempotency-Key` for `POST /v1/purchase-orders` and `POST /v1/sales-orders`.

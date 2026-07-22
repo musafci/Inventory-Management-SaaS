@@ -15,9 +15,11 @@ use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Unit;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Observers\StockMovementObserver;
+use App\Permission\PermissionCatalog;
 use App\Policies\OrganizationMemberPolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\CustomerPolicy;
@@ -37,6 +39,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -78,8 +81,23 @@ class AppServiceProvider extends ServiceProvider
                 ->by("org:{$organizationId}:user:{$userId}");
         });
 
+        Gate::before(function (User $user, string $ability): ?bool {
+            if (! app()->bound('currentOrganization')) {
+                return null;
+            }
+
+            setPermissionsTeamId(app('currentOrganization')->id);
+
+            if ($user->hasRole(PermissionCatalog::SYSTEM_OWNER_ROLE)) {
+                return true;
+            }
+
+            return null;
+        });
+
         Gate::policy(User::class, OrganizationMemberPolicy::class);
         Gate::policy(Organization::class, OrganizationPolicy::class);
+        Gate::policy(Role::class, \App\Policies\RolePolicy::class);
         Gate::policy(Warehouse::class, WarehousePolicy::class);
         Gate::policy(Category::class, CategoryPolicy::class);
         Gate::policy(Unit::class, UnitPolicy::class);
@@ -89,15 +107,26 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Customer::class, CustomerPolicy::class);
         Gate::policy(SalesOrder::class, SalesOrderPolicy::class);
         Gate::policy(Payment::class, PaymentPolicy::class);
-        Gate::define('viewReports', function (\App\Models\User $user): bool {
-            return $user->can('reports.view');
-        });
+        Gate::define('viewAnyDashboard', fn (User $user): bool => $user->can('reports.view_inventory')
+            || $user->can('reports.view_sales')
+            || $user->can('reports.view_purchases')
+            || $user->can('inventory.view'));
+
+        Gate::define('viewInventoryReports', fn (User $user): bool => $user->can('reports.view_inventory'));
+
+        Gate::define('viewSalesReports', fn (User $user): bool => $user->can('reports.view_sales'));
+
+        Gate::define('viewPurchaseReports', fn (User $user): bool => $user->can('reports.view_purchases'));
+
+        Gate::define('exportReports', fn (User $user): bool => $user->can('reports.export'));
         Gate::policy(Stock::class, StockPolicy::class);
         Gate::policy(StockMovement::class, StockMovementPolicy::class);
 
         StockMovement::observe(StockMovementObserver::class);
 
         Event::listen(StockLevelChanged::class, CheckLowStock::class);
+
+        Blade::if('canaccess', fn (string $permission): bool => \App\Support\OrganizationSession::can($permission));
 
         Response::macro('api', function (mixed $data = null, array $meta = [], int $status = HttpResponse::HTTP_OK) {
             $payload = ['data' => $data];

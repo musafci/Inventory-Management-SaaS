@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'web.auth' => WebAuth::class,
+            'platform.web.auth' => \App\Http\Middleware\PlatformWebAuth::class,
         ]);
 
         $middleware->prependToPriorityList(SubstituteBindings::class, ResolveTenant::class);

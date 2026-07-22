@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Http\Livewire\Concerns\EnsuresPermission;
 use App\Http\Livewire\Concerns\MapsFormValidationAttributes;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
@@ -10,6 +11,7 @@ use App\Services\Web\ApiClient;
 #[Layout('layouts.app')]
 class Suppliers extends Component
 {
+    use EnsuresPermission;
     use MapsFormValidationAttributes;
 
     public $items = [];
@@ -34,6 +36,8 @@ class Suppliers extends Component
 
     public function mount()
     {
+        $this->ensurePermission('suppliers.view');
+
         $this->loadItems();
 
         if (request()->routeIs('suppliers.create')) {

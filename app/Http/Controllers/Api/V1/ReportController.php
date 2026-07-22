@@ -14,14 +14,14 @@ class ReportController extends ApiController
 
     public function dashboard(): JsonResponse
     {
-        $this->authorize('viewReports');
+        $this->authorize('viewAnyDashboard');
 
         return $this->success($this->reportService->dashboard());
     }
 
     public function stockValuation(Request $request): JsonResponse
     {
-        $this->authorize('viewReports');
+        $this->authorize('viewInventoryReports');
 
         $warehouseId = $request->filled('warehouse_id')
             ? $request->integer('warehouse_id')
@@ -32,14 +32,14 @@ class ReportController extends ApiController
 
     public function lowStock(): JsonResponse
     {
-        $this->authorize('viewReports');
+        $this->authorize('viewInventoryReports');
 
         return $this->success($this->reportService->lowStock());
     }
 
     public function salesSummary(Request $request): JsonResponse
     {
-        $this->authorize('viewReports');
+        $this->authorize('viewSalesReports');
 
         [$orderFrom, $orderTo, $paymentFrom, $paymentTo] = $this->resolveSummaryDateFilters($request);
 
@@ -53,7 +53,7 @@ class ReportController extends ApiController
 
     public function purchaseSummary(Request $request): JsonResponse
     {
-        $this->authorize('viewReports');
+        $this->authorize('viewPurchaseReports');
 
         [$orderFrom, $orderTo, $paymentFrom, $paymentTo] = $this->resolveSummaryDateFilters($request);
 
@@ -66,11 +66,6 @@ class ReportController extends ApiController
     }
 
     /**
-     * Order metrics filter on order_date; payment metrics filter on paid_at.
-     *
-     * Legacy `from`/`to` apply to order_date only. Use payment_from/payment_to
-     * (or payment_from/payment_to aliases) for cash-basis payment totals.
-     *
      * @return array{0: ?string, 1: ?string, 2: ?string, 3: ?string}
      */
     protected function resolveSummaryDateFilters(Request $request): array

@@ -84,7 +84,13 @@ class ApiClient
                 $this->webSession->clearAuthSession();
             }
 
-            return ['error' => $message, 'status' => $response->getStatusCode()];
+            $result = ['error' => $message, 'status' => $response->getStatusCode()];
+
+            if (! empty($body['errors']) && is_array($body['errors'])) {
+                $result['errors'] = $body['errors'];
+            }
+
+            return $result;
         }
 
         return $body;

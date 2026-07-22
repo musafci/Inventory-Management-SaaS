@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\Web\AuthController;
+use App\Http\Controllers\Web\PlatformAuthController;
+use App\Http\Livewire\Platform\Dashboard as PlatformDashboard;
+use App\Http\Livewire\Platform\OrganizationShow as PlatformOrganizationShow;
+use App\Http\Livewire\Platform\Organizations as PlatformOrganizations;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 
@@ -80,6 +84,10 @@ Route::middleware('web.auth')->group(function (): void {
             return redirect()->route('settings.organization');
         }
 
+        if (\App\Support\OrganizationSession::canManageRoles()) {
+            return redirect()->route('settings.roles');
+        }
+
         if (\App\Support\OrganizationSession::canManageUsers()) {
             return redirect()->route('settings.team');
         }
@@ -89,5 +97,20 @@ Route::middleware('web.auth')->group(function (): void {
 
     Route::get('/settings/organization', \App\Http\Livewire\OrganizationSettings::class)->name('settings.organization');
     Route::get('/settings/team', \App\Http\Livewire\Users::class)->name('settings.team');
+    Route::get('/settings/roles', \App\Http\Livewire\Roles::class)->name('settings.roles');
     Route::redirect('/users', '/settings/team');
+});
+
+// Platform super-admin portal (separate session from tenant app)
+Route::prefix('platform')->group(function (): void {
+    Route::get('/login', [PlatformAuthController::class, 'showLogin'])->name('platform.login');
+    Route::post('/login', [PlatformAuthController::class, 'login'])->name('platform.login.submit');
+
+    Route::middleware('platform.web.auth')->group(function (): void {
+        Route::post('/logout', [PlatformAuthController::class, 'logout'])->name('platform.logout');
+        Route::redirect('/', '/platform/dashboard');
+        Route::get('/dashboard', PlatformDashboard::class)->name('platform.dashboard');
+        Route::get('/organizations', PlatformOrganizations::class)->name('platform.organizations.index');
+        Route::get('/organizations/{id}', PlatformOrganizationShow::class)->name('platform.organizations.show');
+    });
 });

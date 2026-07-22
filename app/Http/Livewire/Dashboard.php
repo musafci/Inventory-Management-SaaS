@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Http\Livewire\Concerns\EnsuresPermission;
 use App\Services\Web\ApiClient;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
@@ -9,12 +10,23 @@ use Livewire\Attributes\Layout;
 #[Layout('layouts.app')]
 class Dashboard extends Component
 {
+    use EnsuresPermission;
+
     public $stats = [];
     public $recentOrders = [];
     public $lowStockItems = [];
 
     public function mount(ApiClient $api)
     {
+        $this->ensureAnyPermission([
+            'inventory.view',
+            'reports.view_inventory',
+            'reports.view_sales',
+            'reports.view_purchases',
+            'orders.purchase.view',
+            'orders.sales.view',
+        ]);
+
         $this->loadData($api);
     }
 

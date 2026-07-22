@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\OrganizationController;
 use App\Http\Controllers\Api\V1\OrganizationMemberController;
 use App\Http\Controllers\Api\V1\ReportExportController;
+use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\ProductAuthorizationProbeController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\StockController;
@@ -49,6 +50,11 @@ Route::prefix('v1')->group(function (): void {
         Route::get('payments', [PaymentController::class, 'index']);
         Route::get('payments/{paymentId}', [PaymentController::class, 'show']);
 
+        Route::get('roles/permissions', [RoleController::class, 'permissions']);
+        Route::apiResource('roles', RoleController::class)
+            ->parameters(['roles' => 'roleId'])
+            ->except(['show']);
+
         Route::get('organization', [OrganizationController::class, 'show']);
         Route::patch('organization', [OrganizationController::class, 'update']);
 
@@ -73,7 +79,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('sales-orders/{salesOrderId}/refund', [SalesOrderController::class, 'refund']);
 
         Route::post('products/authorization-probe', [ProductAuthorizationProbeController::class, 'store'])
-            ->middleware('permission:products.create,api');
+            ->middleware('permission:inventory.create,api');
 
         Route::apiResource('products', ProductController::class)
             ->parameters(['products' => 'productId']);

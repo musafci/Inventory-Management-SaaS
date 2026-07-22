@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Http\Livewire\Concerns\EnsuresPermission;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use App\Services\Web\ApiClient;
@@ -9,6 +10,8 @@ use App\Services\Web\ApiClient;
 #[Layout('layouts.app')]
 class Reports extends Component
 {
+    use EnsuresPermission;
+
     public $activeTab = 'stock-valuation';
 
     public $stockValuation = [];
@@ -22,7 +25,38 @@ class Reports extends Component
 
     public function mount()
     {
-        $this->loadStockValuation();
+        $routeName = request()->route()?->getName();
+
+        $permission = match ($routeName) {
+            'reports.sales-summary' => 'reports.view_sales',
+            'reports.purchase-summary' => 'reports.view_purchases',
+            'reports.stock-valuation', 'reports.low-stock' => 'reports.view_inventory',
+            default => null,
+        };
+
+        if ($permission !== null) {
+            $this->ensurePermission($permission);
+        } else {
+            $this->ensureAnyPermission([
+                'reports.view_sales',
+                'reports.view_inventory',
+                'reports.view_purchases',
+            ]);
+        }
+
+        $this->activeTab = match ($routeName) {
+            'reports.low-stock' => 'low-stock',
+            'reports.sales-summary' => 'sales-summary',
+            'reports.purchase-summary' => 'purchase-summary',
+            default => 'stock-valuation',
+        };
+
+        match ($this->activeTab) {
+            'low-stock' => $this->loadLowStock(),
+            'sales-summary' => $this->loadSalesSummary(),
+            'purchase-summary' => $this->loadPurchaseSummary(),
+            default => $this->loadStockValuation(),
+        };
     }
 
     public function switchTab($tab)

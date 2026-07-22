@@ -2,6 +2,7 @@
 
 namespace App\Http\Livewire;
 
+use App\Http\Livewire\Concerns\EnsuresPermission;
 use App\Http\Livewire\Concerns\MapsFormValidationAttributes;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
@@ -10,6 +11,7 @@ use App\Services\Web\ApiClient;
 #[Layout('layouts.app')]
 class Categories extends Component
 {
+    use EnsuresPermission;
     use MapsFormValidationAttributes;
 
     public $items = [];
@@ -32,6 +34,8 @@ class Categories extends Component
 
     public function mount()
     {
+        $this->ensurePermission('inventory.view');
+
         $this->loadItems();
 
         if (request()->routeIs('categories.create')) {

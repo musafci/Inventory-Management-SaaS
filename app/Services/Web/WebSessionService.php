@@ -4,6 +4,8 @@ namespace App\Services\Web;
 
 use App\Http\Resources\OrganizationResource;
 use App\Models\Organization;
+use App\Models\User;
+use App\Services\PermissionAuthorizationService;
 use App\Services\AuthService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Session;
@@ -12,6 +14,7 @@ class WebSessionService
 {
     public function __construct(
         protected AuthService $authService,
+        protected PermissionAuthorizationService $permissionAuthorization,
     ) {}
 
     /**
@@ -29,6 +32,7 @@ class WebSessionService
             'auth_token' => $token['access_token'] ?? '',
             'refresh_token' => $token['refresh_token'] ?? Session::get('refresh_token'),
             'token_expires_at' => now()->addSeconds($expiresIn)->toIso8601String(),
+            'user_id' => $user['id'] ?? Session::get('user_id'),
             'user_name' => $user['name'] ?? Session::get('user_name', ''),
             'user_email' => $user['email'] ?? Session::get('user_email', ''),
             'organizations' => $this->normalizeOrganizations($organizations),
@@ -93,8 +97,34 @@ class WebSessionService
         }
 
         Session::put('organization_id', $organizationId);
+        $this->syncPermissionsForActiveOrganization();
 
         return true;
+    }
+
+    public function syncPermissionsForActiveOrganization(): void
+    {
+        $userId = (int) Session::get('user_id', 0);
+        $organizationId = (int) Session::get('organization_id', 0);
+
+        if ($userId === 0 || $organizationId === 0) {
+            Session::forget('permissions');
+
+            return;
+        }
+
+        $user = User::query()->find($userId);
+
+        if ($user === null) {
+            Session::forget('permissions');
+
+            return;
+        }
+
+        Session::put(
+            'permissions',
+            $this->permissionAuthorization->permissionsForUser($user, $organizationId),
+        );
     }
 
     /**
@@ -167,9 +197,11 @@ class WebSessionService
             'refresh_token',
             'token_expires_at',
             'organization_id',
+            'user_id',
             'user_name',
             'user_email',
             'organizations',
+            'permissions',
         ]);
     }
 }

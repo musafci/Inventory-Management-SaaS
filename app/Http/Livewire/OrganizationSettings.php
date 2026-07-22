@@ -3,6 +3,7 @@
 namespace App\Http\Livewire;
 
 use App\Http\Livewire\Concerns\InteractsWithOrganizationSession;
+use App\Http\Livewire\Concerns\EnsuresPermission;
 use App\Http\Livewire\Concerns\MapsFormValidationAttributes;
 use App\Services\Web\ApiClient;
 use App\Services\Web\WebSessionService;
@@ -12,6 +13,7 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class OrganizationSettings extends Component
 {
+    use EnsuresPermission;
     use InteractsWithOrganizationSession;
     use MapsFormValidationAttributes;
 
@@ -25,10 +27,7 @@ class OrganizationSettings extends Component
 
     public function mount(): void
     {
-        if (! $this->canManageOrganization()) {
-            abort(403, 'Only the organization owner can access organization settings.');
-        }
-
+        $this->ensurePermission('settings.update');
         $this->loadOrganization();
     }
 
