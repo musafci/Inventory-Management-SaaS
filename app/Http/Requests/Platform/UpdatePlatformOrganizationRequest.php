@@ -20,7 +20,6 @@ class UpdatePlatformOrganizationRequest extends FormRequest
     {
         return [
             'status' => ['sometimes', 'string', Rule::enum(OrganizationStatus::class)],
-            'plan' => ['sometimes', 'string', 'max:50'],
         ];
     }
 }

@@ -15,7 +15,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 @include('components.platform-status-badge', ['status' => $organization['status'] ?? 'trial'])
-                <span class="badge badge-info">{{ ucfirst($organization['plan'] ?? 'trial') }} plan</span>
+                <span class="badge badge-info">{{ ucfirst($organization['subscription']['plan']['name'] ?? $organization['plan'] ?? 'trial') }} plan</span>
             </div>
         </div>
     </div>
@@ -25,7 +25,7 @@
             <div class="mb-6 flex items-start justify-between gap-4">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-900">Tenant controls</h3>
-                    <p class="mt-1 text-sm text-slate-500">Update subscription plan and platform access status.</p>
+                    <p class="mt-1 text-sm text-slate-500">Update platform access status. Plan changes are managed in the Subscription section below.</p>
                 </div>
             </div>
 
@@ -60,12 +60,6 @@
                         <option value="suspended">Suspended</option>
                     </select>
                     @error('form.status') <p class="form-error">{{ $message }}</p> @enderror
-                </div>
-
-                <div>
-                    <label class="form-label">Plan</label>
-                    <input type="text" wire:model="form.plan" class="form-input" placeholder="trial, starter, pro, enterprise...">
-                    @error('form.plan') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="flex justify-end gap-3 pt-2">

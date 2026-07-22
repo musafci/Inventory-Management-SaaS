@@ -19,7 +19,6 @@ class OrganizationShow extends Component
 
     public $form = [
         'status' => '',
-        'plan' => '',
     ];
 
     public $subscriptionForm = [
@@ -70,7 +69,6 @@ class OrganizationShow extends Component
         $this->organization = $response['data'] ?? [];
         $this->form = [
             'status' => $this->organization['status'] ?? 'trial',
-            'plan' => $this->organization['plan'] ?? 'trial',
         ];
 
         $subscription = $this->organization['subscription'] ?? null;
@@ -104,7 +102,6 @@ class OrganizationShow extends Component
     {
         $this->validate([
             'form.status' => 'required|in:trial,active,suspended',
-            'form.plan' => 'required|string|max:50',
         ]);
 
         $api = new PlatformApiClient();

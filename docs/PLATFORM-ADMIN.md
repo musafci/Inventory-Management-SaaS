@@ -194,6 +194,15 @@ When `organizations.status = suspended`:
 | API | `ResolveTenant` returns **403** — *"This organization has been suspended."* |
 | Web | `WebAuth` clears session and redirects to `/login` with error |
 
+### Subscription status & trial expiry
+
+| Condition | Behavior |
+|-----------|----------|
+| `subscription.status = cancelled` | **403** on all tenant API + web access |
+| `subscription.status = past_due` | **403** — payment/trial ended message |
+| Trial `trial_ends_at` in the past | Auto-marked `past_due`, then blocked |
+| Missing subscription row | **403** — run `platform:subscriptions:backfill` for legacy orgs |
+
 ### Plan limits
 
 `PlanLimitService` throws `PlanLimitExceededException` → **422** JSON response before the write proceeds.
@@ -236,6 +245,9 @@ php artisan db:seed --class=PlanSeeder
 
 # Create platform admin
 php artisan platform:admin:create platform@demo.test "Platform Admin" --password=password123
+
+# Legacy orgs created before subscriptions existed
+php artisan platform:subscriptions:backfill
 
 # Full bootstrap (includes PlanSeeder via DatabaseSeeder)
 php artisan app:setup --write-env

@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\SalesOrder;
+use App\Models\Plan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
@@ -12,11 +12,31 @@ beforeEach(function (): void {
     Cache::flush();
     RateLimiter::clear('api-tenant');
     config(['api.rate_limit_per_minute' => 3]);
+
+    $trial = Plan::query()->where('slug', 'trial')->firstOrFail();
+    $limits = $trial->limits;
+    $limits['api_rate_limit'] = 3;
+    $trial->forceFill(['limits' => $limits])->save();
 });
 
 test('tenant api rate limit is keyed per organization not ip', function () {
-    $orgA = $this->registerOrganizationWithOwner(['email' => 'rate-a@acme.test']);
-    $orgB = $this->registerOrganizationWithOwner(['email' => 'rate-b@acme.test']);
+    $registerA = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'rate-a@acme.test',
+    ]))->assertCreated();
+
+    $registerB = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'rate-b@acme.test',
+    ]))->assertCreated();
+
+    $orgA = [
+        'organization_id' => (int) $registerA->json('data.organizations.0.id'),
+        'token' => $registerA->json('data.token.access_token'),
+    ];
+
+    $orgB = [
+        'organization_id' => (int) $registerB->json('data.organizations.0.id'),
+        'token' => $registerB->json('data.token.access_token'),
+    ];
 
     foreach (range(1, 3) as $attempt) {
         $this->getJson(

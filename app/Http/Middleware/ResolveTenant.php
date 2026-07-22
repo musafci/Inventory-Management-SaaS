@@ -3,13 +3,19 @@
 namespace App\Http\Middleware;
 
 use App\Enums\OrganizationStatus;
+use App\Exceptions\SubscriptionAccessDeniedException;
 use App\Models\Organization;
+use App\Services\OrganizationSubscriptionService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class ResolveTenant
 {
+    public function __construct(
+        protected OrganizationSubscriptionService $subscriptionService,
+    ) {}
+
     /**
      * Resolve the active organization from the X-Organization-Id header.
      */
@@ -54,6 +60,14 @@ class ResolveTenant
         if ($organization->status === OrganizationStatus::Suspended) {
             return response()->json([
                 'message' => 'This organization has been suspended.',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        try {
+            $this->subscriptionService->assertAllowsTenantAccess($organization);
+        } catch (SubscriptionAccessDeniedException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
             ], Response::HTTP_FORBIDDEN);
         }
 

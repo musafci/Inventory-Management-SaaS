@@ -160,3 +160,83 @@ test('platform admin can create another platform admin', function () {
     ])->assertCreated()
         ->assertJsonPath('data.email', 'second-admin@acme.test');
 });
+
+test('cancelled subscription blocks tenant api access', function () {
+    $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'cancelled-sub@acme.test',
+    ]))->assertCreated();
+
+    $organizationId = (int) $register->json('data.organizations.0.id');
+    $token = $register->json('data.token.access_token');
+    $headers = $this->organizationHeaders($token, $organizationId);
+
+    PlatformAdmin::factory()->create(['email' => 'cancel-admin@acme.test', 'password' => 'password123']);
+    Passport::actingAs(
+        PlatformAdmin::query()->where('email', 'cancel-admin@acme.test')->first(),
+        [],
+        'platform',
+    );
+
+    $this->patchJson("/api/platform/v1/organizations/{$organizationId}/subscription", [
+        'plan_id' => Plan::query()->where('slug', 'trial')->value('id'),
+        'status' => 'cancelled',
+    ])->assertOk();
+
+    $this->getJson('/api/v1/products', $headers)
+        ->assertForbidden()
+        ->assertJsonPath('message', 'This organization subscription has been cancelled.');
+});
+
+test('expired trial blocks tenant api and marks subscription past due', function () {
+    $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'expired-trial@acme.test',
+    ]))->assertCreated();
+
+    $organizationId = (int) $register->json('data.organizations.0.id');
+    $token = $register->json('data.token.access_token');
+    $headers = $this->organizationHeaders($token, $organizationId);
+
+    $organization = Organization::query()->findOrFail($organizationId);
+    $subscription = $organization->subscription;
+    $subscription->forceFill([
+        'trial_ends_at' => now()->subDay(),
+        'current_period_ends_at' => now()->subDay(),
+    ])->save();
+
+    $this->getJson('/api/v1/products', $headers)
+        ->assertForbidden()
+        ->assertJsonPath('message', 'Your trial or subscription period has ended. Please upgrade to continue.');
+
+    expect($subscription->fresh()->status->value)->toBe('past_due');
+});
+
+test('starter plan allows two warehouses then blocks the third', function () {
+    $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'starter-plan@acme.test',
+    ]))->assertCreated();
+
+    $organizationId = (int) $register->json('data.organizations.0.id');
+    $token = $register->json('data.token.access_token');
+    $headers = $this->organizationHeaders($token, $organizationId);
+
+    PlatformAdmin::factory()->create(['email' => 'starter-admin@acme.test', 'password' => 'password123']);
+    Passport::actingAs(
+        PlatformAdmin::query()->where('email', 'starter-admin@acme.test')->first(),
+        [],
+        'platform',
+    );
+
+    $starterPlan = Plan::query()->where('slug', 'starter')->firstOrFail();
+
+    $this->patchJson("/api/platform/v1/organizations/{$organizationId}/subscription", [
+        'plan_id' => $starterPlan->id,
+        'status' => 'active',
+    ])->assertOk();
+
+    $this->postJson('/api/v1/warehouses', ['name' => 'WH 1', 'address' => 'A'], $headers)->assertCreated();
+    $this->postJson('/api/v1/warehouses', ['name' => 'WH 2', 'address' => 'B'], $headers)->assertCreated();
+
+    $this->postJson('/api/v1/warehouses', ['name' => 'WH 3', 'address' => 'C'], $headers)
+        ->assertStatus(422)
+        ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'Plan limit reached'));
+});

@@ -3,6 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Enums\OrganizationStatus;
+use App\Exceptions\SubscriptionAccessDeniedException;
+use App\Models\Organization;
+use App\Services\OrganizationSubscriptionService;
 use App\Services\Web\WebSessionService;
 use Closure;
 use Illuminate\Http\Request;
@@ -12,6 +15,7 @@ class WebAuth
 {
     public function __construct(
         protected WebSessionService $webSession,
+        protected OrganizationSubscriptionService $subscriptionService,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -30,15 +34,26 @@ class WebAuth
         $organizationId = (int) session('organization_id', 0);
 
         if ($organizationId > 0) {
-            $activeOrganization = collect(session('organizations', []))
-                ->first(fn (array $org): bool => (int) ($org['id'] ?? 0) === $organizationId);
+            $organization = Organization::query()->find($organizationId);
 
-            if (($activeOrganization['status'] ?? null) === OrganizationStatus::Suspended->value) {
+            if ($organization !== null && $organization->status === OrganizationStatus::Suspended) {
                 $this->webSession->clearAuthSession();
 
                 return redirect('/login')->withErrors([
                     'email' => 'This organization has been suspended.',
                 ]);
+            }
+
+            if ($organization !== null) {
+                try {
+                    $this->subscriptionService->assertAllowsTenantAccess($organization);
+                } catch (SubscriptionAccessDeniedException $exception) {
+                    $this->webSession->clearAuthSession();
+
+                    return redirect('/login')->withErrors([
+                        'email' => $exception->getMessage(),
+                    ]);
+                }
             }
         }
 

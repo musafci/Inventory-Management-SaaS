@@ -4,6 +4,7 @@ use App\Http\Middleware\ResolveTenant;
 use App\Models\Organization;
 use App\Models\TenantScopeStub;
 use App\Models\User;
+use App\Services\OrganizationSubscriptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 
@@ -34,7 +35,7 @@ test('resolve tenant middleware rejects requests without organization header', f
     $request = Request::create('/api/v1/tenant-scope-probe', 'GET');
     $request->setUserResolver(fn () => $user);
 
-    $response = (new ResolveTenant)->handle(
+    $response = app(ResolveTenant::class)->handle(
         $request,
         fn () => response()->json(['ok' => true]),
     );
@@ -51,7 +52,7 @@ test('resolve tenant middleware rejects users who do not belong to the organizat
     ]);
     $request->setUserResolver(fn () => $user);
 
-    $response = (new ResolveTenant)->handle(
+    $response = app(ResolveTenant::class)->handle(
         $request,
         fn () => response()->json(['ok' => true]),
     );
@@ -61,6 +62,7 @@ test('resolve tenant middleware rejects users who do not belong to the organizat
 
 test('resolve tenant middleware binds organization for members', function () {
     $organization = Organization::factory()->create();
+    app(OrganizationSubscriptionService::class)->assignTrialPlan($organization);
     $user = User::factory()->create();
 
     $user->organizations()->attach($organization->id, ['role' => 'Owner']);
@@ -70,7 +72,7 @@ test('resolve tenant middleware binds organization for members', function () {
     ]);
     $request->setUserResolver(fn () => $user);
 
-    $response = (new ResolveTenant)->handle(
+    $response = app(ResolveTenant::class)->handle(
         $request,
         fn () => response()->json([
             'organization_id' => app('currentOrganization')->id,

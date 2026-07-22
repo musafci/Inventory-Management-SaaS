@@ -54,7 +54,6 @@ test('platform admin can suspend an organization', function () {
 
     $this->patchJson("/api/platform/v1/organizations/{$organizationId}", [
         'status' => 'suspended',
-        'plan' => 'trial',
     ])->assertOk()
         ->assertJsonPath('data.status', 'suspended');
 });

@@ -195,6 +195,9 @@ php artisan db:seed --class=PlanSeeder
 # Sync RBAC for existing organizations
 php artisan rbac:migrate-organizations
 
+# Backfill subscription rows for legacy organizations
+php artisan platform:subscriptions:backfill
+
 # Create platform super-admin
 php artisan platform:admin:create email@example.com "Admin Name" --password=secret
 

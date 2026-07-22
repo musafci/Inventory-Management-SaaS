@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Events\StockLevelChanged;
 use App\Exceptions\PlanLimitExceededException;
+use App\Exceptions\SubscriptionAccessDeniedException;
 use App\Listeners\CheckLowStock;
 use App\Models\Category;
 use App\Models\Customer;
@@ -20,6 +21,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Observers\StockMovementObserver;
+use App\Services\OrganizationSubscriptionService;
 use App\Permission\PermissionCatalog;
 use App\Policies\OrganizationMemberPolicy;
 use App\Policies\CategoryPolicy;
@@ -78,7 +80,18 @@ class AppServiceProvider extends ServiceProvider
             $organizationId = (string) $request->header('X-Organization-Id', 'missing');
             $userId = (string) ($request->user()?->id ?? 'guest');
 
-            return Limit::perMinute(config('api.rate_limit_per_minute', 120))
+            $perMinute = (int) config('api.rate_limit_per_minute', 120);
+
+            if ($organizationId !== 'missing' && ctype_digit($organizationId)) {
+                $organization = Organization::query()->find((int) $organizationId);
+
+                if ($organization !== null) {
+                    $perMinute = app(OrganizationSubscriptionService::class)
+                        ->apiRateLimitPerMinute($organization);
+                }
+            }
+
+            return Limit::perMinute($perMinute)
                 ->by("org:{$organizationId}:user:{$userId}");
         });
 
@@ -149,6 +162,17 @@ class AppServiceProvider extends ServiceProvider
 
     public static function registerApiExceptionRendering(Exceptions $exceptions): void
     {
+        $exceptions->render(function (SubscriptionAccessDeniedException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'errors' => [],
+            ], HttpResponse::HTTP_FORBIDDEN);
+        });
+
         $exceptions->render(function (PlanLimitExceededException $exception, Request $request) {
             if (! $request->is('api/*')) {
                 return null;
