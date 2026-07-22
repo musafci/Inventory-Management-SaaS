@@ -31,5 +31,10 @@ trait InteractsWithPassport
             'Test Platform Personal Access Client',
             'platform_admins',
         );
+
+        app(ClientRepository::class)->createPersonalAccessGrantClient(
+            'Test User Personal Access Client',
+            'users',
+        );
     }
 }

@@ -12,6 +12,7 @@ use App\Models\Supplier;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Services\OrganizationSubscriptionService;
 use App\Services\StockService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -20,6 +21,8 @@ class DemoSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(PlanSeeder::class);
+
         PlatformAdmin::query()->firstOrCreate(
             ['email' => 'platform@demo.test'],
             [
@@ -84,6 +87,8 @@ class DemoSeeder extends Seeder
         setPermissionsTeamId($organization->id);
 
         app(RolesAndPermissionsSeeder::class)->seedRolesForOrganization($organization);
+
+        app(OrganizationSubscriptionService::class)->assignTrialPlan($organization, 30);
 
         $owner = User::query()->firstOrCreate(
             ['email' => $ownerEmail],

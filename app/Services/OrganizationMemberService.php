@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\PlanLimitService;
 use App\Services\RoleManagementService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -14,6 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 class OrganizationMemberService
 {
+    public function __construct(
+        protected PlanLimitService $planLimitService,
+    ) {}
+
     /**
      * @return LengthAwarePaginator<int, User>
      */
@@ -41,6 +46,8 @@ class OrganizationMemberService
         $role = $data['role'];
 
         $this->assertAssignableRole($role);
+
+        $this->planLimitService->assertCanInviteUser($organization);
 
         return DB::transaction(function () use ($data, $organization, $role): array {
             $user = User::query()->where('email', $data['email'])->first();

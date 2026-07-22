@@ -2,6 +2,10 @@
 
 namespace Tests\Concerns;
 
+use App\Enums\SubscriptionStatus;
+use App\Models\Organization;
+use App\Models\Plan;
+use App\Services\OrganizationSubscriptionService;
 use Illuminate\Testing\TestResponse;
 
 trait InteractsWithOrganizations
@@ -14,8 +18,19 @@ trait InteractsWithOrganizations
         $response = $this->postJson('/api/v1/auth/register', \validRegistrationPayload($overrides))
             ->assertCreated();
 
+        $organizationId = (int) $response->json('data.organizations.0.id');
+        $enterprise = Plan::query()->where('slug', 'enterprise')->first();
+
+        if ($enterprise !== null) {
+            app(OrganizationSubscriptionService::class)->updateSubscription(
+                Organization::query()->findOrFail($organizationId),
+                $enterprise,
+                SubscriptionStatus::Active,
+            );
+        }
+
         return [
-            'organization_id' => $response->json('data.organizations.0.id'),
+            'organization_id' => $organizationId,
             'token' => $response->json('data.token.access_token'),
             'response' => $response,
         ];

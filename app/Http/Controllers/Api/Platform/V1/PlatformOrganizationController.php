@@ -13,6 +13,7 @@ class PlatformOrganizationController extends ApiController
     public function index(): JsonResponse
     {
         $organizations = Organization::query()
+            ->with(['subscription.plan'])
             ->withCount('users')
             ->orderBy('name')
             ->paginate(request()->integer('per_page', 15));
@@ -33,6 +34,7 @@ class PlatformOrganizationController extends ApiController
     public function show(int $organizationId): JsonResponse
     {
         $organization = Organization::query()
+            ->with(['subscription.plan', 'users'])
             ->withCount('users')
             ->findOrFail($organizationId);
 

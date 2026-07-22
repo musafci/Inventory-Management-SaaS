@@ -9,6 +9,7 @@ use App\Http\Resources\AuthTokenResource;
 use App\Http\Resources\OrganizationResource;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
+use App\Services\ImpersonationService;
 use Dedoc\Scramble\Attributes\Endpoint;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
@@ -20,6 +21,7 @@ class AuthController extends ApiController
 {
     public function __construct(
         protected AuthService $authService,
+        protected ImpersonationService $impersonationService,
     ) {}
 
     #[Endpoint(operationId: 'auth.register', title: 'Register organization and owner', description: 'Creates a new organization, owner user, and returns Passport OAuth tokens.')]
@@ -207,6 +209,10 @@ class AuthController extends ApiController
         return $this->success([
             'user' => new UserResource($result['user']),
             'organizations' => OrganizationResource::collection($result['organizations']),
+            'impersonation' => $this->impersonationService->activeSessionForUser(
+                $request->user(),
+                $request->bearerToken(),
+            ),
         ]);
     }
 

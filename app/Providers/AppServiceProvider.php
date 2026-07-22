@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Events\StockLevelChanged;
+use App\Exceptions\PlanLimitExceededException;
 use App\Listeners\CheckLowStock;
 use App\Models\Category;
 use App\Models\Customer;
@@ -148,6 +149,17 @@ class AppServiceProvider extends ServiceProvider
 
     public static function registerApiExceptionRendering(Exceptions $exceptions): void
     {
+        $exceptions->render(function (PlanLimitExceededException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'errors' => [],
+            ], HttpResponse::HTTP_UNPROCESSABLE_ENTITY);
+        });
+
         $exceptions->render(function (ValidationException $exception, Request $request) {
             if (! $request->is('api/*')) {
                 return null;

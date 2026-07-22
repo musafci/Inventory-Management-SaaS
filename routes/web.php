@@ -5,6 +5,7 @@ use App\Http\Controllers\Web\PlatformAuthController;
 use App\Http\Livewire\Platform\Dashboard as PlatformDashboard;
 use App\Http\Livewire\Platform\OrganizationShow as PlatformOrganizationShow;
 use App\Http\Livewire\Platform\Organizations as PlatformOrganizations;
+use App\Http\Livewire\Platform\PlatformAdmins as PlatformPlatformAdmins;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 
@@ -112,5 +113,6 @@ Route::prefix('platform')->group(function (): void {
         Route::get('/dashboard', PlatformDashboard::class)->name('platform.dashboard');
         Route::get('/organizations', PlatformOrganizations::class)->name('platform.organizations.index');
         Route::get('/organizations/{id}', PlatformOrganizationShow::class)->name('platform.organizations.show');
+        Route::get('/admins', PlatformPlatformAdmins::class)->name('platform.admins.index');
     });
 });

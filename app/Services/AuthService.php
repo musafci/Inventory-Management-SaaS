@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\OrganizationStatus;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\OrganizationSubscriptionService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
@@ -17,6 +18,10 @@ use RuntimeException;
 
 class AuthService
 {
+    public function __construct(
+        protected OrganizationSubscriptionService $subscriptionService,
+    ) {}
+
     /**
      * Register a new organization and owner user, then issue OAuth tokens.
      *
@@ -50,6 +55,8 @@ class AuthService
             app(RolesAndPermissionsSeeder::class)->seedRolesForOrganization($organization);
 
             $user->assignRole('Org Owner');
+
+            $this->subscriptionService->assignTrialPlan($organization);
 
             return [$user, $organization];
         });

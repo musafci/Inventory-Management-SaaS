@@ -3,6 +3,8 @@
 Multi-tenant inventory, purchasing, and sales platform built with Laravel 13, PostgreSQL, Redis, Laravel Passport, and Livewire.
 
 > **Detailed guide:** See [SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md](./SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md) for the full system architecture, layer breakdown, and end-to-end workflows.
+>
+> **Platform admin:** See [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md) for the super-admin portal, subscriptions, and cross-tenant operations.
 
 ---
 
@@ -13,14 +15,17 @@ flowchart TB
     subgraph Client["Clients"]
         Browser["Browser (Livewire UI)"]
         APIClient["External API clients / mobile / integrations"]
+        PlatformPortal["Platform admin portal /platform"]
     end
 
     subgraph Laravel["Laravel 13 Application"]
         WebRoutes["Web routes<br/>routes/web.php"]
         APIRoutes["API routes<br/>routes/api.php"]
+        PlatformRoutes["Platform routes<br/>routes/platform.php"]
         Livewire["Livewire components<br/>app/Http/Livewire/*"]
-        ApiBridge["ApiClient<br/>internal /api sub-requests"]
+        ApiBridge["ApiClient / PlatformApiClient<br/>internal sub-requests"]
         Controllers["API Controllers<br/>app/Http/Controllers/Api/V1/*"]
+        PlatformCtrl["Platform Controllers<br/>Api/Platform/V1/*"]
         Services["Domain Services<br/>app/Services/*"]
         Models["Eloquent Models<br/>app/Models/*"]
     end
@@ -32,14 +37,19 @@ flowchart TB
     end
 
     Browser --> WebRoutes
+    PlatformPortal --> WebRoutes
     WebRoutes --> Livewire
     Livewire --> ApiBridge
     ApiBridge --> APIRoutes
+    ApiBridge --> PlatformRoutes
 
     APIClient --> APIRoutes
+    PlatformPortal --> PlatformRoutes
 
     APIRoutes --> Controllers
+    PlatformRoutes --> PlatformCtrl
     Controllers --> Services
+    PlatformCtrl --> Services
     Services --> Models
     Models --> PG
 
@@ -103,9 +113,11 @@ sequenceDiagram
 
 - Header required on all tenant API routes: `X-Organization-Id: <id>`
 - Models use `BelongsToOrganization` + `OrganizationScope` — queries without tenant context return **nothing** (fail-closed)
+- **Suspended organizations** are rejected by `ResolveTenant` (403) and blocked on the web portal (`WebAuth`)
+- **Plan limits** enforced on warehouse, product, team member, and order creation via `PlanLimitService`
 - Rate limit: per org + per user (`throttle:api-tenant`)
 
-**Key files:** `app/Http/Middleware/ResolveTenant.php`, `app/Traits/BelongsToOrganization.php`, `app/Models/Scopes/OrganizationScope.php`, `app/Permission/OrganizationTeamResolver.php`
+**Key files:** `app/Http/Middleware/ResolveTenant.php`, `app/Traits/BelongsToOrganization.php`, `app/Models/Scopes/OrganizationScope.php`, `app/Permission/OrganizationTeamResolver.php`, `app/Services/PlanLimitService.php`
 
 ---
 
@@ -579,19 +591,63 @@ Registration assigns **Org Owner** to the registering user. **System Owner** is 
 
 See **[RBAC-PERMISSIONS.md](./RBAC-PERMISSIONS.md)** for how the permission list is generated and how to add new permissions.
 
+> **Note:** Platform operators (`platform_admins`) use a separate Passport guard — not Spatie roles. See **[PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md)**.
+
 ---
 
-## 14. Key files quick reference
+## 14. Platform admin layer
+
+Cross-tenant operations for **platform operators** — separate from tenant RBAC.
+
+| Surface | Path | Guard |
+|---------|------|-------|
+| Platform API | `/api/platform/v1/*` | `auth:platform` |
+| Web portal | `/platform/*` | `platform.web.auth` (session `platform_auth_token`) |
+
+### Capabilities
+
+| Feature | Implementation |
+|---------|------------------|
+| Organization directory | List/search/suspend tenants |
+| Subscriptions | `plans` + `organization_subscriptions` — trial on registration |
+| Plan limits | Max warehouses, users, products, orders/month on tenant writes |
+| Suspension | Blocks all tenant API + web access for suspended orgs |
+| Feature flags | Global flags with per-org overrides |
+| Support notes | Internal operator notes (never on tenant API) |
+| Impersonation | Short-lived tenant token + append-only audit log |
+| Platform admin CRUD | No public registration; `platform:admin:create` or `/platform/admins` |
+
+### Web portal pages
+
+| URL | Purpose |
+|-----|---------|
+| `/platform/login` | Sign in |
+| `/platform/dashboard` | Metrics overview |
+| `/platform/organizations` | Tenant directory |
+| `/platform/organizations/{id}` | Status, subscription, flags, notes, impersonation |
+| `/platform/admins` | Manage platform admin accounts |
+
+**Key files:** `routes/platform.php`, `app/Http/Livewire/Platform/*`, `app/Services/Web/PlatformApiClient.php`, `app/Services/OrganizationSubscriptionService.php`, `app/Services/ImpersonationService.php`
+
+See **[PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md)** for the full API reference and schema.
+
+---
+
+## 15. Key files quick reference
 
 | Area | Path |
 |------|------|
 | Web routes | `routes/web.php` |
 | API routes | `routes/api.php` |
+| Platform routes | `routes/platform.php` |
 | Livewire UI | `app/Http/Livewire/*` |
-| API bridge | `app/Services/Web/ApiClient.php` |
+| API bridge | `app/Services/Web/ApiClient.php`, `app/Services/Web/PlatformApiClient.php` |
 | Auth | `app/Services/AuthService.php`, `app/Http/Controllers/Web/AuthController.php` |
-| Tenant middleware | `app/Http/Middleware/ResolveTenant.php` |
+| Platform auth | `app/Http/Controllers/Web/PlatformAuthController.php`, `app/Services/Web/PlatformSessionService.php` |
+| Tenant middleware | `app/Http/Middleware/ResolveTenant.php`, `app/Http/Middleware/WebAuth.php` |
 | RBAC | `app/Permission/PermissionCatalog.php`, `app/Services/PermissionAuthorizationService.php`, `app/Services/RoleManagementService.php` |
+| Subscriptions & limits | `app/Services/OrganizationSubscriptionService.php`, `app/Services/PlanLimitService.php` |
+| Platform services | `app/Services/ImpersonationService.php`, `app/Services/FeatureFlagService.php`, `app/Services/SupportNoteService.php` |
 | Stock core | `app/Services/StockService.php`, `app/Observers/StockMovementObserver.php` |
 | Purchase orders | `app/Services/PurchaseOrderService.php`, `app/Services/GoodsReceiptService.php` |
 | Sales orders | `app/Services/SalesOrderService.php`, `app/Services/SalesOrderFulfillmentService.php` |
@@ -603,7 +659,7 @@ See **[RBAC-PERMISSIONS.md](./RBAC-PERMISSIONS.md)** for how the permission list
 
 ---
 
-## 15. Web UI ↔ API coverage
+## 16. Web UI ↔ API coverage
 
 The Livewire frontend consumes the REST API through `ApiClient` (internal sub-requests with Bearer token + `X-Organization-Id`).
 
@@ -624,8 +680,8 @@ The Livewire frontend consumes the REST API through `ApiClient` (internal sub-re
 | Stock movements | Index + create |
 | Payments | Index + detail page at `/payments/{id}` |
 | Reports | All report endpoints + dashboard aggregates + CSV export queue |
-| Platform admin API | `/api/platform/v1/*` — separate `platform` guard |
-| Platform admin portal | **`/platform/*`** — Livewire UI for cross-tenant org management |
+| Platform admin API | `/api/platform/v1/*` — plans, subscriptions, flags, notes, impersonation, admin CRUD |
+| Platform admin portal | **`/platform/*`** — dashboard, org directory, org detail, platform admins |
 | `POST products/authorization-probe` | API/test only — not used in web UI |
 
 **Idempotency:** `ApiClient` automatically sends `Idempotency-Key` for `POST /v1/purchase-orders` and `POST /v1/sales-orders`.
@@ -634,4 +690,4 @@ The Livewire frontend consumes the REST API through `ApiClient` (internal sub-re
 
 ## Summary
 
-InvenTrack is a **multi-tenant Laravel SaaS** where the **Livewire web UI** calls the same **Passport-protected REST API** that external clients use. All data is scoped per **Organization**, and **stock is always changed through a movement ledger** that drives reservations, purchase receipts, sales fulfillments, and low-stock notifications.
+Oneapp is a **multi-tenant Laravel SaaS** where the **Livewire web UI** calls the same **Passport-protected REST API** that external clients use. All data is scoped per **Organization**, and **stock is always changed through a movement ledger** that drives reservations, purchase receipts, sales fulfillments, and low-stock notifications. A **platform admin layer** (`/platform/*`, `/api/platform/v1`) manages subscriptions, enforcement, and cross-tenant operations separately from tenant RBAC.

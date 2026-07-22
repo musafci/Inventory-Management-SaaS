@@ -1,6 +1,8 @@
 # RBAC Permissions Guide
 
-This document explains how permissions are defined and generated in InvenTrack, and how to add a new permission end-to-end.
+This document explains how **tenant** permissions are defined and generated in Oneapp, and how to add a new permission end-to-end.
+
+> **Platform admin auth is separate.** Super-admin operators use the `platform` Passport guard and `platform_admins` table — not Spatie roles. See [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md).
 
 For broader RBAC architecture (roles, policies, session auth), see [ARCHITECTURE.md §13](./ARCHITECTURE.md#13-roles-and-permissions-rbac).
 

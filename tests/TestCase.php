@@ -10,4 +10,9 @@ abstract class TestCase extends BaseTestCase
 {
     use InteractsWithOrganizations;
     use InteractsWithPassport;
+
+    /** @var class-string<\Illuminate\Database\Seeder> */
+    protected $seeder = \Database\Seeders\PlanSeeder::class;
+
+    protected bool $seed = true;
 }

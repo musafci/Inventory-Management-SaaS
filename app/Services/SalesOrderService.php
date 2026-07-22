@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
 use App\Models\Warehouse;
+use App\Services\PlanLimitService;
 use App\Support\CanonicalStockLockOrder;
 use App\Support\OrderStatusNotifier;
 use App\Support\UniqueConstraintViolation;
@@ -22,6 +23,7 @@ class SalesOrderService
 {
     public function __construct(
         protected StockService $stockService,
+        protected PlanLimitService $planLimitService,
     ) {}
 
     /**
@@ -43,6 +45,8 @@ class SalesOrderService
 
     public function create(array $data): SalesOrder
     {
+        $this->planLimitService->assertCanCreateOrder(app('currentOrganization'));
+
         return DB::transaction(function () use ($data): SalesOrder {
             $this->assertCustomerBelongsToCurrentOrganization((int) $data['customer_id']);
             $this->assertWarehouseBelongsToCurrentOrganization((int) $data['warehouse_id']);

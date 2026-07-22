@@ -3,12 +3,17 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Services\PlanLimitService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class ProductService
 {
+    public function __construct(
+        protected PlanLimitService $planLimitService,
+    ) {}
+
     /**
      * @return LengthAwarePaginator<int, Product>
      */
@@ -40,6 +45,8 @@ class ProductService
 
     public function create(array $data): Product
     {
+        $this->planLimitService->assertCanCreateProduct(app('currentOrganization'));
+
         return Product::query()->create([
             'category_id' => $data['category_id'],
             'unit_id' => $data['unit_id'],

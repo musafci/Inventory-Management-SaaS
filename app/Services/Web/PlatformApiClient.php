@@ -78,6 +78,10 @@ class PlatformApiClient
             return $result;
         }
 
+        if ($response->getStatusCode() === 204) {
+            return ['success' => true];
+        }
+
         return $body;
     }
 
@@ -94,5 +98,10 @@ class PlatformApiClient
     public function post(string $endpoint, array $data = []): array
     {
         return $this->makeRequest('POST', $endpoint, $data);
+    }
+
+    public function delete(string $endpoint): array
+    {
+        return $this->makeRequest('DELETE', $endpoint);
     }
 }

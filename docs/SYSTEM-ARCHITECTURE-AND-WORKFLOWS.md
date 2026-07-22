@@ -6,7 +6,9 @@ This document is the **detailed** architecture and workflow guide for **Oneapp**
 |----------|---------|
 | **This file** | Full system design, workflows, and layer breakdown |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Condensed architecture with diagrams |
-| [RBAC-PERMISSIONS.md](./RBAC-PERMISSIONS.md) | Permission catalog, generation, and how to add permissions |
+| [RBAC-PERMISSIONS.md](./RBAC-PERMISSIONS.md) | Tenant permission catalog, generation, and how to add permissions |
+| [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md) | Super-admin portal, subscriptions, plan limits, impersonation |
+| [PROJECT_BRIEF_FOR_SUPERADMIN.md](../PROJECT_BRIEF_FOR_SUPERADMIN.md) | Platform layer product requirements |
 
 ---
 
@@ -28,7 +30,7 @@ This document is the **detailed** architecture and workflow guide for **Oneapp**
 14. [Reports & exports](#14-reports--exports)
 15. [Settings & team management](#15-settings--team-management)
 16. [Notifications & background jobs](#16-notifications--background-jobs)
-17. [Platform admin API](#17-platform-admin-api)
+17. [Platform admin API & portal](#17-platform-admin-api--portal)
 18. [Cross-cutting concerns](#18-cross-cutting-concerns)
 19. [Deployment & operations](#19-deployment--operations)
 20. [Related files index](#20-related-files-index)
@@ -45,6 +47,7 @@ Oneapp is a **multi-tenant SaaS** for small and mid-sized businesses to manage:
 - **Sales** — customers, sales orders, fulfillment, delivery, payments, refunds
 - **Analytics** — stock valuation, low stock, sales/purchase summaries, CSV exports
 - **Administration** — organization profile, team members, roles & permissions
+- **Platform operations** — cross-tenant org management, subscriptions, plan enforcement (super-admin layer)
 
 Each **Organization** is an isolated tenant. Users can belong to multiple organizations with different roles in each.
 
@@ -127,8 +130,8 @@ flowchart TB
 
 ```
 app/
-├── Console/Commands/          # app:setup, rbac:migrate-organizations, Passport helpers
-├── Enums/                     # Order statuses, stock movement types, export status
+├── Console/Commands/          # app:setup, rbac:migrate-organizations, platform:admin:create
+├── Enums/                     # Order statuses, stock movement types, subscription status, export status
 ├── Events/                    # StockLevelChanged, order status events
 ├── Http/
 │   ├── Controllers/
@@ -136,8 +139,9 @@ app/
 │   │   ├── Api/Platform/V1/   # Platform admin controllers
 │   │   └── Web/               # Login, register, logout (session)
 │   ├── Livewire/              # Web UI pages (thin API clients)
+│   │   ├── Platform/          # Super-admin portal pages
 │   │   └── Concerns/          # EnsuresPermission, ApiClient helpers, validation
-│   ├── Middleware/            # ResolveTenant, WebAuth, EnforceIdempotency
+│   ├── Middleware/            # ResolveTenant, WebAuth, PlatformWebAuth, EnforceIdempotency
 │   ├── Requests/              # Form request validation per resource
 │   └── Resources/             # JSON API transformers
 ├── Jobs/                      # Horizon: low stock, report export, order notifications
@@ -148,14 +152,14 @@ app/
 ├── Permission/                # PermissionCatalog (RBAC source of truth)
 ├── Policies/                  # Authorization per resource + RolePolicy
 ├── Providers/                 # AppServiceProvider, Scramble
-├── Services/                  # Domain logic (orders, stock, auth, reports, RBAC)
-│   └── Web/                   # ApiClient, WebSessionService
+├── Services/                  # Domain logic (orders, stock, auth, reports, RBAC, platform)
+│   └── Web/                   # ApiClient, PlatformApiClient, WebSessionService, PlatformSessionService
 ├── Support/                   # OrganizationSession, helpers
 └── Traits/                    # BelongsToOrganization, LogsModelActivity
 
 database/
 ├── migrations/                # Schema including Spatie permission tables
-└── seeders/                   # RolesAndPermissionsSeeder, DemoSeeder
+└── seeders/                   # RolesAndPermissionsSeeder, PlanSeeder, DemoSeeder
 
 resources/
 ├── views/
@@ -209,6 +213,7 @@ sequenceDiagram
     M->>M: User authenticated? (401 if not)
     M->>O: Find organization by ID
     M->>U: User belongs to org? (403 if not)
+    M->>M: Organization suspended? (403 if yes)
     M->>M: app()->instance('currentOrganization', $org)
     M->>S: setPermissionsTeamId($org->id)
     M->>C: Continue to controller
@@ -218,7 +223,9 @@ sequenceDiagram
 
 - Missing `X-Organization-Id` → **403** (not 401)
 - User not in organization → **403**
+- Organization `status = suspended` → **403** (*"This organization has been suspended."*)
 - Spatie permission checks are scoped to the organization team
+- Web portal (`WebAuth`) also blocks suspended orgs by clearing session
 
 ### Data isolation (fail-closed)
 
@@ -257,6 +264,7 @@ sequenceDiagram
     Auth->>Seed: seedRolesForOrganization(org)
     Note over Seed: Creates roles, permissions,<br/>assigns defaults
     Auth->>DB: assignRole('Org Owner')
+    Auth->>DB: assignTrialPlan(org) → organization_subscriptions
     Auth->>DB: COMMIT
     Auth->>OAuth: Password grant → access + refresh token
     OAuth-->>Auth: tokens
@@ -271,6 +279,7 @@ sequenceDiagram
 | Artifact | Details |
 |----------|---------|
 | Organization | Name, slug, trial status, 14-day trial |
+| Subscription | Trial plan row in `organization_subscriptions`; `organizations.plan` synced as cache |
 | User | Owner account |
 | Default roles | System Owner, Org Owner, Admin, Manager, Warehouse Staff, Sales Staff, Viewer |
 | Permissions | Global catalog from `PermissionCatalog.php` |
@@ -493,6 +502,8 @@ Full route definitions: `routes/api.php`
 
 Multi-tenant RBAC uses Spatie Permission with **teams** (`organization_id`).
 
+> **Platform operators** are not part of tenant RBAC. They authenticate via the `platform` guard (`platform_admins` table). See [§17](#17-platform-admin-api--portal) and [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md).
+
 ### Authorization layers
 
 ```mermaid
@@ -571,10 +582,16 @@ erDiagram
 
 | Table | Scope | Purpose |
 |-------|-------|---------|
-| `organizations` | Global | Tenant records |
+| `organizations` | Global | Tenant records (`status`: trial/active/suspended) |
 | `users` | Global | User accounts |
 | `organization_user` | Pivot | User ↔ org membership + role label |
 | `roles`, `permissions`, pivots | RBAC | Spatie + `organization_id` on roles |
+| `platform_admins` | Global | Super-admin identities (separate guard) |
+| `plans` | Global | Subscription tiers + limits JSON |
+| `organization_subscriptions` | Global | Org ↔ plan, billing status (source of truth) |
+| `feature_flags`, `organization_feature_flags` | Global / per org | Feature toggles |
+| `support_notes` | Per org | Internal operator notes (platform only) |
+| `impersonation_logs` | Global | Impersonation audit trail |
 | `products`, `categories`, `units` | Per org | Catalog |
 | `warehouses` | Per org | Locations |
 | `stocks` | Per org | Current qty per product × warehouse |
@@ -811,32 +828,56 @@ php artisan horizon
 
 ## 17. Platform admin API & portal
 
-Separate from tenant RBAC — for **platform operators** managing all organizations.
+Separate from tenant RBAC — for **platform operators** managing all organizations. Full reference: **[PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md)**.
 
 | Route prefix | Guard | Web UI |
 |--------------|-------|--------|
 | `/api/platform/v1` | `auth:platform` | **`/platform/*`** Livewire portal |
+
+### Guard isolation
+
+Platform admin tokens must **never** authenticate tenant routes, and tenant tokens must **never** authenticate platform routes. Tested in `tests/Feature/PlatformLayerTest.php`.
 
 ### Web portal routes
 
 | URL | Purpose |
 |-----|---------|
 | `/platform/login` | Platform admin sign-in |
-| `/platform/dashboard` | Tenant metrics overview |
-| `/platform/organizations` | Paginated org directory |
-| `/platform/organizations/{id}` | View/update plan & status |
+| `/platform/dashboard` | Tenant metrics (total, active, trial, suspended) |
+| `/platform/organizations` | Search, filter, paginate org directory |
+| `/platform/organizations/{id}` | Status controls, subscription, feature flags, support notes, impersonation |
+| `/platform/admins` | Create / remove platform admin accounts |
 
 Uses a **separate session** (`platform_auth_token`) from the tenant app. Demo credentials (local seed): `platform@demo.test` / `password123`.
 
-### API endpoints (also used by portal via `PlatformApiClient`)
+### Platform API endpoints
 
-| Endpoint | Purpose |
-|----------|---------|
-| POST `/auth/login` | Issue personal access token |
-| GET `/organizations` | List all tenants |
-| PATCH `/organizations/{id}` | Update `status`, `plan` |
+| Area | Endpoints |
+|------|-----------|
+| Auth | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` |
+| Plans | `GET /plans` |
+| Organizations | `GET/PATCH /organizations`, `GET/PATCH /organizations/{id}/subscription` |
+| Support | `GET/POST /organizations/{id}/support-notes` |
+| Feature flags | `GET /organizations/{id}/feature-flags`, `PATCH .../feature-flags/{flagId}` |
+| Impersonation | `POST /organizations/{id}/impersonate`, `POST /impersonation/end` |
+| Platform admins | `GET/POST /platform-admins`, `DELETE /platform-admins/{id}` |
 
-**Key files:** `routes/web.php` (platform routes), `app/Services/Web/PlatformApiClient.php`, `app/Http/Livewire/Platform/*`, `routes/platform.php`
+Portal pages call these via `PlatformApiClient` (internal sub-requests with platform session token).
+
+### Subscriptions & plan limits
+
+- Registration assigns a **trial** subscription (`OrganizationSubscriptionService::assignTrialPlan`)
+- `organization_subscriptions` is the source of truth; `organizations.plan` is a synced cache
+- `PlanLimitService` enforces limits before tenant writes (warehouses, users, products, orders/month)
+- Exceeding a limit returns **422** with a clear message
+
+### Suspension & impersonation
+
+- Setting `status = suspended` blocks all tenant API requests (`ResolveTenant`) and web access (`WebAuth`)
+- Impersonation issues a short-lived tenant personal access token; `reason` required; logged in `impersonation_logs`
+- `GET /api/v1/auth/me` includes `impersonation` metadata when active
+
+**Key files:** `routes/platform.php`, `routes/web.php` (platform group), `app/Services/Web/PlatformApiClient.php`, `app/Http/Livewire/Platform/*`, `app/Services/OrganizationSubscriptionService.php`, `app/Services/ImpersonationService.php`
 
 ---
 
@@ -859,13 +900,18 @@ Models using `LogsModelActivity` write to Spatie `activity_log` on create/update
 
 ### 18.3 Rate limiting
 
-`throttle:api-tenant` — per organization + per user limits on tenant API routes.
+`throttle:api-tenant` — per organization + per user limits on tenant API routes. Plan-based limits (`plans.limits.api_rate_limit`) are reserved for future use.
 
-### 18.4 Error handling (API)
+### 18.4 Plan limit errors
+
+`PlanLimitExceededException` → **422** with message describing which limit was hit. Thrown by `PlanLimitService` before warehouse, product, user, or order creation.
+
+### 18.5 Error handling (API)
 
 Centralized in `AppServiceProvider::registerApiExceptionRendering()`:
 
 - `ValidationException` → 422 + field errors
+- `PlanLimitExceededException` → 422 + message
 - `AuthenticationException` → 401
 - `AuthorizationException` → 403
 - OAuth errors → appropriate status + message
@@ -897,13 +943,20 @@ php artisan serve --host=localhost --port=8000
 php artisan horizon
 ```
 
-`app:setup` runs migrations, seeds permissions, generates Passport keys, creates password-grant client.
+`app:setup` runs migrations, seeds roles/permissions and plans, generates Passport keys, creates password-grant client.
+
+```bash
+# Create platform super-admin after setup
+php artisan platform:admin:create platform@demo.test "Platform Admin" --password=password123
+```
 
 ### 19.3 Useful commands
 
 | Command | Purpose |
 |---------|---------|
 | `php artisan app:setup --write-env` | Full bootstrap |
+| `php artisan db:seed --class=PlanSeeder` | Seed plans & feature flags |
+| `php artisan platform:admin:create {email} {name}` | Bootstrap platform admin |
 | `php artisan rbac:migrate-organizations` | Sync RBAC for existing orgs |
 | `php artisan passport:ensure-password-client --write-env` | Fix stale OAuth client after fresh seed |
 | `php artisan horizon` | Start queue workers |
@@ -911,12 +964,13 @@ php artisan horizon
 
 ### 19.4 URLs
 
-| Environment | Web UI | API |
-|-------------|--------|-----|
-| Local dev | http://localhost:8000 | http://localhost:8000/api/v1 |
-| Docker | — | http://localhost:8080/api/v1 |
-| API docs | — | `/docs/api` |
-| Horizon | — | `/horizon` |
+| Environment | Web UI | Platform portal | API |
+|-------------|--------|-----------------|-----|
+| Local dev | http://localhost:8000 | http://localhost:8000/platform | http://localhost:8000/api/v1 |
+| Docker | — | http://localhost:8080/platform | http://localhost:8080/api/v1 |
+| Platform API | — | — | `/api/platform/v1` |
+| API docs | — | — | `/docs/api` |
+| Horizon | — | — | `/horizon` |
 
 Set `APP_URL` in `.env` to match how you access the app.
 
@@ -928,10 +982,12 @@ Set `APP_URL` in `.env` to match how you access the app.
 |------|---------------|
 | **Routes** | `routes/web.php`, `routes/api.php`, `routes/platform.php` |
 | **Auth** | `app/Services/AuthService.php`, `app/Http/Controllers/Web/AuthController.php` |
-| **Web session** | `app/Services/Web/WebSessionService.php`, `app/Http/Middleware/WebAuth.php` |
-| **API bridge** | `app/Services/Web/ApiClient.php` |
+| **Platform** | `app/Http/Controllers/Api/Platform/V1/*`, `app/Http/Livewire/Platform/*`, `docs/PLATFORM-ADMIN.md` |
+| **Web session** | `app/Services/Web/WebSessionService.php`, `app/Services/Web/PlatformSessionService.php` |
+| **API bridge** | `app/Services/Web/ApiClient.php`, `app/Services/Web/PlatformApiClient.php` |
 | **Tenancy** | `app/Http/Middleware/ResolveTenant.php`, `app/Traits/BelongsToOrganization.php` |
 | **RBAC** | `app/Permission/PermissionCatalog.php`, `app/Services/RoleManagementService.php`, `app/Services/PermissionAuthorizationService.php` |
+| **Subscriptions** | `app/Services/OrganizationSubscriptionService.php`, `app/Services/PlanLimitService.php`, `database/seeders/PlanSeeder.php` |
 | **Purchase orders** | `app/Services/PurchaseOrderService.php`, `app/Services/GoodsReceiptService.php` |
 | **Sales orders** | `app/Services/SalesOrderService.php`, `app/Services/SalesOrderFulfillmentService.php` |
 | **Stock** | `app/Services/StockService.php`, `app/Observers/StockMovementObserver.php` |
@@ -951,9 +1007,10 @@ Oneapp is a **multi-tenant inventory SaaS** built on Laravel 13 where:
 1. **Organizations** isolate all business data
 2. **Passport OAuth** authenticates both web session and API clients
 3. **Livewire** renders the UI by calling the **same REST API** via `ApiClient`
-4. **RBAC** (Spatie teams) controls access at API, page, and UI levels
-5. **Stock** changes only through an **immutable movement ledger**
-6. **Purchase and sales workflows** drive inbound/outbound inventory and payments
-7. **Horizon** processes notifications and report exports asynchronously
+4. **RBAC** (Spatie teams) controls tenant access at API, page, and UI levels
+5. **Platform admin layer** (`/platform/*`, `/api/platform/v1`) manages subscriptions, suspension, and cross-tenant ops separately
+6. **Stock** changes only through an **immutable movement ledger**
+7. **Purchase and sales workflows** drive inbound/outbound inventory and payments
+8. **Horizon** processes notifications and report exports asynchronously
 
-For shorter diagrams and quick reference, see [ARCHITECTURE.md](./ARCHITECTURE.md). For permissions specifically, see [RBAC-PERMISSIONS.md](./RBAC-PERMISSIONS.md).
+For shorter diagrams and quick reference, see [ARCHITECTURE.md](./ARCHITECTURE.md). For permissions specifically, see [RBAC-PERMISSIONS.md](./RBAC-PERMISSIONS.md). For platform operations, see [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md).

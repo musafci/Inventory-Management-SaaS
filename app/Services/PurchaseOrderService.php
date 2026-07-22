@@ -19,6 +19,10 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class PurchaseOrderService
 {
+    public function __construct(
+        protected PlanLimitService $planLimitService,
+    ) {}
+
     /**
      * @return LengthAwarePaginator<int, PurchaseOrder>
      */
@@ -38,6 +42,8 @@ class PurchaseOrderService
 
     public function create(array $data): PurchaseOrder
     {
+        $this->planLimitService->assertCanCreateOrder(app('currentOrganization'));
+
         return DB::transaction(function () use ($data): PurchaseOrder {
             $this->assertSupplierBelongsToCurrentOrganization((int) $data['supplier_id']);
             $this->assertWarehouseBelongsToCurrentOrganization((int) $data['warehouse_id']);

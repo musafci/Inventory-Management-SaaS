@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\OrganizationStatus;
 use App\Models\Organization;
 use Closure;
 use Illuminate\Http\Request;
@@ -47,6 +48,12 @@ class ResolveTenant
         if (! $belongsToOrganization) {
             return response()->json([
                 'message' => 'You do not belong to this organization.',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        if ($organization->status === OrganizationStatus::Suspended) {
+            return response()->json([
+                'message' => 'This organization has been suspended.',
             ], Response::HTTP_FORBIDDEN);
         }
 

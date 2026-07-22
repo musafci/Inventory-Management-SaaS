@@ -114,4 +114,105 @@
             </div>
         </div>
     </div>
+
+    <div class="mt-8 grid gap-6 lg:grid-cols-2">
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold text-slate-900">Subscription</h3>
+            <p class="mt-1 text-sm text-slate-500">Plan limits are enforced on tenant write operations.</p>
+            <form wire:submit.prevent="saveSubscription" class="mt-5 space-y-4">
+                <div>
+                    <label class="form-label">Plan</label>
+                    <select wire:model="subscriptionForm.plan_id" class="form-input">
+                        <option value="">Select plan</option>
+                        @foreach($plans as $plan)
+                            <option value="{{ $plan['id'] }}">{{ $plan['name'] }} ({{ $plan['slug'] }})</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Subscription status</label>
+                    <select wire:model="subscriptionForm.status" class="form-input">
+                        <option value="trial">Trial</option>
+                        <option value="active">Active</option>
+                        <option value="past_due">Past due</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary" wire:loading.attr="disabled">Update subscription</button>
+            </form>
+        </div>
+
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold text-slate-900">Impersonation</h3>
+            <p class="mt-1 text-sm text-slate-500">Issue a short-lived tenant token for support. All sessions are logged.</p>
+            <form wire:submit.prevent="startImpersonation" class="mt-5 space-y-4">
+                <div>
+                    <label class="form-label">Team member</label>
+                    <select wire:model="impersonationForm.user_id" class="form-input">
+                        <option value="">Select user</option>
+                        @foreach(($organization['members'] ?? []) as $member)
+                            <option value="{{ $member['id'] }}">{{ $member['name'] }} ({{ $member['email'] }})</option>
+                        @endforeach
+                    </select>
+                    @error('impersonationForm.user_id') <p class="form-error">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="form-label">Reason (required)</label>
+                    <textarea wire:model="impersonationForm.reason" rows="3" class="form-input" placeholder="Support ticket #123 — investigating sync issue"></textarea>
+                    @error('impersonationForm.reason') <p class="form-error">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit" class="btn-secondary" wire:loading.attr="disabled">Start impersonation</button>
+            </form>
+            @if(session('impersonation_token'))
+                <div class="mt-4 rounded-xl bg-amber-50 p-4 text-xs text-amber-900 ring-1 ring-amber-200">
+                    <p class="font-semibold">Impersonation token issued</p>
+                    <p class="mt-2 break-all font-mono">{{ session('impersonation_token') }}</p>
+                    <p class="mt-2">Use header <code class="rounded bg-amber-100 px-1">X-Organization-Id: {{ session('impersonation_org_id') }}</code></p>
+                </div>
+            @endif
+        </div>
+
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold text-slate-900">Feature flags</h3>
+            <div class="mt-4 space-y-3">
+                @forelse($featureFlags as $flag)
+                    <label class="flex items-start justify-between gap-4 rounded-xl border border-slate-100 p-4" wire:key="flag-{{ $flag['id'] }}">
+                        <span>
+                            <span class="font-medium text-slate-900">{{ $flag['key'] }}</span>
+                            <span class="mt-1 block text-sm text-slate-500">{{ $flag['description'] }}</span>
+                        </span>
+                        <input type="checkbox"
+                               class="mt-1 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                               @checked($flag['enabled'])
+                               wire:change="toggleFeatureFlag({{ $flag['id'] }}, $event.target.checked)">
+                    </label>
+                @empty
+                    <p class="text-sm text-slate-500">No feature flags configured.</p>
+                @endforelse
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold text-slate-900">Support notes</h3>
+            <p class="mt-1 text-sm text-slate-500">Internal only — never exposed to tenant API.</p>
+            <form wire:submit.prevent="addSupportNote" class="mt-5 space-y-3">
+                <textarea wire:model="noteForm.note" rows="3" class="form-input" placeholder="Add an internal note..."></textarea>
+                @error('noteForm.note') <p class="form-error">{{ $message }}</p> @enderror
+                <button type="submit" class="btn-secondary" wire:loading.attr="disabled">Add note</button>
+            </form>
+            <div class="mt-6 space-y-4">
+                @forelse($supportNotes as $note)
+                    <div class="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100" wire:key="note-{{ $note['id'] }}">
+                        <p class="text-sm text-slate-700">{{ $note['note'] }}</p>
+                        <p class="mt-2 text-xs text-slate-400">
+                            {{ $note['platform_admin']['name'] ?? 'Platform admin' }}
+                            · {{ \Illuminate\Support\Carbon::parse($note['created_at'])->format('M j, Y g:i A') }}
+                        </p>
+                    </div>
+                @empty
+                    <p class="text-sm text-slate-500">No support notes yet.</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
 </div>

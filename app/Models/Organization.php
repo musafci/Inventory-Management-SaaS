@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['name', 'slug', 'email', 'phone', 'plan', 'status', 'trial_ends_at'])]
 class Organization extends Model
@@ -28,5 +30,25 @@ class Organization extends Model
         return $this->belongsToMany(User::class)
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(OrganizationSubscription::class);
+    }
+
+    public function supportNotes(): HasMany
+    {
+        return $this->hasMany(SupportNote::class);
+    }
+
+    public function featureFlagOverrides(): HasMany
+    {
+        return $this->hasMany(OrganizationFeatureFlag::class);
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->status === OrganizationStatus::Suspended;
     }
 }

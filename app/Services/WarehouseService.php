@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Warehouse;
+use App\Services\PlanLimitService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -10,6 +11,10 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class WarehouseService
 {
+    public function __construct(
+        protected PlanLimitService $planLimitService,
+    ) {}
+
     /**
      * @return LengthAwarePaginator<int, Warehouse>
      */
@@ -24,6 +29,9 @@ class WarehouseService
 
     public function create(array $data): Warehouse
     {
+        $organization = app('currentOrganization');
+        $this->planLimitService->assertCanCreateWarehouse($organization);
+
         return DB::transaction(function () use ($data) {
             $shouldBeDefault = ($data['is_default'] ?? false) || ! $this->organizationHasWarehouses();
 

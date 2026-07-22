@@ -17,6 +17,8 @@ docker compose exec app php artisan app:setup --write-env
 | Service | URL / port |
 |---------|------------|
 | API | http://localhost:8080/api/v1 |
+| Platform portal | http://localhost:8080/platform/login |
+| Platform API | http://localhost:8080/api/platform/v1 |
 | OpenAPI docs | http://localhost:8080/docs/api |
 | Horizon dashboard | http://localhost:8080/horizon |
 | PostgreSQL | `localhost:5433` (user `inventory`, password `secret`, db `inventory`) |
@@ -107,8 +109,10 @@ RUN_STOCK_PG_CONCURRENCY=1 php artisan test
 
 ### Architecture
 
-- **Multi-tenant:** Each request to tenant routes must include `X-Organization-Id`. Middleware `ResolveTenant` binds `currentOrganization` and sets Spatie permission team context.
+- **Multi-tenant:** Each request to tenant routes must include `X-Organization-Id`. Middleware `ResolveTenant` binds `currentOrganization`, sets Spatie permission team context, and **blocks suspended organizations** (403).
 - **Auth:** Laravel Passport password grant. Public routes: `POST /api/v1/auth/register`, `login`, `refresh`. Protected routes use `auth:api`.
+- **Subscriptions:** New orgs receive a trial plan via `organization_subscriptions`. Plan limits enforce max warehouses, users, products, and monthly orders.
+- **Platform admin:** Separate guard at `/api/platform/v1` and Livewire portal at `/platform/*` — see [docs/PLATFORM-ADMIN.md](docs/PLATFORM-ADMIN.md).
 - **API envelope:** Success responses are `{ "data": ..., "meta": ... }`. Errors are `{ "message": "...", "errors": { ... } }`.
 - **Stock:** All `quantity_on_hand` changes go through `StockService::recordMovement()`. An observer fires `StockLevelChanged` for low-stock notifications (queued via Horizon).
 - **Idempotency:** `POST /api/v1/purchase-orders` and `POST /api/v1/sales-orders` require an `Idempotency-Key` header.
@@ -120,7 +124,9 @@ RUN_STOCK_PG_CONCURRENCY=1 php artisan test
 |-----|-------------|
 | [docs/SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md](docs/SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md) | Full system architecture & detailed workflows |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Condensed architecture with diagrams |
-| [docs/RBAC-PERMISSIONS.md](docs/RBAC-PERMISSIONS.md) | Permission catalog & how to add permissions |
+| [docs/RBAC-PERMISSIONS.md](docs/RBAC-PERMISSIONS.md) | Tenant permission catalog & how to add permissions |
+| [docs/PLATFORM-ADMIN.md](docs/PLATFORM-ADMIN.md) | Super-admin portal, subscriptions, plan limits, impersonation |
+| [PROJECT_BRIEF_FOR_SUPERADMIN.md](PROJECT_BRIEF_FOR_SUPERADMIN.md) | Platform layer product requirements |
 
 ### Main domain areas
 
@@ -134,10 +140,29 @@ RUN_STOCK_PG_CONCURRENCY=1 php artisan test
 | Payments | Polymorphic `Payment` on sales/purchase orders |
 | Reports | `ReportService` — stock valuation, low stock, sales/purchase summaries |
 | Audit | Spatie Activity Log on orders, payments, stock movements |
+| Platform admin | Cross-tenant org management, subscriptions, flags, impersonation — `routes/platform.php`, `/platform/*` |
 
-### Roles (seeded)
+### Platform admin portal
 
-`Org Owner`, `Admin`, `Manager`, `Warehouse Staff`, `Sales Staff`, `Viewer` — permissions defined in `database/seeders/RolesAndPermissionsSeeder.php`.
+Super-admins manage all tenants separately from organization RBAC:
+
+| URL | Purpose |
+|-----|---------|
+| `/platform/login` | Platform sign-in |
+| `/platform/dashboard` | Tenant overview |
+| `/platform/organizations` | Org directory |
+| `/platform/organizations/{id}` | Status, subscription, flags, notes, impersonation |
+| `/platform/admins` | Platform admin accounts |
+
+```bash
+php artisan platform:admin:create platform@example.com "Platform Admin" --password=your-password
+```
+
+See [docs/PLATFORM-ADMIN.md](docs/PLATFORM-ADMIN.md) for the full API and enforcement details.
+
+### Roles (seeded per organization)
+
+`System Owner`, `Org Owner`, `Admin`, `Manager`, `Warehouse Staff`, `Sales Staff`, `Viewer` — permissions defined in `app/Permission/PermissionCatalog.php` and seeded via `RolesAndPermissionsSeeder`. Platform operators use a **separate** `platform_admins` table (not Spatie roles).
 
 ### Demo data (local environment)
 
@@ -163,6 +188,15 @@ DB_CONNECTION=sqlite DB_DATABASE=:memory: php artisan scramble:export
 ```bash
 # Full bootstrap (migrations + seeders + Passport)
 php artisan app:setup --write-env
+
+# Seed plans & feature flags only
+php artisan db:seed --class=PlanSeeder
+
+# Sync RBAC for existing organizations
+php artisan rbac:migrate-organizations
+
+# Create platform super-admin
+php artisan platform:admin:create email@example.com "Admin Name" --password=secret
 
 # Migrations only
 php artisan migrate
