@@ -7,7 +7,8 @@ This document is the **detailed** architecture and workflow guide for **Oneapp**
 | **This file** | Full system design, workflows, and layer breakdown |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Condensed architecture with diagrams |
 | [RBAC-PERMISSIONS.md](./RBAC-PERMISSIONS.md) | Tenant permission catalog, generation, and how to add permissions |
-| [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md) | Super-admin portal, subscriptions, plan limits, impersonation |
+| [SUBSCRIPTIONS-AND-PLANS.md](./SUBSCRIPTIONS-AND-PLANS.md) | Plans, subscriptions, limits, and enforcement |
+| [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md) | Super-admin portal & platform API |
 | [PROJECT_BRIEF_FOR_SUPERADMIN.md](../PROJECT_BRIEF_FOR_SUPERADMIN.md) | Platform layer product requirements |
 
 ---

@@ -4,7 +4,8 @@ Platform operators manage **all tenants** from a layer that sits above organizat
 
 | Document | Purpose |
 |----------|---------|
-| **This file** | Platform API, portal, subscriptions, enforcement, impersonation |
+| **This file** | Platform API, portal, impersonation, operator workflows |
+| [SUBSCRIPTIONS-AND-PLANS.md](./SUBSCRIPTIONS-AND-PLANS.md) | Plans, subscriptions, limits & enforcement (detailed) |
 | [PROJECT_BRIEF_FOR_SUPERADMIN.md](../PROJECT_BRIEF_FOR_SUPERADMIN.md) | Product requirements & implementation checklist |
 | [ARCHITECTURE.md §14](./ARCHITECTURE.md#14-platform-admin-layer) | Condensed platform overview |
 | [SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md §17](./SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md#17-platform-admin-api--portal) | End-to-end platform workflows |

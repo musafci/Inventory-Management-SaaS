@@ -125,7 +125,8 @@ RUN_STOCK_PG_CONCURRENCY=1 php artisan test
 | [docs/SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md](docs/SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md) | Full system architecture & detailed workflows |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Condensed architecture with diagrams |
 | [docs/RBAC-PERMISSIONS.md](docs/RBAC-PERMISSIONS.md) | Tenant permission catalog & how to add permissions |
-| [docs/PLATFORM-ADMIN.md](docs/PLATFORM-ADMIN.md) | Super-admin portal, subscriptions, plan limits, impersonation |
+| [docs/SUBSCRIPTIONS-AND-PLANS.md](docs/SUBSCRIPTIONS-AND-PLANS.md) | Plans, subscriptions, limits & enforcement |
+| [docs/PLATFORM-ADMIN.md](docs/PLATFORM-ADMIN.md) | Super-admin portal, impersonation & platform API |
 | [PROJECT_BRIEF_FOR_SUPERADMIN.md](PROJECT_BRIEF_FOR_SUPERADMIN.md) | Platform layer product requirements |
 
 ### Main domain areas

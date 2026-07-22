@@ -4,7 +4,9 @@ Multi-tenant inventory, purchasing, and sales platform built with Laravel 13, Po
 
 > **Detailed guide:** See [SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md](./SYSTEM-ARCHITECTURE-AND-WORKFLOWS.md) for the full system architecture, layer breakdown, and end-to-end workflows.
 >
-> **Platform admin:** See [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md) for the super-admin portal, subscriptions, and cross-tenant operations.
+> **Platform admin:** See [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md) for the super-admin portal and cross-tenant operations.
+>
+> **Subscriptions:** See [SUBSCRIPTIONS-AND-PLANS.md](./SUBSCRIPTIONS-AND-PLANS.md) for plans, limits, and enforcement.
 
 ---
 
@@ -630,6 +632,8 @@ Cross-tenant operations for **platform operators** — separate from tenant RBAC
 **Key files:** `routes/platform.php`, `app/Http/Livewire/Platform/*`, `app/Services/Web/PlatformApiClient.php`, `app/Services/OrganizationSubscriptionService.php`, `app/Services/ImpersonationService.php`
 
 See **[PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md)** for the full API reference and schema.
+
+See **[SUBSCRIPTIONS-AND-PLANS.md](./SUBSCRIPTIONS-AND-PLANS.md)** for plan tiers, limits, lifecycle, and enforcement detail.
 
 ---
 
