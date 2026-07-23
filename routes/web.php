@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Web\AuthController;
+use App\Http\Controllers\Web\OrderPrintController;
 use App\Http\Controllers\Web\PlatformAuthController;
 use App\Http\Livewire\Platform\ActivityLogs as PlatformActivityLogs;
 use App\Http\Livewire\Platform\Dashboard as PlatformDashboard;
@@ -52,12 +53,14 @@ Route::middleware('web.auth')->group(function (): void {
     Route::get('/customers/create', \App\Http\Livewire\Customers::class)->name('customers.create');
 
     // Purchase Orders
+    Route::get('/purchase-orders/{id}/print', [OrderPrintController::class, 'purchaseOrder'])->name('purchase-orders.print');
     Route::get('/purchase-orders', \App\Http\Livewire\PurchaseOrders::class)->name('purchase-orders.index');
     Route::get('/purchase-orders/create', \App\Http\Livewire\PurchaseOrders::class)->name('purchase-orders.create');
     Route::get('/purchase-orders/{id}', \App\Http\Livewire\PurchaseOrders::class)->name('purchase-orders.show');
     Route::get('/purchase-orders/{id}/edit', \App\Http\Livewire\PurchaseOrders::class)->name('purchase-orders.edit');
 
     // Sales Orders
+    Route::get('/sales-orders/{id}/print', [OrderPrintController::class, 'salesOrder'])->name('sales-orders.print');
     Route::get('/sales-orders', \App\Http\Livewire\SalesOrders::class)->name('sales-orders.index');
     Route::get('/sales-orders/create', \App\Http\Livewire\SalesOrders::class)->name('sales-orders.create');
     Route::get('/sales-orders/{id}', \App\Http\Livewire\SalesOrders::class)->name('sales-orders.show');

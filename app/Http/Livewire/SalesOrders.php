@@ -216,9 +216,13 @@ class SalesOrders extends Component
             $this->dispatch('toast', message: $response['error'], type: 'error');
             return;
         }
+        $orderId = $response['data']['id'] ?? null;
         $this->dispatch('toast', message: 'Sales order created successfully.', type: 'success');
         $this->closeModal();
         $this->loadItems();
+        if ($orderId) {
+            $this->dispatch('open-print', url: "/sales-orders/{$orderId}/print?print=1");
+        }
     }
 
     public function update()

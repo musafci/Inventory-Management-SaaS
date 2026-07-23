@@ -1,5 +1,6 @@
 <div x-data="{ toasts: [], showReceiveModal: @entangle('showReceiveModal'), showPayModal: @entangle('showPayModal') }"
-     x-on:toast.window="toasts.push({msg: $event.detail.message, type: $event.detail.type || 'success', id: Date.now()}); setTimeout(() => toasts.shift(), 4000)">
+     x-on:toast.window="toasts.push({msg: $event.detail.message, type: $event.detail.type || 'success', id: Date.now()}); setTimeout(() => toasts.shift(), 4000)"
+     x-on:open-print.window="window.open($event.detail.url, '_blank')">
 @if($detail)
     @include('livewire.purchase-orders.show-detail')
 @else
@@ -50,6 +51,9 @@
                             <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">${{ number_format($item['total_amount'] ?? 0, 2) }}</td>
                             <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
                                 <div class="flex items-center justify-end gap-1">
+                                    <a href="/purchase-orders/{{ $item['id'] }}/print?print=1" target="_blank" class="text-gray-400 hover:text-slate-700 transition-colors" title="Print">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18M6.34 6.34l.393-.393A2.25 2.25 0 019.05 5.25h5.9a2.25 2.25 0 011.857.697l.393.393M6.34 6.34l-1.125 1.125A2.25 2.25 0 004.5 9.318v5.364a2.25 2.25 0 002.715 2.196l1.125-.281m12-8.455l1.125 1.125A2.25 2.25 0 0119.5 9.318v5.364a2.25 2.25 0 01-2.715 2.196l-1.125-.281m-12 0h12" /></svg>
+                                    </a>
                                     @if(($item['status'] ?? '') === 'draft')
                                         <button wire:click="editItem({{ $item['id'] }})" class="text-gray-400 hover:text-primary-600 transition-colors" title="Edit">
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" /></svg>

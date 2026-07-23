@@ -211,9 +211,13 @@ class PurchaseOrders extends Component
             $this->dispatch('toast', message: $response['error'], type: 'error');
             return;
         }
+        $orderId = $response['data']['id'] ?? null;
         $this->dispatch('toast', message: 'Purchase order created successfully.', type: 'success');
         $this->closeModal();
         $this->loadItems();
+        if ($orderId) {
+            $this->dispatch('open-print', url: "/purchase-orders/{$orderId}/print?print=1");
+        }
     }
 
     public function update()

@@ -65,6 +65,10 @@
     @endif
 
     <div class="mt-8 flex gap-3 border-t border-slate-100 pt-6">
+        <a href="/purchase-orders/{{ $detail['id'] }}/print" target="_blank" class="btn-secondary inline-flex items-center gap-2">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18M6.34 6.34l.393-.393A2.25 2.25 0 019.05 5.25h5.9a2.25 2.25 0 011.857.697l.393.393M6.34 6.34l-1.125 1.125A2.25 2.25 0 004.5 9.318v5.364a2.25 2.25 0 002.715 2.196l1.125-.281m12-8.455l1.125 1.125A2.25 2.25 0 0119.5 9.318v5.364a2.25 2.25 0 01-2.715 2.196l-1.125-.281m-12 0h12" /></svg>
+            Print
+        </a>
         @if($status === 'draft')
             <a href="/purchase-orders/{{ $detail['id'] }}/edit" class="btn-primary">Edit order</a>
         @endif
