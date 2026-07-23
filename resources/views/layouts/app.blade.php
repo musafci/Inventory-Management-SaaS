@@ -37,6 +37,7 @@
 
         {{-- Main content --}}
         <div class="lg:pl-72 flex flex-col min-h-full">
+            @include('components.impersonation-banner')
             <header class="app-header">
                 <button type="button" class="-m-2.5 rounded-xl p-2.5 text-slate-600 transition-colors hover:bg-slate-100 lg:hidden" @click="mobileMenu = !mobileMenu">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -50,6 +51,7 @@
                     </div>
                     <div class="flex flex-1"></div>
                     <div class="flex items-center gap-x-3 lg:gap-x-4">
+                        @unless(session('impersonation'))
                         <div class="relative" x-data="orgSelector(@js(session('organizations', [])), @js(session('organization_id')))" x-init="init()">
                             <button type="button" class="org-selector-btn" @click="open = !open">
                                 <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" /></svg>
@@ -68,6 +70,7 @@
                                 </template>
                             </div>
                         </div>
+                        @endunless
 
                         <div class="relative" x-data="{ open: false }">
                             <button type="button" class="flex items-center gap-x-2 rounded-xl px-2 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100" @click="open = !open">

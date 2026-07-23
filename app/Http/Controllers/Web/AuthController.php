@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Services\AuthService;
+use App\Services\Web\ImpersonationWebService;
 use App\Services\Web\WebSessionService;
 use Illuminate\Http\Request;
 
@@ -12,6 +13,7 @@ class AuthController extends Controller
     public function __construct(
         protected AuthService $authService,
         protected WebSessionService $webSession,
+        protected ImpersonationWebService $impersonationWeb,
     ) {}
 
     public function showLogin()
@@ -90,6 +92,12 @@ class AuthController extends Controller
 
     public function logout()
     {
+        if ($this->impersonationWeb->isActive()) {
+            $returnUrl = $this->impersonationWeb->exit();
+
+            return redirect($returnUrl)->with('success', 'Impersonation ended.');
+        }
+
         if ($token = session('auth_token')) {
             $this->authService->revokeAccessToken($token);
         }

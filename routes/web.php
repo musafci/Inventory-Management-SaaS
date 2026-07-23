@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Web\AuthController;
+use App\Http\Controllers\Web\ImpersonationExitController;
 use App\Http\Controllers\Web\OrderPrintController;
 use App\Http\Controllers\Web\PlatformAuthController;
+use App\Http\Controllers\Web\PlatformImpersonationController;
 use App\Http\Livewire\Platform\ActivityLogs as PlatformActivityLogs;
 use App\Http\Livewire\Platform\Dashboard as PlatformDashboard;
 use App\Http\Livewire\Platform\OrganizationShow as PlatformOrganizationShow;
@@ -20,6 +22,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Protected routes
 Route::middleware('web.auth')->group(function (): void {
+    Route::post('/impersonation/exit', ImpersonationExitController::class)->name('impersonation.exit');
     Route::post('/organization/switch', [AuthController::class, 'switchOrganization'])->name('organization.switch');
     Route::get('/', fn () => redirect('/dashboard'))->name('home');
 
@@ -114,6 +117,8 @@ Route::prefix('platform')->group(function (): void {
 
     Route::middleware('platform.web.auth')->group(function (): void {
         Route::post('/logout', [PlatformAuthController::class, 'logout'])->name('platform.logout');
+        Route::post('/organizations/{id}/impersonate', [PlatformImpersonationController::class, 'start'])
+            ->name('platform.impersonation.start');
         Route::redirect('/', '/platform/dashboard');
         Route::get('/dashboard', PlatformDashboard::class)->name('platform.dashboard');
         Route::get('/organizations', PlatformOrganizations::class)->name('platform.organizations.index');

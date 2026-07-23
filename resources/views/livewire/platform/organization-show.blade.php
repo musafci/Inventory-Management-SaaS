@@ -137,33 +137,27 @@
         </div>
 
         <div class="card p-6">
-            <h3 class="text-lg font-semibold text-slate-900">Impersonation</h3>
-            <p class="mt-1 text-sm text-slate-500">Issue a short-lived tenant token for support. All sessions are logged.</p>
-            <form wire:submit.prevent="startImpersonation" class="mt-5 space-y-4">
+            <h3 class="text-lg font-semibold text-slate-900">Login as tenant</h3>
+            <p class="mt-1 text-sm text-slate-500">Open the tenant app as a team member for support debugging. All sessions are logged.</p>
+            <form method="POST" action="{{ route('platform.impersonation.start', $organizationId) }}" class="mt-5 space-y-4">
+                @csrf
                 <div>
                     <label class="form-label">Team member</label>
-                    <select wire:model="impersonationForm.user_id" class="form-input">
+                    <select name="user_id" class="form-input">
                         <option value="">Select user</option>
                         @foreach(($organization['members'] ?? []) as $member)
-                            <option value="{{ $member['id'] }}">{{ $member['name'] }} ({{ $member['email'] }})</option>
+                            <option value="{{ $member['id'] }}" @selected(old('user_id') == $member['id'])>{{ $member['name'] }} ({{ $member['email'] }})</option>
                         @endforeach
                     </select>
-                    @error('impersonationForm.user_id') <p class="form-error">{{ $message }}</p> @enderror
+                    @error('user_id') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="form-label">Reason (required)</label>
-                    <textarea wire:model="impersonationForm.reason" rows="3" class="form-input" placeholder="Support ticket #123 — investigating sync issue"></textarea>
-                    @error('impersonationForm.reason') <p class="form-error">{{ $message }}</p> @enderror
+                    <textarea name="reason" rows="3" class="form-input" placeholder="Support ticket #123 — investigating sync issue">{{ old('reason') }}</textarea>
+                    @error('reason') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
-                <button type="submit" class="btn-secondary" wire:loading.attr="disabled">Start impersonation</button>
+                <button type="submit" class="btn-primary">Login as user</button>
             </form>
-            @if(session('impersonation_token'))
-                <div class="mt-4 rounded-xl bg-amber-50 p-4 text-xs text-amber-900 ring-1 ring-amber-200">
-                    <p class="font-semibold">Impersonation token issued</p>
-                    <p class="mt-2 break-all font-mono">{{ session('impersonation_token') }}</p>
-                    <p class="mt-2">Use header <code class="rounded bg-amber-100 px-1">X-Organization-Id: {{ session('impersonation_org_id') }}</code></p>
-                </div>
-            @endif
         </div>
 
         <div class="card p-6">

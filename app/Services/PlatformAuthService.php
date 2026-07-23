@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\PlatformAdmin;
+use App\Support\PassportPersonalAccessClients;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Hash;
 
@@ -19,6 +20,7 @@ class PlatformAuthService
             throw new AuthenticationException('Invalid platform credentials.');
         }
 
+        PassportPersonalAccessClients::ensure('platform_admins');
         $tokenResult = $admin->createToken('platform-admin');
 
         return [

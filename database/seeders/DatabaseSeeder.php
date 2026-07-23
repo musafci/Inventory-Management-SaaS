@@ -27,6 +27,8 @@ class DatabaseSeeder extends Seeder
             Artisan::call('passport:ensure-password-client', [
                 '--write-env' => true,
             ]);
+
+            Artisan::call('passport:ensure-personal-access-clients');
         }
     }
 }

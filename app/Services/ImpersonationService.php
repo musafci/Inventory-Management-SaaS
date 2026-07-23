@@ -6,6 +6,7 @@ use App\Models\ImpersonationLog;
 use App\Models\Organization;
 use App\Models\PlatformAdmin;
 use App\Models\User;
+use App\Support\PassportPersonalAccessClients;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Token;
@@ -23,6 +24,7 @@ class ImpersonationService
         return DB::transaction(function () use ($admin, $organization, $user, $reason): array {
             $this->endActiveSessionsForAdmin($admin);
 
+            PassportPersonalAccessClients::ensure('users');
             $tokenResult = $user->createToken('impersonation');
 
             $log = ImpersonationLog::query()->create([

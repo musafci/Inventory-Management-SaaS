@@ -70,6 +70,7 @@ class WebAuth
     protected function isBillingExemptRoute(Request $request): bool
     {
         return $request->is('settings/billing*')
-            || $request->is('logout');
+            || $request->is('logout')
+            || $request->is('impersonation/exit');
     }
 }

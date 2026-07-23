@@ -28,6 +28,8 @@ class SetupApplication extends Command
             '--write-env' => $this->option('write-env'),
         ]);
 
+        $this->call('passport:ensure-personal-access-clients');
+
         $this->components->info('Setup complete.');
 
         return self::SUCCESS;

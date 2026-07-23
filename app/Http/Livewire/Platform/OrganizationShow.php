@@ -41,11 +41,6 @@ class OrganizationShow extends Component
         'note' => '',
     ];
 
-    public $impersonationForm = [
-        'user_id' => '',
-        'reason' => '',
-    ];
-
     public function mount(int $id): void
     {
         $this->organizationId = $id;
@@ -215,41 +210,6 @@ class OrganizationShow extends Component
 
         $this->loadFeatureFlags();
         $this->dispatch('toast', message: 'Feature flag updated.', type: 'success');
-    }
-
-    public function startImpersonation(): void
-    {
-        $this->validate([
-            'impersonationForm.user_id' => 'required|integer',
-            'impersonationForm.reason' => 'required|string|min:10|max:500',
-        ]);
-
-        $api = new PlatformApiClient();
-        $response = $api->post("/organizations/{$this->organizationId}/impersonate", [
-            'user_id' => (int) $this->impersonationForm['user_id'],
-            'reason' => $this->impersonationForm['reason'],
-        ]);
-
-        if (isset($response['error'])) {
-            $this->dispatch('toast', message: $this->extractErrorMessage($response), type: 'error');
-
-            return;
-        }
-
-        $token = $response['data']['token']['access_token'] ?? null;
-        $orgId = $response['data']['organization_id'] ?? $this->organizationId;
-
-        if ($token === null) {
-            $this->dispatch('toast', message: 'Impersonation token was not returned.', type: 'error');
-
-            return;
-        }
-
-        $this->impersonationForm = ['user_id' => '', 'reason' => ''];
-        $this->dispatch('toast', message: 'Impersonation session started. Token issued — use tenant API with X-Organization-Id.', type: 'success');
-
-        session()->flash('impersonation_token', $token);
-        session()->flash('impersonation_org_id', $orgId);
     }
 
     /**

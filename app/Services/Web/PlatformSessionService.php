@@ -30,6 +30,19 @@ class PlatformSessionService
         ]);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function exportSession(): array
+    {
+        return Session::only([
+            'platform_auth_token',
+            'platform_admin_id',
+            'platform_admin_name',
+            'platform_admin_email',
+        ]);
+    }
+
     public function hasAuthToken(): bool
     {
         return Session::has('platform_auth_token')
