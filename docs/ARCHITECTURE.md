@@ -662,7 +662,7 @@ Cross-tenant operations for **platform operators** — separate from tenant RBAC
 
 **Key files:** `routes/platform.php`, `app/Http/Livewire/Platform/*`, `app/Services/Web/PlatformApiClient.php`, `app/Services/OrganizationSubscriptionService.php`, `app/Services/ImpersonationService.php`
 
-See **[PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md)** for the full API reference and schema.
+See **[PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md)** for the full API reference and schema. See **[IMPERSONATION.md](./IMPERSONATION.md)** for login-as-tenant support debugging.
 
 See **[SUBSCRIPTIONS-AND-PLANS.md](./SUBSCRIPTIONS-AND-PLANS.md)** for plan tiers, limits, lifecycle, and enforcement detail.
 

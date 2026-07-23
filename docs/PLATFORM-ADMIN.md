@@ -6,6 +6,7 @@ Platform operators manage **all tenants** from a layer that sits above organizat
 |----------|---------|
 | **[GETTING-STARTED.md](./GETTING-STARTED.md)** | How to run the project (includes Stripe webhook setup) |
 | **This file** | Platform API, portal, impersonation, operator workflows |
+| **[IMPERSONATION.md](./IMPERSONATION.md)** | Login-as-tenant guide (web + API, audit, troubleshooting) |
 | [SUBSCRIPTIONS-AND-PLANS.md](./SUBSCRIPTIONS-AND-PLANS.md) | Plans, subscriptions, limits & enforcement (detailed) |
 | [PRICING_PLAN.md](../PRICING_PLAN.md) | Authoritative pricing spec & seed values |
 | [PROJECT_BRIEF_FOR_SUPERADMIN.md](../PROJECT_BRIEF_FOR_SUPERADMIN.md) | Product requirements & implementation checklist |
@@ -169,14 +170,33 @@ Never exposed on tenant-facing `/api/v1`.
 
 ### Impersonation
 
+See **[IMPERSONATION.md](./IMPERSONATION.md)** for the full operator guide, session model, and troubleshooting.
+
+#### Web portal (login-as-tenant)
+
+From `/platform/organizations/{id}` → **Login as tenant**:
+
+1. Select a team member and enter a reason (min 10 characters).
+2. Click **Login as user** → redirected to tenant `/dashboard`.
+3. An amber banner shows organization, user, and reason; org switcher is hidden.
+4. **Exit impersonation** (banner) or **Sign out** (header) restores the platform session.
+
+| Method | Path | Middleware |
+|--------|------|------------|
+| POST | `/platform/organizations/{id}/impersonate` | `platform.web.auth` |
+| POST | `/impersonation/exit` | `web.auth` |
+
+#### Platform API
+
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/organizations/{id}/impersonate` | `{ user_id, reason }` — issue short-lived tenant token |
 | POST | `/impersonation/end` | End active impersonation session |
 
-- `reason` is required (min 10 chars)
-- Logged append-only in `impersonation_logs`
+- `reason` is required (min 10 chars, max 500)
+- Logged append-only in `impersonation_logs`; token revoked on end
 - Tenant `GET /api/v1/auth/me` includes `impersonation` object when active
+- Requires Passport personal access client for `users` — auto-provisioned; see `passport:ensure-personal-access-clients`
 - **React Native / mobile:** show visible impersonation indicator (cross-team coordination)
 
 ### Platform admin management
@@ -264,7 +284,7 @@ Checks are per-resource — being over on products does not block order creation
 | Middleware | `app/Http/Middleware/PlatformWebAuth.php` |
 | Subscription | `app/Services/OrganizationSubscriptionService.php` |
 | Plan limits | `app/Services/PlanLimitService.php` |
-| Impersonation | `app/Services/ImpersonationService.php` |
+| Impersonation | `app/Services/ImpersonationService.php`, `app/Services/Web/ImpersonationWebService.php` |
 | Support notes | `app/Services/SupportNoteService.php` |
 | Feature flags | `app/Services/FeatureFlagService.php` |
 | Platform admins | `app/Services/PlatformAdminService.php` |
@@ -297,6 +317,9 @@ php artisan subscriptions:notify-trial-ending
 
 # Hard-delete orgs past deletion grace (also scheduled daily)
 php artisan organizations:process-deletions
+
+# Ensure Passport personal access clients (required for impersonation)
+php artisan passport:ensure-personal-access-clients
 
 # Full bootstrap (includes PlanSeeder via DatabaseSeeder)
 php artisan app:setup --write-env

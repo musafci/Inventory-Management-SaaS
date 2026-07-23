@@ -140,6 +140,7 @@ Pre-launch readiness coverage: `php artisan test --filter=PrelaunchReadiness`
 | [docs/SUBSCRIPTIONS-AND-PLANS.md](docs/SUBSCRIPTIONS-AND-PLANS.md) | Plans, subscriptions, limits & enforcement |
 | [PRICING_PLAN.md](PRICING_PLAN.md) | Authoritative pricing spec & seed values |
 | [docs/PLATFORM-ADMIN.md](docs/PLATFORM-ADMIN.md) | Super-admin portal, impersonation & platform API |
+| [docs/IMPERSONATION.md](docs/IMPERSONATION.md) | Login-as-tenant for support debugging (web + API) |
 | [PRELAUNCH_READINESS.MD](PRELAUNCH_READINESS.MD) | Pre-launch checklist (L0–L8) — implementation reference |
 | [PROJECT_BRIEF_FOR_SUPERADMIN.md](PROJECT_BRIEF_FOR_SUPERADMIN.md) | Platform layer product requirements |
 
@@ -175,7 +176,7 @@ Super-admins manage all tenants separately from organization RBAC:
 php artisan platform:admin:create platform@example.com "Platform Admin" --password=your-password
 ```
 
-See [docs/PLATFORM-ADMIN.md](docs/PLATFORM-ADMIN.md) for the full API and enforcement details.
+See [docs/PLATFORM-ADMIN.md](docs/PLATFORM-ADMIN.md) for the full API and enforcement details. For login-as-tenant support debugging, see [docs/IMPERSONATION.md](docs/IMPERSONATION.md).
 
 ### Roles (seeded per organization)
 

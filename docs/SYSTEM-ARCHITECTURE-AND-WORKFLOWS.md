@@ -934,10 +934,13 @@ Portal pages call these via `PlatformApiClient` (internal sub-requests with plat
 ### Suspension & impersonation
 
 - Setting `status = suspended` blocks all tenant API requests (`ResolveTenant`) and web access (`WebAuth`)
-- Impersonation issues a short-lived tenant personal access token; `reason` required; logged in `impersonation_logs`
+- Impersonation issues a short-lived tenant personal access token (1 hour); `reason` required; logged in `impersonation_logs`
+- **Web login-as:** `POST /platform/organizations/{id}/impersonate` swaps platform session for tenant session; amber banner in tenant layout; `POST /impersonation/exit` or Sign out restores platform session
+- **API:** `POST /api/platform/v1/organizations/{id}/impersonate` returns tenant Bearer token for mobile/scripts
 - `GET /api/v1/auth/me` includes `impersonation` metadata when active
+- See **[IMPERSONATION.md](./IMPERSONATION.md)** for operator workflow and troubleshooting
 
-**Key files:** `routes/platform.php`, `routes/web.php` (platform group), `app/Services/Web/PlatformApiClient.php`, `app/Http/Livewire/Platform/*`, `app/Services/OrganizationSubscriptionService.php`, `app/Services/ImpersonationService.php`
+**Key files:** `routes/platform.php`, `routes/web.php` (platform + impersonation exit), `app/Services/ImpersonationService.php`, `app/Services/Web/ImpersonationWebService.php`, `app/Http/Livewire/Platform/*`, `app/Services/OrganizationSubscriptionService.php`
 
 ---
 
