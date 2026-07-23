@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Category;
+use App\Support\ListSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +17,10 @@ class CategoryService
      */
     public function paginate(): LengthAwarePaginator
     {
-        return QueryBuilder::for(Category::class)
+        $query = Category::query();
+        ListSearch::applyToColumns($query, ['name', 'slug']);
+
+        return QueryBuilder::for($query)
             ->allowedFilters(AllowedFilter::partial('name'))
             ->allowedSorts('name')
             ->defaultSort('name')

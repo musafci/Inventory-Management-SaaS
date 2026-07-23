@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Warehouse;
 use App\Services\PlanLimitService;
+use App\Support\ListSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -20,7 +21,10 @@ class WarehouseService
      */
     public function paginate(): LengthAwarePaginator
     {
-        return QueryBuilder::for(Warehouse::class)
+        $query = Warehouse::query();
+        ListSearch::applyToColumns($query, ['name', 'address']);
+
+        return QueryBuilder::for($query)
             ->allowedFilters(AllowedFilter::partial('name'))
             ->allowedSorts('name')
             ->defaultSort('name')

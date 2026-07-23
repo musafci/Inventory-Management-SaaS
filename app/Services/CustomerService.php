@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Support\ListSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -15,7 +16,10 @@ class CustomerService
      */
     public function paginate(): LengthAwarePaginator
     {
-        return QueryBuilder::for(Customer::class)
+        $query = Customer::query();
+        ListSearch::applyToColumns($query, ['name', 'email', 'phone', 'address']);
+
+        return QueryBuilder::for($query)
             ->allowedFilters(AllowedFilter::partial('name'), AllowedFilter::partial('email'))
             ->allowedSorts('name')
             ->defaultSort('name')

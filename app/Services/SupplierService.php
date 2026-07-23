@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Supplier;
+use App\Support\ListSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +17,10 @@ class SupplierService
      */
     public function paginate(): LengthAwarePaginator
     {
-        return QueryBuilder::for(Supplier::class)
+        $query = Supplier::query();
+        ListSearch::applyToColumns($query, ['name', 'contact_person', 'email', 'phone']);
+
+        return QueryBuilder::for($query)
             ->allowedFilters(AllowedFilter::partial('name'))
             ->allowedSorts('name')
             ->defaultSort('name')

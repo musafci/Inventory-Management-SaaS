@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Services\PlanLimitService;
+use App\Support\ListSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -20,18 +21,7 @@ class ProductService
     public function paginate(): LengthAwarePaginator
     {
         $query = Product::query();
-
-        $search = request()->query('search');
-
-        if (is_string($search) && $search !== '') {
-            $term = '%'.$search.'%';
-
-            $query->where(function ($builder) use ($term) {
-                $builder->where('name', 'like', $term)
-                    ->orWhere('sku', 'like', $term)
-                    ->orWhere('barcode', 'like', $term);
-            });
-        }
+        ListSearch::applyToColumns($query, ['name', 'sku', 'barcode']);
 
         return QueryBuilder::for($query)
             ->allowedFilters(

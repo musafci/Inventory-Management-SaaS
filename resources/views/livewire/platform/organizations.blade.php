@@ -12,12 +12,7 @@
     </div>
 
     <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center">
-        <div class="relative flex-1 max-w-lg">
-            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-            </div>
-            <input type="text" wire:model.live.debounce.300ms="search" class="search-input" placeholder="Search by name, email, or slug...">
-        </div>
+        <x-list-search wire:model.live.debounce.300ms="search" placeholder="Search by name, email, or slug..." />
         <div class="tab-nav max-w-md flex-1">
             <button type="button" wire:click="$set('statusFilter', '')" @class(['tab-btn', 'tab-btn-active' => $statusFilter === '', 'tab-btn-inactive' => $statusFilter !== ''])>All</button>
             <button type="button" wire:click="$set('statusFilter', 'active')" @class(['tab-btn', 'tab-btn-active' => $statusFilter === 'active', 'tab-btn-inactive' => $statusFilter !== 'active'])>Active</button>

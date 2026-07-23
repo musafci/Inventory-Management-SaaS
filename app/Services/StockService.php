@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
+use App\Support\ListSearch;
 use App\Support\UniqueConstraintViolation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -124,6 +125,10 @@ class StockService
     public function paginateStocks(): LengthAwarePaginator
     {
         $query = Stock::query()->with(['warehouse', 'product']);
+        ListSearch::apply($query, [
+            ['relation' => 'product', 'columns' => ['name', 'sku']],
+            ['relation' => 'warehouse', 'columns' => ['name']],
+        ]);
 
         return QueryBuilder::for($query)
             ->allowedFilters(
@@ -156,6 +161,11 @@ class StockService
     public function paginateMovements(): LengthAwarePaginator
     {
         $query = StockMovement::query()->with(['warehouse', 'product', 'createdBy']);
+        ListSearch::apply($query, [
+            ['relation' => 'product', 'columns' => ['name', 'sku']],
+            ['relation' => 'warehouse', 'columns' => ['name']],
+            ['columns' => ['note']],
+        ]);
 
         return QueryBuilder::for($query)
             ->allowedFilters(

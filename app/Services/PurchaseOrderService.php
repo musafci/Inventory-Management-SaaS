@@ -8,6 +8,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Supplier;
 use App\Models\Warehouse;
+use App\Support\ListSearch;
 use App\Support\OrderStatusNotifier;
 use App\Support\UniqueConstraintViolation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -28,8 +29,13 @@ class PurchaseOrderService
      */
     public function paginate(): LengthAwarePaginator
     {
-        return QueryBuilder::for(PurchaseOrder::class)
-            ->with(['supplier', 'warehouse', 'items.product'])
+        $query = PurchaseOrder::query()->with(['supplier', 'warehouse', 'items.product']);
+        ListSearch::apply($query, [
+            ['columns' => ['po_number']],
+            ['relation' => 'supplier', 'columns' => ['name']],
+        ]);
+
+        return QueryBuilder::for($query)
             ->allowedFilters(
                 AllowedFilter::exact('supplier_id'),
                 AllowedFilter::exact('warehouse_id'),

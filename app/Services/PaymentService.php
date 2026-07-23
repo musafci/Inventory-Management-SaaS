@@ -12,6 +12,7 @@ use App\Models\PurchaseOrder;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
 use App\Support\CanonicalStockLockOrder;
+use App\Support\ListSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -28,8 +29,10 @@ class PaymentService
      */
     public function paginate(): LengthAwarePaginator
     {
-        return QueryBuilder::for(Payment::class)
-            ->with(['payable', 'recordedBy'])
+        $query = Payment::query()->with(['payable', 'recordedBy']);
+        ListSearch::applyToColumns($query, ['reference', 'note']);
+
+        return QueryBuilder::for($query)
             ->allowedFilters(
                 AllowedFilter::exact('payable_type'),
                 AllowedFilter::exact('payable_id'),

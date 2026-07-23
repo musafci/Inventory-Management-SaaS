@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Unit;
+use App\Support\ListSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -14,7 +15,10 @@ class UnitService
      */
     public function paginate(): LengthAwarePaginator
     {
-        return QueryBuilder::for(Unit::class)
+        $query = Unit::query();
+        ListSearch::applyToColumns($query, ['name', 'symbol']);
+
+        return QueryBuilder::for($query)
             ->allowedFilters(AllowedFilter::partial('name'))
             ->allowedSorts('name')
             ->defaultSort('name')

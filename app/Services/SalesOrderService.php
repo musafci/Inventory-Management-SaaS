@@ -10,6 +10,7 @@ use App\Models\SalesOrderItem;
 use App\Models\Warehouse;
 use App\Services\PlanLimitService;
 use App\Support\CanonicalStockLockOrder;
+use App\Support\ListSearch;
 use App\Support\OrderStatusNotifier;
 use App\Support\UniqueConstraintViolation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -31,8 +32,13 @@ class SalesOrderService
      */
     public function paginate(): LengthAwarePaginator
     {
-        return QueryBuilder::for(SalesOrder::class)
-            ->with(['customer', 'warehouse', 'items.product'])
+        $query = SalesOrder::query()->with(['customer', 'warehouse', 'items.product']);
+        ListSearch::apply($query, [
+            ['columns' => ['order_number']],
+            ['relation' => 'customer', 'columns' => ['name', 'email']],
+        ]);
+
+        return QueryBuilder::for($query)
             ->allowedFilters(
                 AllowedFilter::exact('customer_id'),
                 AllowedFilter::exact('warehouse_id'),
