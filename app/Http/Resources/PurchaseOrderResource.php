@@ -22,6 +22,14 @@ class PurchaseOrderResource extends JsonResource
             'order_date' => $this->order_date?->toDateString(),
             'expected_date' => $this->expected_date?->toDateString(),
             'total_amount' => $this->total_amount,
+            'gross_subtotal' => $this->when(
+                $this->relationLoaded('items'),
+                fn (): string => $this->grossSubtotal(),
+            ),
+            'total_discount' => $this->when(
+                $this->relationLoaded('items'),
+                fn (): string => $this->totalDiscount(),
+            ),
             'supplier' => new SupplierResource($this->whenLoaded('supplier')),
             'warehouse' => new WarehouseResource($this->whenLoaded('warehouse')),
             'items' => PurchaseOrderItemResource::collection($this->whenLoaded('items')),

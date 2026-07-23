@@ -75,4 +75,30 @@ class SalesOrder extends Model
 
         return number_format(max(0, $due), 2, '.', '');
     }
+
+    public function totalDiscount(): string
+    {
+        $total = $this->discountItems()->sum(
+            fn (SalesOrderItem $item): float => (float) $item->discount,
+        );
+
+        return number_format($total, 2, '.', '');
+    }
+
+    public function grossSubtotal(): string
+    {
+        $total = $this->discountItems()->sum(
+            fn (SalesOrderItem $item): float => (float) $item->quantity * (float) $item->unit_price,
+        );
+
+        return number_format($total, 2, '.', '');
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, SalesOrderItem>
+     */
+    protected function discountItems()
+    {
+        return $this->relationLoaded('items') ? $this->items : $this->items()->get();
+    }
 }

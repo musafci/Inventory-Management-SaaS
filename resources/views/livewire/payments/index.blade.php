@@ -41,7 +41,15 @@
                             $status = $item['status'] ?? 'completed';
                         @endphp
                         <tr class="table-row-hover">
-                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{{ $item['created_at'] ?? $item['payment_date'] ?? '-' }}</td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                                @if(!empty($item['paid_at']))
+                                    {{ \Illuminate\Support\Carbon::parse($item['paid_at'])->format('M j, Y g:i A') }}
+                                @elseif(!empty($item['created_at']))
+                                    {{ \Illuminate\Support\Carbon::parse($item['created_at'])->format('M j, Y g:i A') }}
+                                @else
+                                    —
+                                @endif
+                            </td>
                             <td class="whitespace-nowrap px-6 py-4 text-sm font-medium">
                                 <a href="/payments/{{ $item['id'] }}" class="text-primary-600 hover:text-primary-500">{{ $item['order']['order_number'] ?? $item['order_number'] ?? 'Payment #'.$item['id'] }}</a>
                             </td>

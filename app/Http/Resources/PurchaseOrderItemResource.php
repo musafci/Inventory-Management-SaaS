@@ -20,6 +20,7 @@ class PurchaseOrderItemResource extends JsonResource
             'quantity_received' => $this->quantity_received,
             'quantity_remaining' => $this->quantityRemaining(),
             'unit_cost' => $this->unit_cost,
+            'discount' => $this->discount,
             'subtotal' => $this->subtotal,
         ];
     }

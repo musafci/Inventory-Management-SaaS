@@ -8,6 +8,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Supplier;
 use App\Models\Warehouse;
+use App\Support\LineItemMath;
 use App\Support\ListSearch;
 use App\Support\OrderStatusNotifier;
 use App\Support\UniqueConstraintViolation;
@@ -155,7 +156,7 @@ class PurchaseOrderService
     }
 
     /**
-     * @param  list<array{product_id: int, quantity_ordered: int, unit_cost: float|string}>  $items
+     * @param  list<array{product_id: int, quantity_ordered: int, unit_cost: float|string, discount?: float|string}>  $items
      */
     protected function syncItems(PurchaseOrder $purchaseOrder, array $items): void
     {
@@ -168,6 +169,7 @@ class PurchaseOrderService
                 'quantity_ordered' => $item['quantity_ordered'],
                 'quantity_received' => 0,
                 'unit_cost' => $item['unit_cost'],
+                'discount' => $item['discount'],
                 'subtotal' => $item['subtotal'],
             ]);
         }
@@ -175,7 +177,7 @@ class PurchaseOrderService
 
     /**
      * @param  array<int, array<string, mixed>>  $items
-     * @return list<array{product_id: int, quantity_ordered: int, unit_cost: string, subtotal: string}>
+     * @return list<array{product_id: int, quantity_ordered: int, unit_cost: string, discount: string, subtotal: string}>
      */
     protected function validateAndNormalizeItems(array $items): array
     {
@@ -192,6 +194,7 @@ class PurchaseOrderService
             $productId = (int) ($item['product_id'] ?? 0);
             $quantityOrdered = (int) ($item['quantity_ordered'] ?? 0);
             $unitCost = round((float) ($item['unit_cost'] ?? 0), 2);
+            $discount = round((float) ($item['discount'] ?? 0), 2);
 
             if ($quantityOrdered <= 0) {
                 throw ValidationException::withMessages([
@@ -204,6 +207,13 @@ class PurchaseOrderService
                     "items.$index.unit_cost" => ['Unit cost cannot be negative.'],
                 ]);
             }
+
+            LineItemMath::assertDiscountWithinLineTotal(
+                $discount,
+                $quantityOrdered,
+                $unitCost,
+                "items.$index.discount",
+            );
 
             if (in_array($productId, $productIds, true)) {
                 throw ValidationException::withMessages([
@@ -218,7 +228,8 @@ class PurchaseOrderService
                 'product_id' => $productId,
                 'quantity_ordered' => $quantityOrdered,
                 'unit_cost' => number_format($unitCost, 2, '.', ''),
-                'subtotal' => number_format($quantityOrdered * $unitCost, 2, '.', ''),
+                'discount' => number_format($discount, 2, '.', ''),
+                'subtotal' => LineItemMath::subtotal($quantityOrdered, $unitCost, $discount),
             ];
         }
 

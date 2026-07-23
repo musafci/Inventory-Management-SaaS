@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'quantity_ordered',
     'quantity_received',
     'unit_cost',
+    'discount',
     'subtotal',
 ])]
 class PurchaseOrderItem extends Model
@@ -28,6 +29,7 @@ class PurchaseOrderItem extends Model
             'quantity_ordered' => 'integer',
             'quantity_received' => 'integer',
             'unit_cost' => 'decimal:2',
+            'discount' => 'decimal:2',
             'subtotal' => 'decimal:2',
         ];
     }

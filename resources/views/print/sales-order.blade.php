@@ -70,10 +70,13 @@
     </table>
 
     <div class="print-total">
-        <div class="print-total-row grand">
-            <span>Total</span>
-            <span>${{ number_format((float) ($order['total_amount'] ?? 0), 2) }}</span>
-        </div>
+        <x-order-discount-summary :order="$order" compact />
+        @if((float) ($order['total_discount'] ?? 0) <= 0)
+            <div class="print-total-row grand">
+                <span>Total</span>
+                <span>${{ number_format((float) ($order['total_amount'] ?? 0), 2) }}</span>
+            </div>
+        @endif
         @if(isset($order['amount_due']))
             <div class="print-total-row">
                 <span>Amount due</span>

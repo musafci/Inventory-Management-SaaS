@@ -143,6 +143,7 @@ class SalesOrders extends Component
             'form.items.*.product_id' => 'required',
             'form.items.*.quantity' => 'required|integer|min:1',
             'form.items.*.unit_price' => 'required|numeric|min:0',
+            'form.items.*.discount' => 'nullable|numeric|min:0',
         ];
     }
 

@@ -302,3 +302,45 @@ test('purchase orders are isolated between organizations', function () {
     $this->putJson("/api/v1/purchase-orders/{$purchaseOrderId}", ['expected_date' => '2026-08-01'], $headersB)->assertNotFound();
     $this->postJson("/api/v1/purchase-orders/{$purchaseOrderId}/send", [], $headersB)->assertNotFound();
 });
+
+test('purchase order line item discount reduces subtotal and total amount', function () {
+    $org = $this->registerOrganizationWithOwner(['email' => 'po-discount@acme.test']);
+    $headers = $this->organizationHeaders($org['token'], $org['organization_id']);
+    $catalog = createPurchasingCatalog($this, $headers);
+
+    createDraftPurchaseOrder($this, $headers, $catalog, [
+        'items' => [
+            [
+                'product_id' => $catalog['product_id'],
+                'quantity_ordered' => 20,
+                'unit_cost' => 5,
+                'discount' => 10,
+            ],
+        ],
+    ])
+        ->assertCreated()
+        ->assertJsonPath('data.total_amount', '90.00')
+        ->assertJsonPath('data.total_discount', '10.00')
+        ->assertJsonPath('data.gross_subtotal', '100.00')
+        ->assertJsonPath('data.items.0.discount', '10.00')
+        ->assertJsonPath('data.items.0.subtotal', '90.00');
+});
+
+test('purchase order rejects discount greater than line total', function () {
+    $org = $this->registerOrganizationWithOwner(['email' => 'po-discount-invalid@acme.test']);
+    $headers = $this->organizationHeaders($org['token'], $org['organization_id']);
+    $catalog = createPurchasingCatalog($this, $headers);
+
+    createDraftPurchaseOrder($this, $headers, $catalog, [
+        'items' => [
+            [
+                'product_id' => $catalog['product_id'],
+                'quantity_ordered' => 10,
+                'unit_cost' => 5,
+                'discount' => 60,
+            ],
+        ],
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['items.0.discount']);
+});

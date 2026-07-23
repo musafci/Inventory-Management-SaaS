@@ -40,6 +40,7 @@ class StorePurchaseOrderRequest extends FormRequest
             ],
             'items.*.quantity_ordered' => ['required', 'integer', 'min:1'],
             'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
+            'items.*.discount' => ['sometimes', 'numeric', 'min:0'],
         ];
     }
 }

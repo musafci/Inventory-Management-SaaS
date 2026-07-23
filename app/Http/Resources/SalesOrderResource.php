@@ -21,6 +21,14 @@ class SalesOrderResource extends JsonResource
             'status' => $this->status->value,
             'order_date' => $this->order_date?->toDateString(),
             'total_amount' => $this->total_amount,
+            'gross_subtotal' => $this->when(
+                $this->relationLoaded('items'),
+                fn (): string => $this->grossSubtotal(),
+            ),
+            'total_discount' => $this->when(
+                $this->relationLoaded('items'),
+                fn (): string => $this->totalDiscount(),
+            ),
             'customer' => new CustomerResource($this->whenLoaded('customer')),
             'warehouse' => new WarehouseResource($this->whenLoaded('warehouse')),
             'items' => SalesOrderItemResource::collection($this->whenLoaded('items')),

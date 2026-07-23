@@ -26,6 +26,7 @@
             <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500">Warehouse</dt>
             <dd class="mt-1 text-sm font-medium text-slate-900">{{ $detail['warehouse']['name'] ?? '—' }}</dd>
         </div>
+        <x-order-discount-summary :order="$detail" />
         <div>
             <dt class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total amount</dt>
             <dd class="mt-1 text-lg font-bold text-slate-900">${{ number_format($detail['total_amount'] ?? 0, 2) }}</dd>
@@ -46,6 +47,8 @@
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Quantity</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Fulfilled</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Unit price</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Discount</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Subtotal</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -55,6 +58,8 @@
                             <td class="px-4 py-3 text-sm text-slate-600">{{ $item['quantity'] ?? 0 }}</td>
                             <td class="px-4 py-3 text-sm text-slate-600">{{ $item['quantity_fulfilled'] ?? 0 }}</td>
                             <td class="px-4 py-3 text-sm text-slate-900">${{ number_format($item['unit_price'] ?? 0, 2) }}</td>
+                            <td class="px-4 py-3 text-sm text-slate-600">${{ number_format($item['discount'] ?? 0, 2) }}</td>
+                            <td class="px-4 py-3 text-sm font-medium text-slate-900">${{ number_format($item['subtotal'] ?? 0, 2) }}</td>
                         </tr>
                     @endforeach
                 </tbody>

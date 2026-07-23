@@ -18,6 +18,7 @@ class PurchaseOrderItemFactory extends Factory
     {
         $quantity = fake()->numberBetween(1, 50);
         $unitCost = fake()->randomFloat(2, 1, 100);
+        $discount = 0;
 
         return [
             'purchase_order_id' => PurchaseOrder::factory(),
@@ -25,7 +26,8 @@ class PurchaseOrderItemFactory extends Factory
             'quantity_ordered' => $quantity,
             'quantity_received' => 0,
             'unit_cost' => $unitCost,
-            'subtotal' => round($quantity * $unitCost, 2),
+            'discount' => $discount,
+            'subtotal' => round(($quantity * $unitCost) - $discount, 2),
         ];
     }
 }

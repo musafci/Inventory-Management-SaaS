@@ -82,4 +82,30 @@ class PurchaseOrder extends Model
 
         return number_format(max(0, $due), 2, '.', '');
     }
+
+    public function totalDiscount(): string
+    {
+        $total = $this->discountItems()->sum(
+            fn (PurchaseOrderItem $item): float => (float) $item->discount,
+        );
+
+        return number_format($total, 2, '.', '');
+    }
+
+    public function grossSubtotal(): string
+    {
+        $total = $this->discountItems()->sum(
+            fn (PurchaseOrderItem $item): float => (float) $item->quantity_ordered * (float) $item->unit_cost,
+        );
+
+        return number_format($total, 2, '.', '');
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, PurchaseOrderItem>
+     */
+    protected function discountItems()
+    {
+        return $this->relationLoaded('items') ? $this->items : $this->items()->get();
+    }
 }

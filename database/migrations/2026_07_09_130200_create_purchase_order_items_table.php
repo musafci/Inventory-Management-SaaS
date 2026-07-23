@@ -15,6 +15,7 @@ return new class extends Migration
             $table->unsignedInteger('quantity_ordered');
             $table->unsignedInteger('quantity_received')->default(0);
             $table->decimal('unit_cost', 12, 2);
+            $table->decimal('discount', 12, 2)->default(0);
             $table->decimal('subtotal', 12, 2);
             $table->timestamps();
 

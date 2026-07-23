@@ -399,3 +399,51 @@ test('sales order fulfill rejects draft sales orders', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['status']);
 });
+
+test('sales order line item discount reduces subtotal and total amount', function () {
+    $org = $this->registerOrganizationWithOwner(['email' => 'so-discount@acme.test']);
+    $headers = $this->organizationHeaders($org['token'], $org['organization_id']);
+    $catalog = createSalesCatalog($this, $headers);
+
+    $this->postJson('/api/v1/sales-orders', [
+        'customer_id' => $catalog['customer_id'],
+        'warehouse_id' => $catalog['warehouse_id'],
+        'order_date' => '2026-07-09',
+        'items' => [
+            [
+                'product_id' => $catalog['product_id'],
+                'quantity' => 3,
+                'unit_price' => 15,
+                'discount' => 5,
+            ],
+        ],
+    ], withIdempotencyKey($headers))
+        ->assertCreated()
+        ->assertJsonPath('data.total_amount', '40.00')
+        ->assertJsonPath('data.total_discount', '5.00')
+        ->assertJsonPath('data.gross_subtotal', '45.00')
+        ->assertJsonPath('data.items.0.discount', '5.00')
+        ->assertJsonPath('data.items.0.subtotal', '40.00');
+});
+
+test('sales order rejects discount greater than line total', function () {
+    $org = $this->registerOrganizationWithOwner(['email' => 'so-discount-invalid@acme.test']);
+    $headers = $this->organizationHeaders($org['token'], $org['organization_id']);
+    $catalog = createSalesCatalog($this, $headers);
+
+    $this->postJson('/api/v1/sales-orders', [
+        'customer_id' => $catalog['customer_id'],
+        'warehouse_id' => $catalog['warehouse_id'],
+        'order_date' => '2026-07-09',
+        'items' => [
+            [
+                'product_id' => $catalog['product_id'],
+                'quantity' => 2,
+                'unit_price' => 10,
+                'discount' => 25,
+            ],
+        ],
+    ], withIdempotencyKey($headers))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['items.0.discount']);
+});

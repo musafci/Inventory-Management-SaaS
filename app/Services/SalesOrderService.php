@@ -10,6 +10,7 @@ use App\Models\SalesOrderItem;
 use App\Models\Warehouse;
 use App\Services\PlanLimitService;
 use App\Support\CanonicalStockLockOrder;
+use App\Support\LineItemMath;
 use App\Support\ListSearch;
 use App\Support\OrderStatusNotifier;
 use App\Support\UniqueConstraintViolation;
@@ -295,11 +296,12 @@ class SalesOrderService
                 ]);
             }
 
-            if ($discount < 0) {
-                throw ValidationException::withMessages([
-                    "items.$index.discount" => ['Discount cannot be negative.'],
-                ]);
-            }
+            LineItemMath::assertDiscountWithinLineTotal(
+                $discount,
+                $quantity,
+                $unitPrice,
+                "items.$index.discount",
+            );
 
             if (in_array($productId, $productIds, true)) {
                 throw ValidationException::withMessages([
@@ -315,7 +317,7 @@ class SalesOrderService
                 'quantity' => $quantity,
                 'unit_price' => number_format($unitPrice, 2, '.', ''),
                 'discount' => number_format($discount, 2, '.', ''),
-                'subtotal' => number_format(($quantity * $unitPrice) - $discount, 2, '.', ''),
+                'subtotal' => LineItemMath::subtotal($quantity, $unitPrice, $discount),
             ];
         }
 

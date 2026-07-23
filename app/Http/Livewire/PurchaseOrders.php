@@ -138,6 +138,7 @@ class PurchaseOrders extends Component
             'form.items.*.product_id' => 'required',
             'form.items.*.quantity_ordered' => 'required|integer|min:1',
             'form.items.*.unit_cost' => 'required|numeric|min:0',
+            'form.items.*.discount' => 'nullable|numeric|min:0',
         ];
     }
 
@@ -147,6 +148,7 @@ class PurchaseOrders extends Component
             'product_id' => '',
             'quantity_ordered' => '',
             'unit_cost' => '',
+            'discount' => '0',
         ];
     }
 
@@ -184,6 +186,7 @@ class PurchaseOrders extends Component
                     'product_id' => $item['product_id'],
                     'quantity_ordered' => $item['quantity_ordered'],
                     'unit_cost' => $item['unit_cost'],
+                    'discount' => $item['discount'] ?? '0',
                 ];
             }
             $this->form = [

@@ -19,6 +19,8 @@
                         <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Customer</th>
                         <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Order Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Subtotal</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Discount</th>
                         <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Total</th>
                         <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                     </tr>
@@ -47,6 +49,14 @@
                                 </span>
                             </td>
                             <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{{ $item['order_date'] ?? '-' }}</td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">${{ number_format($item['gross_subtotal'] ?? $item['total_amount'] ?? 0, 2) }}</td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm text-emerald-700">
+                                @if((float) ($item['total_discount'] ?? 0) > 0)
+                                    -${{ number_format($item['total_discount'], 2) }}
+                                @else
+                                    <span class="text-gray-400">—</span>
+                                @endif
+                            </td>
                             <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">${{ number_format($item['total_amount'] ?? 0, 2) }}</td>
                             <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
                                 <div class="flex items-center justify-end gap-1">
@@ -96,7 +106,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
+                            <td colspan="8" class="px-6 py-12 text-center">
                                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
                                 <p class="mt-2 text-sm text-gray-500">No sales orders found.</p>
                                 <button wire:click="openModal()" class="mt-3 btn-primary text-sm">New Sales Order</button>
@@ -175,8 +185,8 @@
                                 <div class="space-y-3">
                                     @forelse($form['items'] as $index => $item)
                                         <div class="flex items-start gap-3 rounded-lg border border-gray-200 p-3 bg-gray-50">
-                                            <div class="flex-1 grid grid-cols-3 gap-3">
-                                                <div>
+                                            <div class="flex-1 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                                <div class="col-span-2 sm:col-span-1">
                                                     <label class="text-xs font-medium text-gray-500 mb-1 block">Product</label>
                                                     <select wire:model="form.items.{{ $index }}.product_id" class="form-input text-sm">
                                                         <option value="">Select</option>
@@ -192,6 +202,10 @@
                                                 <div>
                                                     <label class="text-xs font-medium text-gray-500 mb-1 block">Unit Price</label>
                                                     <input type="number" wire:model="form.items.{{ $index }}.unit_price" class="form-input text-sm" step="0.01" min="0" placeholder="0.00">
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs font-medium text-gray-500 mb-1 block">Discount</label>
+                                                    <input type="number" wire:model="form.items.{{ $index }}.discount" class="form-input text-sm" step="0.01" min="0" placeholder="0.00">
                                                 </div>
                                             </div>
                                             <button type="button" wire:click="removeItem({{ $index }})" class="mt-5 text-gray-400 hover:text-red-600">

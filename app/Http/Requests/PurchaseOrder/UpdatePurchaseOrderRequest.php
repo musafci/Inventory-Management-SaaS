@@ -42,6 +42,7 @@ class UpdatePurchaseOrderRequest extends FormRequest
             ],
             'items.*.quantity_ordered' => ['required_with:items', 'integer', 'min:1'],
             'items.*.unit_cost' => ['required_with:items', 'numeric', 'min:0'],
+            'items.*.discount' => ['sometimes', 'numeric', 'min:0'],
         ];
     }
 }

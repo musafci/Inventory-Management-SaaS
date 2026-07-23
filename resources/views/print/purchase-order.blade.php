@@ -57,6 +57,7 @@
                 <th>SKU</th>
                 <th class="text-right">Qty ordered</th>
                 <th class="text-right">Unit cost</th>
+                <th class="text-right">Discount</th>
                 <th class="text-right">Subtotal</th>
             </tr>
         </thead>
@@ -67,6 +68,7 @@
                     <td>{{ $item['product']['sku'] ?? '—' }}</td>
                     <td class="text-right">{{ $item['quantity_ordered'] ?? 0 }}</td>
                     <td class="text-right">${{ number_format((float) ($item['unit_cost'] ?? 0), 2) }}</td>
+                    <td class="text-right">${{ number_format((float) ($item['discount'] ?? 0), 2) }}</td>
                     <td class="text-right">${{ number_format((float) ($item['subtotal'] ?? 0), 2) }}</td>
                 </tr>
             @endforeach
@@ -74,10 +76,13 @@
     </table>
 
     <div class="print-total">
-        <div class="print-total-row grand">
-            <span>Total</span>
-            <span>${{ number_format((float) ($order['total_amount'] ?? 0), 2) }}</span>
-        </div>
+        <x-order-discount-summary :order="$order" compact />
+        @if((float) ($order['total_discount'] ?? 0) <= 0)
+            <div class="print-total-row grand">
+                <span>Total</span>
+                <span>${{ number_format((float) ($order['total_amount'] ?? 0), 2) }}</span>
+            </div>
+        @endif
         @if(isset($order['amount_due']))
             <div class="print-total-row">
                 <span>Amount due</span>
