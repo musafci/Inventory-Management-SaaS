@@ -141,6 +141,7 @@ Pre-launch readiness coverage: `php artisan test --filter=PrelaunchReadiness`
 | [PRICING_PLAN.md](PRICING_PLAN.md) | Authoritative pricing spec & seed values |
 | [docs/PLATFORM-ADMIN.md](docs/PLATFORM-ADMIN.md) | Super-admin portal, impersonation & platform API |
 | [docs/IMPERSONATION.md](docs/IMPERSONATION.md) | Login-as-tenant for support debugging (web + API) |
+| [docs/POS-PLANNING.md](docs/POS-PLANNING.md) | **Future:** complete POS module planning (not implemented) |
 | [PRELAUNCH_READINESS.MD](PRELAUNCH_READINESS.MD) | Pre-launch checklist (L0–L8) — implementation reference |
 | [PROJECT_BRIEF_FOR_SUPERADMIN.md](PROJECT_BRIEF_FOR_SUPERADMIN.md) | Platform layer product requirements |
 

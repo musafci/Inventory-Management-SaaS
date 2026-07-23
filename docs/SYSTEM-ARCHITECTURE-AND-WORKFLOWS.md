@@ -11,6 +11,7 @@ This document is the **detailed** architecture and workflow guide for **Oneapp**
 | [SUBSCRIPTIONS-AND-PLANS.md](./SUBSCRIPTIONS-AND-PLANS.md) | Plans, subscriptions, limits, and enforcement |
 | [PRICING_PLAN.md](../PRICING_PLAN.md) | Authoritative pricing spec & seed values |
 | [PLATFORM-ADMIN.md](./PLATFORM-ADMIN.md) | Super-admin portal & platform API |
+| [POS-PLANNING.md](./POS-PLANNING.md) | Future complete POS module planning (not implemented) |
 | [PROJECT_BRIEF_FOR_SUPERADMIN.md](../PROJECT_BRIEF_FOR_SUPERADMIN.md) | Platform layer product requirements |
 | [PRELAUNCH_READINESS.MD](../PRELAUNCH_READINESS.MD) | Pre-launch checklist (L0–L8) |
 

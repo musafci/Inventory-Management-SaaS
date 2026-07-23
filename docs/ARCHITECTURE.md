@@ -10,6 +10,8 @@ Multi-tenant inventory, purchasing, and sales platform built with Laravel 13, Po
 >
 > **Subscriptions:** See [SUBSCRIPTIONS-AND-PLANS.md](./SUBSCRIPTIONS-AND-PLANS.md) for plans, limits, and enforcement.
 >
+> **POS (future):** See [POS-PLANNING.md](./POS-PLANNING.md) for complete point-of-sale planning — not implemented.
+>
 > **Pre-launch:** See [PRELAUNCH_READINESS.MD](../PRELAUNCH_READINESS.MD) for password reset, auth hardening, email, webhooks, GDPR, sessions, health, and CI.
 
 ---
