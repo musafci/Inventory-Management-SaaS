@@ -4,16 +4,21 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\Supplier\StoreSupplierRequest;
 use App\Http\Requests\Supplier\UpdateSupplierRequest;
+use App\Http\Requests\Import\ImportCsvRequest;
 use App\Http\Resources\SupplierResource;
 use App\Models\Supplier;
 use App\Services\SupplierService;
+use App\Services\SupplierImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 class SupplierController extends ApiController
 {
     public function __construct(
         protected SupplierService $supplierService,
+        protected SupplierImportService $supplierImportService,
     ) {}
 
     public function index(): JsonResponse
@@ -42,6 +47,24 @@ class SupplierController extends ApiController
         $supplier = $this->supplierService->create($request->validated());
 
         return $this->success(new SupplierResource($supplier), status: 201);
+    }
+
+    public function import(ImportCsvRequest $request): JsonResponse
+    {
+        $this->authorize('create', Supplier::class);
+
+        try {
+            $result = $this->supplierImportService->import(
+                app('currentOrganization'),
+                $request->validated('csv'),
+            );
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages([
+                'csv' => [$exception->getMessage()],
+            ]);
+        }
+
+        return $this->success($result);
     }
 
     public function show(int $supplierId): JsonResponse

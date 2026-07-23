@@ -6,6 +6,7 @@ use App\Http\Livewire\Concerns\EnsuresPermission;
 use App\Http\Livewire\Concerns\MapsFormValidationAttributes;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\WithFileUploads;
 use App\Services\Web\ApiClient;
 
 #[Layout('layouts.app')]
@@ -13,6 +14,7 @@ class Suppliers extends Component
 {
     use EnsuresPermission;
     use MapsFormValidationAttributes;
+    use WithFileUploads;
 
     public $items = [];
     public $pagination = [];
@@ -22,7 +24,12 @@ class Suppliers extends Component
     public $perPage = 15;
 
     public $showModal = false;
+    public $showImportModal = false;
     public $editingId = null;
+
+    public $importFile;
+    /** @var array<string, mixed>|null */
+    public $importResult = null;
 
     public $form = [
         'name' => '',
@@ -139,6 +146,61 @@ class Suppliers extends Component
     {
         $this->showModal = false;
         $this->resetForm();
+    }
+
+    public function openImportModal()
+    {
+        $this->ensurePermission('suppliers.create');
+        $this->importFile = null;
+        $this->importResult = null;
+        $this->resetValidation();
+        $this->showImportModal = true;
+    }
+
+    public function closeImportModal()
+    {
+        $this->showImportModal = false;
+        $this->importFile = null;
+        $this->importResult = null;
+    }
+
+    public function importCsv()
+    {
+        $this->ensurePermission('suppliers.create');
+        $this->validate([
+            'importFile' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+
+        $path = $this->importFile->getRealPath();
+        $csv = is_string($path) ? file_get_contents($path) : false;
+
+        if ($csv === false) {
+            $this->dispatch('toast', message: 'Unable to read the CSV file.', type: 'error');
+
+            return;
+        }
+
+        $api = new ApiClient();
+        $response = $api->post('/v1/suppliers/import', ['csv' => $csv]);
+
+        if (isset($response['error'])) {
+            $this->dispatch('toast', message: $response['error'], type: 'error');
+
+            return;
+        }
+
+        $this->importResult = $response['data'] ?? null;
+        $this->loadItems();
+
+        $imported = (int) ($this->importResult['imported'] ?? 0);
+        $failed = (int) ($this->importResult['failed'] ?? 0);
+
+        if ($failed > 0) {
+            $this->dispatch('toast', message: "Imported {$imported} suppliers. {$failed} rows failed.", type: 'error');
+        } else {
+            $this->dispatch('toast', message: "Imported {$imported} suppliers successfully.", type: 'success');
+            $this->closeImportModal();
+        }
     }
 
     public function store()

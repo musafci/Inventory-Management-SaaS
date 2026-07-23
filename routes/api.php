@@ -54,6 +54,7 @@ Route::prefix('v1')->group(function (): void {
     Route::middleware(['auth:api', 'tenant', 'throttle:api-tenant'])->group(function (): void {
         Route::apiResource('suppliers', SupplierController::class)
             ->parameters(['suppliers' => 'supplierId']);
+        Route::post('suppliers/import', [SupplierController::class, 'import']);
 
         Route::post('purchase-orders', [PurchaseOrderController::class, 'store'])
             ->middleware('idempotency');
@@ -92,6 +93,7 @@ Route::prefix('v1')->group(function (): void {
 
         Route::apiResource('customers', CustomerController::class)
             ->parameters(['customers' => 'customerId']);
+        Route::post('customers/import', [CustomerController::class, 'import']);
 
         Route::post('sales-orders', [SalesOrderController::class, 'store'])
             ->middleware('idempotency');
@@ -108,6 +110,8 @@ Route::prefix('v1')->group(function (): void {
 
         Route::post('products/authorization-probe', [ProductAuthorizationProbeController::class, 'store'])
             ->middleware('permission:inventory.create,api');
+
+        Route::post('products/import', [ProductController::class, 'import']);
 
         Route::apiResource('products', ProductController::class)
             ->parameters(['products' => 'productId']);

@@ -4,16 +4,21 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\Customer\StoreCustomerRequest;
 use App\Http\Requests\Customer\UpdateCustomerRequest;
+use App\Http\Requests\Import\ImportCsvRequest;
 use App\Http\Resources\CustomerResource;
 use App\Models\Customer;
 use App\Services\CustomerService;
+use App\Services\CustomerImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 class CustomerController extends ApiController
 {
     public function __construct(
         protected CustomerService $customerService,
+        protected CustomerImportService $customerImportService,
     ) {}
 
     public function index(): JsonResponse
@@ -42,6 +47,24 @@ class CustomerController extends ApiController
         $customer = $this->customerService->create($request->validated());
 
         return $this->success(new CustomerResource($customer), status: 201);
+    }
+
+    public function import(ImportCsvRequest $request): JsonResponse
+    {
+        $this->authorize('create', Customer::class);
+
+        try {
+            $result = $this->customerImportService->import(
+                app('currentOrganization'),
+                $request->validated('csv'),
+            );
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages([
+                'csv' => [$exception->getMessage()],
+            ]);
+        }
+
+        return $this->success($result);
     }
 
     public function show(int $customerId): JsonResponse

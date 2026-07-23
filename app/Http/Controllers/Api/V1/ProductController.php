@@ -4,20 +4,25 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\Product\StoreProductRequest;
 use App\Http\Requests\Product\UpdateProductRequest;
+use App\Http\Requests\Import\ImportCsvRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Services\ProductService;
+use App\Services\ProductImportService;
 use Dedoc\Scramble\Attributes\Endpoint;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response as ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 #[Group('Products', description: 'Product catalog CRUD within the active organization.', weight: 10)]
 class ProductController extends ApiController
 {
     public function __construct(
         protected ProductService $productService,
+        protected ProductImportService $productImportService,
     ) {}
 
     #[Endpoint(operationId: 'products.index', title: 'List products', description: 'Returns a paginated list of products for the active organization.')]
@@ -100,6 +105,24 @@ class ProductController extends ApiController
         $product = $this->productService->create($request->validated());
 
         return $this->success(new ProductResource($product), status: 201);
+    }
+
+    public function import(ImportCsvRequest $request): JsonResponse
+    {
+        $this->authorize('create', Product::class);
+
+        try {
+            $result = $this->productImportService->import(
+                app('currentOrganization'),
+                $request->validated('csv'),
+            );
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages([
+                'csv' => [$exception->getMessage()],
+            ]);
+        }
+
+        return $this->success($result);
     }
 
     #[Endpoint(operationId: 'products.show', title: 'Show product', description: 'Returns a single product by ID within the active organization.')]

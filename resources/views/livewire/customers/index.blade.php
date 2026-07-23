@@ -8,10 +8,15 @@
                 <input type="text" wire:model.live.debounce.300ms="search" class="form-input pl-10" placeholder="Search customers..." wire:loading.class="search-loading" wire:target="search">
             </div>
         </div>
-        <button wire:click="openModal()" class="btn-primary">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-            Add Customer
-        </button>
+        @canaccess('customers.create')
+        <div class="flex items-center gap-2">
+            <button wire:click="openImportModal()" class="btn-secondary">Import CSV</button>
+            <button wire:click="openModal()" class="btn-primary">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                Add Customer
+            </button>
+        </div>
+        @endcanaccess
     </div>
 
     <div class="card overflow-hidden" wire:loading.class="wire-loading-dim" wire:target="items">
@@ -122,6 +127,47 @@
                                     <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                                     Saving...
                                 </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($showImportModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto" x-data x-cloak>
+            <div class="flex min-h-full items-end justify-center px-4 pb-4 pt-4 sm:items-center sm:p-0">
+                <div class="fixed inset-0 bg-gray-900/50 transition-opacity" wire:click="closeImportModal()"></div>
+                <div class="relative w-full max-w-lg transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8">
+                    <form wire:submit.prevent="importCsv">
+                        <div class="border-b border-gray-100 px-6 py-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Import Customers from CSV</h3>
+                            <p class="mt-1 text-sm text-gray-500">Upload a CSV file with a header row.</p>
+                        </div>
+                        <div class="space-y-4 px-6 py-4">
+                            <div class="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
+                                Required columns: <code>name</code><br>
+                                Optional: <code>email</code>, <code>phone</code>, <code>address</code>
+                            </div>
+                            <div>
+                                <label class="form-label">CSV file</label>
+                                <input type="file" wire:model="importFile" accept=".csv,text/csv" class="form-input">
+                                @error('importFile') <p class="form-error">{{ $message }}</p> @enderror
+                            </div>
+                            @if($importResult && !empty($importResult['errors']))
+                                <div class="max-h-40 overflow-y-auto rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                                    @foreach($importResult['errors'] as $error)
+                                        <p><strong>Row {{ $error['row'] }}:</strong> {{ implode(' ', $error['messages']) }}</p>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                        <div class="flex justify-end gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4">
+                            <button type="button" wire:click="closeImportModal()" class="btn-secondary">Cancel</button>
+                            <button type="submit" class="btn-primary" wire:loading.attr="disabled">
+                                <span wire:loading.remove wire:target="importCsv">Import</span>
+                                <span wire:loading wire:target="importCsv">Importing...</span>
                             </button>
                         </div>
                     </form>
