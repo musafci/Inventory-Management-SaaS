@@ -13,6 +13,7 @@ use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use App\Services\ImpersonationService;
 use App\Services\PasswordResetService;
+use App\Services\PermissionAuthorizationService;
 use App\Services\SessionService;
 use Dedoc\Scramble\Attributes\Endpoint;
 use Dedoc\Scramble\Attributes\Group;
@@ -27,6 +28,7 @@ class AuthController extends ApiController
         protected AuthService $authService,
         protected ImpersonationService $impersonationService,
         protected PasswordResetService $passwordResetService,
+        protected PermissionAuthorizationService $permissionAuthorization,
         protected SessionService $sessionService,
     ) {}
 
@@ -210,13 +212,39 @@ class AuthController extends ApiController
     )]
     public function me(Request $request): JsonResponse
     {
-        $result = $this->authService->me($request->user());
+        $user = $request->user();
+        $result = $this->authService->me($user);
+
+        $organizationIdHeader = $request->header('X-Organization-Id');
+        $permissions = [];
+        $activeOrganizationId = null;
+
+        if ($organizationIdHeader !== null && $organizationIdHeader !== '') {
+            $organizationId = (int) $organizationIdHeader;
+
+            if ($organizationId <= 0) {
+                return $this->error('Organization context is invalid.', [], 403);
+            }
+
+            $belongsToOrganization = $user->organizations()
+                ->where('organizations.id', $organizationId)
+                ->exists();
+
+            if (! $belongsToOrganization) {
+                return $this->error('You do not belong to this organization.', [], 403);
+            }
+
+            $activeOrganizationId = $organizationId;
+            $permissions = $this->permissionAuthorization->permissionsForUser($user, $organizationId);
+        }
 
         return $this->success([
             'user' => new UserResource($result['user']),
             'organizations' => OrganizationResource::collection($result['organizations']),
+            'active_organization_id' => $activeOrganizationId,
+            'permissions' => $permissions,
             'impersonation' => $this->impersonationService->activeSessionForUser(
-                $request->user(),
+                $user,
                 $request->bearerToken(),
             ),
         ]);

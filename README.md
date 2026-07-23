@@ -141,6 +141,7 @@ Pre-launch readiness coverage: `php artisan test --filter=PrelaunchReadiness`
 | [PRICING_PLAN.md](PRICING_PLAN.md) | Authoritative pricing spec & seed values |
 | [docs/PLATFORM-ADMIN.md](docs/PLATFORM-ADMIN.md) | Super-admin portal, impersonation & platform API |
 | [docs/IMPERSONATION.md](docs/IMPERSONATION.md) | Login-as-tenant for support debugging (web + API) |
+| [docs/MOBILE-PLANNING.md](docs/MOBILE-PLANNING.md) | **Future:** React Native / Expo tenant mobile app (full web parity, offline, push) |
 | [PRELAUNCH_READINESS.MD](PRELAUNCH_READINESS.MD) | Pre-launch checklist (L0–L8) — implementation reference |
 | [PROJECT_BRIEF_FOR_SUPERADMIN.md](PROJECT_BRIEF_FOR_SUPERADMIN.md) | Platform layer product requirements |
 
@@ -177,6 +178,16 @@ php artisan platform:admin:create platform@example.com "Platform Admin" --passwo
 ```
 
 See [docs/PLATFORM-ADMIN.md](docs/PLATFORM-ADMIN.md) for the full API and enforcement details. For login-as-tenant support debugging, see [docs/IMPERSONATION.md](docs/IMPERSONATION.md).
+
+### Mobile app (Expo)
+
+Tenant React Native app lives in [`mobile/`](mobile/). Phase 0 includes auth, org switcher, and permission-gated tabs.
+
+```bash
+cd mobile && cp .env.example .env && npm install && npm start
+```
+
+See [mobile/README.md](mobile/README.md) and [docs/MOBILE-PLANNING.md](docs/MOBILE-PLANNING.md).
 
 ### Roles (seeded per organization)
 

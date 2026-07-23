@@ -152,5 +152,46 @@ test('auth me does not require organization header', function () {
 
     $response->assertOk()
         ->assertJsonPath('data.user.email', 'me@acme.test')
-        ->assertJsonCount(1, 'data.organizations');
+        ->assertJsonCount(1, 'data.organizations')
+        ->assertJsonPath('data.active_organization_id', null)
+        ->assertJsonPath('data.permissions', []);
+});
+
+test('auth me returns permissions when organization header is provided', function () {
+    $registerResponse = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'me-perms@acme.test',
+    ]))->assertCreated();
+
+    $accessToken = $registerResponse->json('data.token.access_token');
+    $organizationId = $registerResponse->json('data.organizations.0.id');
+
+    $response = $this->getJson('/api/v1/auth/me', [
+        'Authorization' => 'Bearer '.$accessToken,
+        'X-Organization-Id' => (string) $organizationId,
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('data.active_organization_id', $organizationId);
+
+    expect($response->json('data.permissions'))->toContain('inventory.view')
+        ->and($response->json('data.permissions'))->toContain('orders.sales.create')
+        ->and($response->json('data.permissions'))->toContain('settings.view');
+});
+
+test('auth me rejects organization header for org user does not belong to', function () {
+    $owner = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'me-owner@acme.test',
+        'organization_name' => 'Owner Org',
+    ]))->assertCreated();
+
+    $other = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'me-other@acme.test',
+        'organization_name' => 'Other Org',
+    ]))->assertCreated();
+
+    $this->getJson('/api/v1/auth/me', [
+        'Authorization' => 'Bearer '.$owner->json('data.token.access_token'),
+        'X-Organization-Id' => (string) $other->json('data.organizations.0.id'),
+    ])->assertForbidden()
+        ->assertJsonPath('message', 'You do not belong to this organization.');
 });
