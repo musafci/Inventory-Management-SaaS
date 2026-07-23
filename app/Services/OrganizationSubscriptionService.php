@@ -8,6 +8,7 @@ use App\Exceptions\SubscriptionPaymentRequiredException;
 use App\Models\Organization;
 use App\Models\OrganizationSubscription;
 use App\Models\Plan;
+use App\Jobs\SendOrganizationPlanUpgradedNotificationJob;
 use Illuminate\Support\Facades\DB;
 
 class OrganizationSubscriptionService
@@ -204,7 +205,25 @@ class OrganizationSubscriptionService
         ?\DateTimeInterface $trialEndsAt = null,
         ?\DateTimeInterface $periodEndsAt = null,
     ): OrganizationSubscription {
-        return DB::transaction(function () use ($organization, $plan, $status, $trialEndsAt, $periodEndsAt): OrganizationSubscription {
+        $shouldNotify = false;
+        $previousPlanSlug = null;
+        $previousStatus = null;
+
+        $subscription = DB::transaction(function () use (
+            $organization,
+            $plan,
+            $status,
+            $trialEndsAt,
+            $periodEndsAt,
+            &$shouldNotify,
+            &$previousPlanSlug,
+            &$previousStatus,
+        ): OrganizationSubscription {
+            $existing = OrganizationSubscription::query()
+                ->with('plan')
+                ->where('organization_id', $organization->id)
+                ->first();
+
             $subscription = OrganizationSubscription::query()->updateOrCreate(
                 ['organization_id' => $organization->id],
                 [
@@ -217,8 +236,49 @@ class OrganizationSubscriptionService
 
             $this->syncOrganizationPlanCache($organization->fresh(), $subscription);
 
-            return $subscription->load('plan');
+            $subscription->load('plan');
+
+            if ($this->shouldNotifyPlanUpgrade($existing, $subscription)) {
+                $shouldNotify = true;
+                $previousPlanSlug = $existing?->plan?->slug;
+                $previousStatus = $existing?->status?->value;
+            }
+
+            return $subscription;
         });
+
+        if ($shouldNotify) {
+            SendOrganizationPlanUpgradedNotificationJob::dispatch(
+                $organization->id,
+                $previousPlanSlug,
+                $previousStatus,
+            );
+        }
+
+        return $subscription;
+    }
+
+    protected function shouldNotifyPlanUpgrade(
+        ?OrganizationSubscription $previous,
+        OrganizationSubscription $current,
+    ): bool {
+        if ($current->status !== SubscriptionStatus::Active) {
+            return false;
+        }
+
+        if ($previous === null) {
+            return false;
+        }
+
+        if (in_array($previous->status, [
+            SubscriptionStatus::Trial,
+            SubscriptionStatus::Expired,
+            SubscriptionStatus::Cancelled,
+        ], true)) {
+            return true;
+        }
+
+        return $previous->plan_id !== $current->plan_id;
     }
 
     public function syncOrganizationPlanCache(Organization $organization, ?OrganizationSubscription $subscription = null): void

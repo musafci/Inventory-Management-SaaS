@@ -1,11 +1,13 @@
 <?php
 
 use App\Enums\SubscriptionStatus;
+use App\Mail\OrganizationPlanUpgradedMail;
 use App\Models\Organization;
 use App\Models\Plan;
 use App\Services\OrganizationSubscriptionService;
 use App\Services\StripeBillingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Stripe\Subscription as StripeSubscription;
 
 uses(RefreshDatabase::class);
@@ -78,6 +80,111 @@ test('stripe activation upgrades organization to selected plan', function () {
         ->and($subscription->status)->toBe(SubscriptionStatus::Active)
         ->and($subscription->plan->slug)->toBe('starter')
         ->and($subscription->billing_interval)->toBe('monthly');
+});
+
+test('stripe activation sends plan upgraded notification email', function () {
+    Mail::fake();
+
+    $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'stripe-upgrade-notify@acme.test',
+    ]))->assertCreated();
+
+    $organization = Organization::query()->findOrFail($register->json('data.organizations.0.id'));
+    $starter = Plan::query()->where('slug', 'starter')->firstOrFail();
+
+    $stripeSubscription = StripeSubscription::constructFrom([
+        'id' => 'sub_test_notify',
+        'status' => 'active',
+        'current_period_end' => now()->addMonth()->timestamp,
+        'metadata' => [
+            'organization_id' => (string) $organization->id,
+            'plan_slug' => 'starter',
+            'billing_interval' => 'monthly',
+        ],
+        'items' => [
+            'data' => [
+                [
+                    'price' => [
+                        'recurring' => ['interval' => 'month'],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    app(StripeBillingService::class)->activateFromStripeSubscription($organization, $stripeSubscription, $starter);
+
+    Mail::assertSent(OrganizationPlanUpgradedMail::class, function (OrganizationPlanUpgradedMail $mail): bool {
+        return $mail->hasTo('oneapp.com.bd@gmail.com')
+            && $mail->organization->name === 'Acme Inventory'
+            && $mail->subscription->plan->slug === 'starter'
+            && $mail->previousPlanSlug === 'growth'
+            && $mail->previousStatus === SubscriptionStatus::Trial->value;
+    });
+});
+
+test('renewing the same active plan does not send plan upgraded notification email', function () {
+    $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'stripe-renewal@acme.test',
+    ]))->assertCreated();
+
+    $organization = Organization::query()->findOrFail($register->json('data.organizations.0.id'));
+    $starter = Plan::query()->where('slug', 'starter')->firstOrFail();
+
+    $stripeSubscription = StripeSubscription::constructFrom([
+        'id' => 'sub_test_renewal',
+        'status' => 'active',
+        'current_period_end' => now()->addMonth()->timestamp,
+        'metadata' => [
+            'organization_id' => (string) $organization->id,
+            'plan_slug' => 'starter',
+            'billing_interval' => 'monthly',
+        ],
+        'items' => [
+            'data' => [
+                [
+                    'price' => [
+                        'recurring' => ['interval' => 'month'],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $billing = app(StripeBillingService::class);
+
+    Mail::fake();
+
+    $billing->activateFromStripeSubscription($organization, $stripeSubscription, $starter);
+
+    Mail::assertSent(OrganizationPlanUpgradedMail::class);
+
+    Mail::fake();
+
+    $billing->activateFromStripeSubscription($organization->fresh(), $stripeSubscription, $starter);
+
+    Mail::assertNotSent(OrganizationPlanUpgradedMail::class);
+});
+
+test('platform admin plan change sends plan upgraded notification email', function () {
+    Mail::fake();
+
+    $org = $this->registerOrganizationWithOwner(['email' => 'platform-plan-change@acme.test']);
+    $organization = Organization::query()->findOrFail($org['organization_id']);
+    $business = Plan::query()->where('slug', 'business')->firstOrFail();
+
+    app(OrganizationSubscriptionService::class)->updateSubscription(
+        $organization,
+        $business,
+        SubscriptionStatus::Active,
+        null,
+        now()->addMonth(),
+    );
+
+    Mail::assertSent(OrganizationPlanUpgradedMail::class, function (OrganizationPlanUpgradedMail $mail): bool {
+        return $mail->hasTo('oneapp.com.bd@gmail.com')
+            && $mail->subscription->plan->slug === 'business';
+    });
 });
 
 test('checkout requires configured stripe keys', function () {

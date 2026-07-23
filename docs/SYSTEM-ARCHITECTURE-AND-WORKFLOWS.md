@@ -860,6 +860,7 @@ Hard delete runs via scheduled `organizations:process-deletions`.
 |---------|-------------------|------------|
 | Registration | `SendWelcomeEmailJob` → `WelcomeMail` | New org owner |
 | Platform signup | `SendOrganizationRegisteredNotificationJob` | `ORGANIZATION_REGISTRATION_NOTIFICATION_EMAIL` |
+| Plan upgrade / paid activation | `SendOrganizationPlanUpgradedNotificationJob` | `ORGANIZATION_REGISTRATION_NOTIFICATION_EMAIL` |
 | Password reset | `PasswordResetMail` (queued) | Requesting user |
 | Trial ending soon | `subscriptions:notify-trial-ending` → `TrialEndingSoonMail` | Organization email |
 | Payment failed (Stripe) | `SendPaymentFailedNotificationJob` → `PaymentFailedMail` | Organization email |
