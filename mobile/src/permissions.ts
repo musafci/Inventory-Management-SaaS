@@ -28,6 +28,18 @@ export function canViewInventory(permissions: string[]): boolean {
   return can(permissions, 'inventory.view');
 }
 
+export function canCreateInventory(permissions: string[]): boolean {
+  return can(permissions, 'inventory.create');
+}
+
+export function canUpdateInventory(permissions: string[]): boolean {
+  return can(permissions, 'inventory.update');
+}
+
+export function canDeleteInventory(permissions: string[]): boolean {
+  return can(permissions, 'inventory.delete');
+}
+
 export function canViewSales(permissions: string[]): boolean {
   return canAny(permissions, ['customers.view', 'orders.sales.view', 'payments.view']);
 }

@@ -12,6 +12,10 @@ import * as authApi from '@/src/api/auth';
 import { ApiError } from '@/src/api/client';
 import type { ImpersonationSession, MeResponse, Organization, User } from '@/src/api/types';
 import * as authStorage from '@/src/auth/storage';
+import {
+  registerDevicePushToken,
+  unregisterDevicePushToken,
+} from '@/src/notifications/pushToken';
 
 type AuthContextValue = {
   isLoading: boolean;
@@ -177,6 +181,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOrganizationId(applied.organizationId);
         setPermissions(applied.permissions);
         setImpersonation(applied.impersonation);
+
+        void registerDevicePushToken(applied.organizationId);
       } catch {
         await authStorage.clearAuthStorage();
       } finally {
@@ -216,6 +222,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOrganizationId(applied.organizationId);
     setPermissions(applied.permissions);
     setImpersonation(applied.impersonation);
+
+    void registerDevicePushToken(applied.organizationId);
   }, []);
 
   const logout = useCallback(async () => {
@@ -223,6 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (accessToken) {
       try {
+        await unregisterDevicePushToken();
         await authApi.logout(accessToken);
       } catch {
         // Ignore network errors during logout.
@@ -248,6 +257,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOrganizationId(applied.organizationId);
     setPermissions(applied.permissions);
     setImpersonation(applied.impersonation);
+
+    void registerDevicePushToken(applied.organizationId);
   }, []);
 
   const value = useMemo<AuthContextValue>(
