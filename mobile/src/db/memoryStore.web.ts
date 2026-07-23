@@ -1,4 +1,4 @@
-import type { Category, Product, Unit } from '@/src/api/types';
+import type { Category, Customer, Payment, Product, PurchaseOrder, SalesOrder, Supplier, Unit } from '@/src/api/types';
 import type { OutboxMutation, SyncResource } from '@/src/db/types';
 
 type SyncEntry = {
@@ -29,6 +29,39 @@ function syncKey(organizationId: number, resource: SyncResource): string {
   return `${organizationId}:${resource}`;
 }
 
+function supplierKey(organizationId: number, supplierId: number): string {
+  return `${organizationId}:${supplierId}`;
+}
+
+function customerKey(organizationId: number, customerId: number): string {
+  return `${organizationId}:${customerId}`;
+}
+
+function paymentKey(organizationId: number, paymentId: number): string {
+  return `${organizationId}:${paymentId}`;
+}
+
+const suppliers = new Map<string, Supplier>();
+const customers = new Map<string, Customer>();
+const orders = new Map<string, PurchaseOrder | SalesOrder>();
+const payments = new Map<string, Payment>();
+
+export const webPartnersStore = {
+  suppliers,
+  customers,
+  supplierKey,
+  customerKey,
+};
+
+export const webOrdersStore = {
+  orders,
+};
+
+export const webPaymentsStore = {
+  payments,
+  paymentKey,
+};
+
 export const webMemoryStore = {
   products,
   categories,
@@ -46,6 +79,42 @@ export const webMemoryStore = {
 };
 
 import { clearInventoryMemoryCache } from '@/src/db/inventoryCache.web';
+
+export function clearPartnersMemoryCache(organizationId: number): void {
+  const prefix = `${organizationId}:`;
+
+  for (const key of suppliers.keys()) {
+    if (key.startsWith(prefix)) {
+      suppliers.delete(key);
+    }
+  }
+
+  for (const key of customers.keys()) {
+    if (key.startsWith(prefix)) {
+      customers.delete(key);
+    }
+  }
+}
+
+export function clearOrdersMemoryCache(organizationId: number): void {
+  const prefix = `${organizationId}:`;
+
+  for (const key of orders.keys()) {
+    if (key.startsWith(prefix)) {
+      orders.delete(key);
+    }
+  }
+}
+
+export function clearPaymentsMemoryCache(organizationId: number): void {
+  const prefix = `${organizationId}:`;
+
+  for (const key of payments.keys()) {
+    if (key.startsWith(prefix)) {
+      payments.delete(key);
+    }
+  }
+}
 
 export function clearOrganizationMemoryCache(organizationId: number): void {
   for (const key of products.keys()) {
@@ -79,4 +148,7 @@ export function clearOrganizationMemoryCache(organizationId: number): void {
   }
 
   clearInventoryMemoryCache(organizationId);
+  clearPartnersMemoryCache(organizationId);
+  clearOrdersMemoryCache(organizationId);
+  clearPaymentsMemoryCache(organizationId);
 }

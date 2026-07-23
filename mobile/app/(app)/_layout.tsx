@@ -39,6 +39,20 @@ export default function AppLayout() {
         <Stack.Screen name="units/index" options={{ title: 'Units' }} />
         <Stack.Screen name="units/new" options={{ title: 'New unit' }} />
         <Stack.Screen name="units/[id]/edit" options={{ title: 'Edit unit' }} />
+        <Stack.Screen name="suppliers/index" options={{ title: 'Suppliers' }} />
+        <Stack.Screen name="suppliers/new" options={{ title: 'New supplier' }} />
+        <Stack.Screen name="suppliers/[id]/edit" options={{ title: 'Edit supplier' }} />
+        <Stack.Screen name="customers/index" options={{ title: 'Customers' }} />
+        <Stack.Screen name="customers/new" options={{ title: 'New customer' }} />
+        <Stack.Screen name="customers/[id]/edit" options={{ title: 'Edit customer' }} />
+        <Stack.Screen name="purchase-orders/index" options={{ title: 'Purchase orders' }} />
+        <Stack.Screen name="purchase-orders/new" options={{ title: 'New purchase order' }} />
+        <Stack.Screen name="purchase-orders/[id]" options={{ title: 'Purchase order' }} />
+        <Stack.Screen name="sales-orders/index" options={{ title: 'Sales orders' }} />
+        <Stack.Screen name="sales-orders/new" options={{ title: 'New sales order' }} />
+        <Stack.Screen name="sales-orders/[id]" options={{ title: 'Sales order' }} />
+        <Stack.Screen name="payments/index" options={{ title: 'Payments' }} />
+        <Stack.Screen name="payments/[id]" options={{ title: 'Payment' }} />
       </Stack>
     </>
   );

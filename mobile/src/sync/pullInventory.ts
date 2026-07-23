@@ -10,6 +10,8 @@ import {
 } from '@/src/db/inventoryCache';
 import { getSyncCursor, setSyncCursor } from '@/src/db/syncMetadata';
 import { pullCatalogCache } from '@/src/sync/pullCatalog';
+import { pullOrdersCache } from '@/src/sync/pullOrders';
+import { pullPartnersCache } from '@/src/sync/pullPartners';
 
 export async function pullInventoryCache(organizationId: number): Promise<void> {
   const [warehousesCursor, stocksCursor, movementsCursor] = await Promise.all([
@@ -41,4 +43,6 @@ export async function pullInventoryCache(organizationId: number): Promise<void> 
 export async function pullAllCaches(organizationId: number): Promise<void> {
   await pullCatalogCache(organizationId);
   await pullInventoryCache(organizationId);
+  await pullPartnersCache(organizationId);
+  await pullOrdersCache(organizationId);
 }

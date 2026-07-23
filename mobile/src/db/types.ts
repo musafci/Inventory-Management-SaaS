@@ -19,7 +19,14 @@ export type SyncResource =
   | 'units'
   | 'warehouses'
   | 'stocks'
-  | 'stock_movements';
+  | 'stock_movements'
+  | 'suppliers'
+  | 'customers'
+  | 'purchase_orders'
+  | 'sales_orders'
+  | 'payments';
+
+export type OrderType = 'purchase_order' | 'sales_order';
 
 export type ProductRow = {
   id: number;
@@ -54,5 +61,56 @@ export type UnitRow = {
   name: string;
   symbol: string | null;
   created_at: string | null;
+  updated_at: string | null;
+};
+
+export type SupplierRow = {
+  id: number;
+  organization_id: number;
+  name: string;
+  contact_person: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type CustomerRow = {
+  id: number;
+  organization_id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type CachedOrderRow = {
+  id: number;
+  organization_id: number;
+  order_type: OrderType;
+  status: string;
+  reference_number: string | null;
+  total_amount: string | null;
+  partner_id: number | null;
+  order_date: string | null;
+  payload: string;
+  updated_at: string | null;
+};
+
+export type PaymentRow = {
+  id: number;
+  organization_id: number;
+  payable_type: string;
+  payable_id: number;
+  amount: string;
+  method: string;
+  status: string;
+  reference: string | null;
+  note: string | null;
+  paid_at: string | null;
+  payload: string;
   updated_at: string | null;
 };

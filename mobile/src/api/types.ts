@@ -172,3 +172,177 @@ export type StockMovementPayload = {
   quantity: number;
   note?: string | null;
 };
+
+export type Supplier = {
+  id: number;
+  organization_id: number;
+  name: string;
+  contact_person: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type Customer = {
+  id: number;
+  organization_id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type SupplierPayload = {
+  name: string;
+  contact_person?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+};
+
+export type CustomerPayload = {
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+};
+
+export type PurchaseOrderItem = {
+  id: number;
+  product_id: number;
+  quantity_ordered: number;
+  quantity_received: number;
+  quantity_remaining: number;
+  unit_cost: string;
+  discount?: string;
+  subtotal: string;
+};
+
+export type SalesOrderItem = {
+  id: number;
+  product_id: number;
+  quantity: number;
+  quantity_fulfilled: number;
+  quantity_returned: number;
+  unit_price: string;
+  discount?: string;
+  subtotal: string;
+};
+
+export type PurchaseOrder = {
+  id: number;
+  organization_id: number;
+  supplier_id: number;
+  warehouse_id: number;
+  po_number: string;
+  status: string;
+  order_date: string;
+  expected_date: string | null;
+  total_amount: string;
+  amount_paid?: string;
+  amount_due?: string;
+  supplier?: Supplier;
+  items?: PurchaseOrderItem[];
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type SalesOrder = {
+  id: number;
+  organization_id: number;
+  customer_id: number;
+  warehouse_id: number;
+  order_number: string;
+  status: string;
+  order_date: string;
+  total_amount: string;
+  amount_paid?: string;
+  amount_due?: string;
+  customer?: Customer;
+  items?: SalesOrderItem[];
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type PurchaseOrderItemPayload = {
+  product_id: number;
+  quantity_ordered: number;
+  unit_cost: number | string;
+  discount?: number | string;
+};
+
+export type SalesOrderItemPayload = {
+  product_id: number;
+  quantity: number;
+  unit_price: number | string;
+  discount?: number | string;
+};
+
+export type PurchaseOrderPayload = {
+  supplier_id: number;
+  warehouse_id: number;
+  order_date: string;
+  expected_date?: string | null;
+  items: PurchaseOrderItemPayload[];
+};
+
+export type SalesOrderPayload = {
+  customer_id: number;
+  warehouse_id: number;
+  order_date: string;
+  items: SalesOrderItemPayload[];
+};
+
+export type ReceivePurchaseOrderPayload = {
+  items: Array<{
+    purchase_order_item_id: number;
+    quantity: number;
+  }>;
+  note?: string | null;
+};
+
+export type FulfillSalesOrderPayload = {
+  items: Array<{
+    sales_order_item_id: number;
+    quantity: number;
+  }>;
+  note?: string | null;
+};
+
+export type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'check' | 'other';
+
+export type Payment = {
+  id: number;
+  organization_id: number;
+  payable_type: string;
+  payable_id: number;
+  amount: string;
+  method: PaymentMethod | string;
+  status: string;
+  reference: string | null;
+  note: string | null;
+  paid_at: string | null;
+  recorded_by?: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type PaymentPayload = {
+  amount: number | string;
+  method: PaymentMethod | string;
+  reference?: string | null;
+  note?: string | null;
+  paid_at?: string | null;
+};
+
+export type RefundPayload = {
+  amount: number | string;
+  method: PaymentMethod | string;
+  reference?: string | null;
+  note?: string | null;
+  paid_at?: string | null;
+};

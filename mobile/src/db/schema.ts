@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const MIGRATION_SQL = `
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -113,4 +113,64 @@ CREATE INDEX IF NOT EXISTS idx_warehouses_org ON warehouses (organization_id);
 CREATE INDEX IF NOT EXISTS idx_stocks_org ON stocks (organization_id);
 CREATE INDEX IF NOT EXISTS idx_stock_movements_org ON stock_movements (organization_id);
 CREATE INDEX IF NOT EXISTS idx_outbox_status ON outbox_mutations (status, organization_id);
+
+CREATE TABLE IF NOT EXISTS suppliers (
+  id INTEGER NOT NULL,
+  organization_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  contact_person TEXT,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  created_at TEXT,
+  updated_at TEXT,
+  PRIMARY KEY (id, organization_id)
+);
+
+CREATE TABLE IF NOT EXISTS customers (
+  id INTEGER NOT NULL,
+  organization_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  created_at TEXT,
+  updated_at TEXT,
+  PRIMARY KEY (id, organization_id)
+);
+
+CREATE TABLE IF NOT EXISTS cached_orders (
+  id INTEGER NOT NULL,
+  organization_id INTEGER NOT NULL,
+  order_type TEXT NOT NULL,
+  status TEXT NOT NULL,
+  reference_number TEXT,
+  total_amount TEXT,
+  partner_id INTEGER,
+  order_date TEXT,
+  payload TEXT NOT NULL,
+  updated_at TEXT,
+  PRIMARY KEY (id, organization_id, order_type)
+);
+
+CREATE TABLE IF NOT EXISTS payments (
+  id INTEGER NOT NULL,
+  organization_id INTEGER NOT NULL,
+  payable_type TEXT NOT NULL,
+  payable_id INTEGER NOT NULL,
+  amount TEXT NOT NULL,
+  method TEXT NOT NULL,
+  status TEXT NOT NULL,
+  reference TEXT,
+  note TEXT,
+  paid_at TEXT,
+  payload TEXT NOT NULL,
+  updated_at TEXT,
+  PRIMARY KEY (id, organization_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_suppliers_org ON suppliers (organization_id);
+CREATE INDEX IF NOT EXISTS idx_customers_org ON customers (organization_id);
+CREATE INDEX IF NOT EXISTS idx_cached_orders_org ON cached_orders (organization_id, order_type);
+CREATE INDEX IF NOT EXISTS idx_payments_org ON payments (organization_id);
 `;

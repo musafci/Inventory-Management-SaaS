@@ -42,6 +42,10 @@ export async function clearOrganizationCache(organizationId: number): Promise<vo
     await db.runAsync('DELETE FROM warehouses WHERE organization_id = ?', organizationId);
     await db.runAsync('DELETE FROM stocks WHERE organization_id = ?', organizationId);
     await db.runAsync('DELETE FROM stock_movements WHERE organization_id = ?', organizationId);
+    await db.runAsync('DELETE FROM suppliers WHERE organization_id = ?', organizationId);
+    await db.runAsync('DELETE FROM customers WHERE organization_id = ?', organizationId);
+    await db.runAsync('DELETE FROM cached_orders WHERE organization_id = ?', organizationId);
+    await db.runAsync('DELETE FROM payments WHERE organization_id = ?', organizationId);
     await db.runAsync('DELETE FROM sync_metadata WHERE organization_id = ?', organizationId);
     await db.runAsync('DELETE FROM outbox_mutations WHERE organization_id = ?', organizationId);
   });
