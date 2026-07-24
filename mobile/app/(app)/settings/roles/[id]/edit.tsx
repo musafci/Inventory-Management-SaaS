@@ -1,18 +1,11 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Button, ErrorState, FormScreen, Input, LoadingState, SectionHeader } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { usePermissionGroups, useRoles, useUpdateRole } from '@/src/hooks/useTeam';
+import { theme } from '@/src/theme';
 
 export default function EditRoleScreen() {
   const router = useRouter();
@@ -48,13 +41,27 @@ export default function EditRoleScreen() {
     ));
   };
 
+  const handleSubmit = () => {
+    void (async () => {
+      try {
+        await updateMutation.mutateAsync({
+          name: name.trim(),
+          description: description.trim() || null,
+          permissions,
+        });
+        router.back();
+      } catch (error) {
+        const message = error instanceof ApiError ? error.message : 'Could not update role.';
+        Alert.alert('Update failed', message);
+      }
+    })();
+  };
+
   if (rolesQuery.isLoading) {
     return (
       <>
         <Stack.Screen options={{ title: 'Edit role' }} />
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" />
-        </View>
+        <LoadingState />
       </>
     );
   }
@@ -63,9 +70,7 @@ export default function EditRoleScreen() {
     return (
       <>
         <Stack.Screen options={{ title: 'Edit role' }} />
-        <View style={styles.centered}>
-          <Text style={styles.error}>Role not found.</Text>
-        </View>
+        <ErrorState message="Role not found." />
       </>
     );
   }
@@ -73,32 +78,24 @@ export default function EditRoleScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Edit role' }} />
-      <ScrollView contentContainerStyle={styles.container}>
+      <FormScreen>
         {role.is_protected ? (
           <View style={styles.notice}>
             <Text style={styles.noticeText}>This is a protected role. Some fields may be restricted.</Text>
           </View>
         ) : null}
 
-        <Text style={styles.label}>Name</Text>
-        <TextInput
+        <Input
+          editable={!role.is_protected}
+          label="Name"
           value={name}
           onChangeText={setName}
-          editable={!role.is_protected}
-          style={styles.input}
         />
+        <Input label="Description" multiline value={description} onChangeText={setDescription} />
 
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          style={[styles.input, styles.textArea]}
-        />
-
-        <Text style={styles.sectionTitle}>Permissions</Text>
+        <SectionHeader title="Permissions" />
         {groupsQuery.isLoading ? (
-          <ActivityIndicator style={styles.loader} />
+          <LoadingState />
         ) : (
           Object.entries(groups).map(([groupName, groupPermissions]) => (
             <View key={groupName} style={styles.group}>
@@ -119,140 +116,63 @@ export default function EditRoleScreen() {
           ))
         )}
 
-        <Pressable
-          disabled={updateMutation.isPending || !name.trim()}
-          onPress={() => {
-            void (async () => {
-              try {
-                await updateMutation.mutateAsync({
-                  name: name.trim(),
-                  description: description.trim() || null,
-                  permissions,
-                });
-                router.back();
-              } catch (error) {
-                const message = error instanceof ApiError ? error.message : 'Could not update role.';
-                Alert.alert('Update failed', message);
-              }
-            })();
-          }}
-          style={[styles.button, updateMutation.isPending ? styles.buttonDisabled : null]}>
-          <Text style={styles.buttonText}>{updateMutation.isPending ? 'Saving…' : 'Save changes'}</Text>
-        </Pressable>
-      </ScrollView>
+        <Button
+          disabled={!name.trim()}
+          label="Save changes"
+          loading={updateMutation.isPending}
+          onPress={handleSubmit}
+        />
+      </FormScreen>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flexGrow: 1,
-    padding: 16,
-    paddingBottom: 40,
-  },
-  centered: {
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  error: {
-    color: '#b91c1c',
-    fontSize: 15,
-  },
   notice: {
-    backgroundColor: '#fef3c7',
-    borderColor: '#fcd34d',
-    borderRadius: 10,
+    backgroundColor: theme.colors.warningSoft,
+    borderColor: theme.colors.warning,
+    borderRadius: theme.radius.sm,
     borderWidth: 1,
-    marginBottom: 16,
-    padding: 12,
+    marginBottom: theme.spacing.lg,
+    padding: theme.spacing.md,
   },
   noticeText: {
-    color: '#92400e',
+    color: theme.colors.warning,
     fontSize: 14,
-  },
-  label: {
-    color: '#334155',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    marginTop: 12,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    borderWidth: 1,
-    fontSize: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  sectionTitle: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
-    marginTop: 20,
-  },
-  loader: {
-    marginVertical: 16,
   },
   group: {
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   groupTitle: {
-    color: '#64748b',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 8,
-    textTransform: 'uppercase',
+    ...theme.typography.label,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.sm,
   },
   permissionRow: {
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 8,
+    backgroundColor: theme.colors.surfaceMuted,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.sm,
     borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
-    paddingHorizontal: 12,
+    marginBottom: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
     paddingVertical: 10,
   },
   permissionSelected: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#2563eb',
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primary,
   },
   permissionText: {
-    color: '#334155',
+    color: theme.colors.text,
     flex: 1,
     fontSize: 14,
   },
   checkmark: {
-    color: '#2563eb',
+    color: theme.colors.primary,
     fontSize: 16,
     fontWeight: '700',
-    marginLeft: 8,
-  },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    marginTop: 24,
-    paddingVertical: 14,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    marginLeft: theme.spacing.sm,
   },
 });

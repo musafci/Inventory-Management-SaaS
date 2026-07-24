@@ -1,9 +1,11 @@
 import { type Href } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
 
 import { HubCard } from '@/components/HubCard';
+import { HubScreenLayout } from '@/components/ui';
 import { useAuth } from '@/src/auth/AuthContext';
 import { canCreateSupplier } from '@/src/permissions';
+import type { AccentTone } from '@/src/theme';
+import type { AppIcon } from '@/src/theme/icons';
 
 type PurchasingLink = {
   href: Href;
@@ -11,6 +13,8 @@ type PurchasingLink = {
   body: string;
   testID: string;
   visible?: boolean;
+  tone?: AccentTone;
+  icon?: AppIcon;
 };
 
 export default function PurchasingScreen() {
@@ -22,12 +26,16 @@ export default function PurchasingScreen() {
       title: 'Suppliers',
       body: 'Browse, create, edit, and delete suppliers.',
       testID: 'hub-suppliers',
+      tone: 'amber',
+      icon: { ios: 'person.crop.rectangle.fill', android: 'business', web: 'business' },
     },
     {
       href: '/(app)/purchase-orders',
       title: 'Purchase orders',
       body: 'Create orders, receive stock, and record payments.',
       testID: 'hub-purchase-orders',
+      tone: 'indigo',
+      icon: { ios: 'shippingbox.fill', android: 'inventory_2', web: 'inventory_2' },
     },
     {
       href: '/(app)/imports/suppliers' as Href,
@@ -35,45 +43,27 @@ export default function PurchasingScreen() {
       body: 'Bulk upload suppliers from a CSV file.',
       testID: 'hub-import-suppliers',
       visible: canCreateSupplier(permissions),
+      tone: 'violet',
+      icon: { ios: 'square.and.arrow.down.fill', android: 'download', web: 'download' },
     },
   ];
 
   return (
-    <View style={styles.container}>
-      <Text accessibilityRole="header" style={styles.title}>Purchasing</Text>
-      <Text style={styles.description}>
-        Manage suppliers and purchase orders from the modules below.
-      </Text>
-
+    <HubScreenLayout
+      description="Manage suppliers and purchase orders from the modules below."
+      eyebrow="Purchasing"
+      title="Procurement hub">
       {links.filter((link) => link.visible !== false).map((link) => (
         <HubCard
           key={link.testID}
-          href={link.href}
-          title={link.title}
           body={link.body}
+          href={link.href}
+          icon={link.icon}
           testID={link.testID}
+          title={link.title}
+          tone={link.tone}
         />
       ))}
-    </View>
+    </HubScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    color: '#0f172a',
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  description: {
-    color: '#64748b',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 20,
-    marginTop: 10,
-  },
-});

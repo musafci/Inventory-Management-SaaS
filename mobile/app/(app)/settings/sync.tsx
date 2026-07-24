@@ -1,8 +1,16 @@
 import { Stack } from 'expo-router';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
+import {
+  Button,
+  Card,
+  DetailRow,
+  ScreenScrollView,
+  SectionHeader,
+} from '@/components/ui';
 import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 import { useSync } from '@/src/sync/SyncContext';
+import { theme } from '@/src/theme';
 
 function formatSyncedAt(value: string | null): string {
   if (!value) {
@@ -27,37 +35,32 @@ export default function SyncSettingsScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Sync status' }} />
-      <View style={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.label}>Database</Text>
-          <Text style={styles.value}>{isReady ? 'Ready' : 'Initializing…'}</Text>
-        </View>
+      <ScreenScrollView>
+        <Card>
+          <DetailRow label="Database" value={isReady ? 'Ready' : 'Initializing…'} />
+        </Card>
 
-        <View style={styles.card}>
-          <Text style={styles.label}>Pending changes</Text>
-          <Text style={styles.value}>{pendingOutboxCount}</Text>
+        <Card>
+          <DetailRow label="Pending changes" value={String(pendingOutboxCount)} />
           <Text style={styles.meta}>Mutations waiting to sync to the server.</Text>
-        </View>
+        </Card>
 
-        <View style={styles.card}>
-          <Text style={styles.label}>Last synced</Text>
-          <Text style={styles.value}>{formatSyncedAt(lastSyncedAt)}</Text>
-        </View>
+        <Card>
+          <DetailRow label="Last synced" value={formatSyncedAt(lastSyncedAt)} />
+        </Card>
 
-        <Pressable
+        <Button
           disabled={!isReady || isSyncing}
+          label={isSyncing ? 'Syncing…' : 'Sync now'}
+          loading={isSyncing}
           onPress={() => {
             void syncNow();
           }}
-          style={[styles.button, !isReady || isSyncing ? styles.buttonDisabled : null]}>
-          <Text style={styles.buttonText}>
-            {isSyncing ? 'Syncing…' : 'Sync now'}
-          </Text>
-        </Pressable>
+        />
 
         {failedMutations.length > 0 ? (
           <View style={styles.failedSection}>
-            <Text style={styles.failedTitle}>Failed changes</Text>
+            <SectionHeader title="Failed changes" />
             <Text style={styles.failedDescription}>
               These queued actions could not be applied. Retry after fixing the issue, or dismiss to remove them.
             </Text>
@@ -66,18 +69,20 @@ export default function SyncSettingsScreen() {
               keyExtractor={(item) => String(item.id)}
               scrollEnabled={false}
               renderItem={({ item }) => (
-                <View style={styles.failedCard}>
+                <Card style={styles.failedCard}>
                   <Text style={styles.failedMethod}>{item.method} {item.path}</Text>
                   <Text style={styles.failedError}>{item.error_message ?? 'Unknown error'}</Text>
                   <View style={styles.failedActions}>
-                    <Pressable
+                    <Button
+                      label="Retry"
+                      variant="ghost"
                       onPress={() => {
                         void retryMutation(item.id);
                       }}
-                      style={styles.retryButton}>
-                      <Text style={styles.retryText}>Retry</Text>
-                    </Pressable>
-                    <Pressable
+                    />
+                    <Button
+                      label="Dismiss"
+                      variant="danger"
                       onPress={() => {
                         Alert.alert('Dismiss change', 'Remove this failed mutation from the queue?', [
                           { text: 'Cancel', style: 'cancel' },
@@ -90,125 +95,51 @@ export default function SyncSettingsScreen() {
                           },
                         ]);
                       }}
-                      style={styles.dismissButton}>
-                      <Text style={styles.dismissText}>Dismiss</Text>
-                    </Pressable>
+                    />
                   </View>
-                </View>
+                </Card>
               )}
             />
           </View>
         ) : null}
-      </View>
+      </ScreenScrollView>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flex: 1,
-    padding: 20,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 16,
-  },
-  label: {
-    color: '#64748b',
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  value: {
-    color: '#0f172a',
-    fontSize: 20,
-    fontWeight: '700',
-    marginTop: 8,
-  },
   meta: {
-    color: '#64748b',
-    fontSize: 13,
-    marginTop: 6,
-  },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#2563eb',
-    borderRadius: 12,
-    marginTop: 8,
-    paddingVertical: 14,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
   },
   failedSection: {
-    marginTop: 20,
-  },
-  failedTitle: {
-    color: '#0f172a',
-    fontSize: 18,
-    fontWeight: '700',
+    marginTop: theme.spacing.xl,
   },
   failedDescription: {
-    color: '#64748b',
-    fontSize: 14,
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
-    marginBottom: 12,
-    marginTop: 6,
+    marginBottom: theme.spacing.md,
   },
   failedCard: {
-    backgroundColor: '#fff',
-    borderColor: '#fecaca',
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 10,
-    padding: 14,
+    borderColor: theme.colors.danger,
+    marginBottom: theme.spacing.sm,
   },
   failedMethod: {
-    color: '#0f172a',
+    color: theme.colors.text,
     fontFamily: 'SpaceMono',
     fontSize: 12,
   },
   failedError: {
-    color: '#b91c1c',
+    color: theme.colors.danger,
     fontSize: 14,
     lineHeight: 20,
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
   failedActions: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 12,
-  },
-  retryButton: {
-    backgroundColor: '#dbeafe',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  retryText: {
-    color: '#1d4ed8',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  dismissButton: {
-    backgroundColor: '#fee2e2',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  dismissText: {
-    color: '#b91c1c',
-    fontSize: 14,
-    fontWeight: '600',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.md,
   },
 });

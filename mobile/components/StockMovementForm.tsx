@@ -1,16 +1,8 @@
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EmptyWarehousesPrompt } from '@/components/EmptyWarehousesPrompt';
+import { Button, ChipSelect, FormScreen, Input, LoadingState } from '@/components/ui';
 import type { StockMovementPayload, StockMovementType } from '@/src/api/types';
 import {
   useCachedProductsForPicker,
@@ -18,6 +10,7 @@ import {
   useWarehouses,
 } from '@/src/hooks/useInventory';
 import { useNetwork } from '@/src/network/NetworkContext';
+import { theme } from '@/src/theme';
 
 type StockMovementFormProps = {
   onSuccess: () => void;
@@ -56,11 +49,7 @@ export function StockMovementForm({ onSuccess }: StockMovementFormProps) {
   }, [productId, products]);
 
   if (warehousesQuery.isLoading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+    return <LoadingState />;
   }
 
   if (warehouses.length === 0) {
@@ -107,43 +96,36 @@ export function StockMovementForm({ onSuccess }: StockMovementFormProps) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <FormScreen>
       {!isConnected ? (
-        <Text style={styles.offlineNote}>
-          Offline mode: this adjustment will be queued for sync.
-        </Text>
+        <View style={styles.offlineNote}>
+          <Text style={styles.offlineText}>
+            Offline mode: this adjustment will be queued for sync.
+          </Text>
+        </View>
       ) : null}
 
-      <Text style={styles.label}>Warehouse</Text>
-      <View style={styles.chipRow}>
-        {warehouses.map((warehouse) => (
-          <Pressable
-            key={warehouse.id}
-            onPress={() => setWarehouseId(warehouse.id)}
-            style={[styles.chip, warehouseId === warehouse.id ? styles.chipSelected : null]}>
-            <Text
-              style={[
-                styles.chipText,
-                warehouseId === warehouse.id ? styles.chipTextSelected : null,
-              ]}>
-              {warehouse.name}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <ChipSelect
+        label="Warehouse"
+        options={warehouses.map((warehouse) => ({
+          label: warehouse.name,
+          value: String(warehouse.id),
+        }))}
+        value={String(warehouseId)}
+        onChange={(value) => setWarehouseId(Number(value))}
+      />
 
-      <Text style={styles.label}>Product search</Text>
-      <TextInput
+      <Input
+        label="Product search"
+        placeholder="Search cached products"
         value={productSearch}
         onChangeText={(value) => {
           setProductSearch(value);
           setProductId(0);
         }}
-        placeholder="Search cached products"
-        style={styles.input}
       />
 
-      <Text style={styles.label}>Product</Text>
+      <Text style={styles.fieldLabel}>Product</Text>
       {products.length === 0 ? (
         <Text style={styles.helper}>No cached products match. Sync or search again.</Text>
       ) : (
@@ -165,133 +147,87 @@ export function StockMovementForm({ onSuccess }: StockMovementFormProps) {
         </View>
       )}
 
-      <Text style={styles.label}>Movement type</Text>
-      <View style={styles.chipRow}>
-        {movementTypes.map((option) => (
-          <Pressable
-            key={option.value}
-            onPress={() => setType(option.value)}
-            style={[styles.chip, type === option.value ? styles.chipSelected : null]}>
-            <Text
-              style={[
-                styles.chipText,
-                type === option.value ? styles.chipTextSelected : null,
-              ]}>
-              {option.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <ChipSelect
+        label="Movement type"
+        options={movementTypes.map((option) => ({
+          label: option.label,
+          value: option.value,
+        }))}
+        value={type}
+        onChange={setType}
+      />
 
-      <Text style={styles.label}>Quantity</Text>
-      <TextInput
+      <Input
+        keyboardType="number-pad"
+        label="Quantity"
         value={quantity}
         onChangeText={setQuantity}
-        keyboardType="number-pad"
-        style={styles.input}
       />
 
-      <Text style={styles.label}>Note</Text>
-      <TextInput
+      <Input
+        label="Note"
+        multiline
+        placeholder="Optional note"
         value={note}
         onChangeText={setNote}
-        placeholder="Optional note"
-        style={[styles.input, styles.noteInput]}
-        multiline
       />
 
-      <Pressable
-        disabled={mutation.isPending}
-        onPress={() => {
-          void handleSubmit();
-        }}
-        style={[styles.button, mutation.isPending ? styles.buttonDisabled : null]}>
-        <Text style={styles.buttonText}>{mutation.isPending ? 'Saving…' : 'Record movement'}</Text>
-      </Pressable>
-    </ScrollView>
+      <Button
+        label="Record movement"
+        loading={mutation.isPending}
+        onPress={() => void handleSubmit()}
+      />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    paddingBottom: 40,
+  offlineNote: {
+    backgroundColor: theme.colors.warningSoft,
+    borderRadius: theme.radius.sm,
+    marginBottom: theme.spacing.md,
+    padding: theme.spacing.md,
   },
-  loading: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
+  offlineText: {
+    color: theme.colors.warning,
+    fontSize: 13,
+  },
+  fieldLabel: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
+    marginBottom: theme.spacing.sm,
   },
   helper: {
-    color: '#64748b',
-    fontSize: 15,
-    lineHeight: 22,
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.md,
     textAlign: 'center',
-  },
-  offlineNote: {
-    backgroundColor: '#fef3c7',
-    borderRadius: 8,
-    color: '#92400e',
-    fontSize: 13,
-    marginBottom: 12,
-    padding: 10,
-  },
-  label: {
-    color: '#334155',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    marginTop: 12,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    borderWidth: 1,
-    fontSize: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  noteInput: {
-    minHeight: 80,
-    textAlignVertical: 'top',
   },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
   },
   chip: {
-    backgroundColor: '#e2e8f0',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: theme.colors.surfaceMuted,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   chipSelected: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   chipText: {
-    color: '#334155',
+    color: theme.colors.textSecondary,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   chipTextSelected: {
-    color: '#fff',
-  },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    marginTop: 24,
-    paddingVertical: 14,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    color: theme.colors.primaryText,
   },
 });

@@ -1,7 +1,8 @@
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
+import { Alert } from 'react-native';
 
+import { Button, FormScreen, Input } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { useCreateSupplier } from '@/src/hooks/usePartners';
 
@@ -14,119 +15,64 @@ export default function NewSupplierScreen() {
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
 
+  const handleSubmit = () => {
+    void (async () => {
+      try {
+        await mutation.mutateAsync({
+          name: name.trim(),
+          contact_person: contactPerson.trim() || null,
+          email: email.trim() || null,
+          phone: phone.trim() || null,
+          address: address.trim() || null,
+        });
+        router.back();
+      } catch (error) {
+        const message = error instanceof ApiError ? error.message : 'Could not create supplier.';
+        Alert.alert('Create failed', message);
+      }
+    })();
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: 'New supplier' }} />
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.label}>Name</Text>
-        <TextInput
+      <FormScreen>
+        <Input
+          label="Name"
+          placeholder="Supplier name"
           value={name}
           onChangeText={setName}
-          placeholder="Supplier name"
-          style={styles.input}
         />
-
-        <Text style={styles.label}>Contact person</Text>
-        <TextInput
+        <Input
+          label="Contact person"
+          placeholder="Optional"
           value={contactPerson}
           onChangeText={setContactPerson}
-          placeholder="Optional"
-          style={styles.input}
         />
-
-        <Text style={styles.label}>Email</Text>
-        <TextInput
+        <Input
+          autoCapitalize="none"
+          keyboardType="email-address"
+          label="Email"
+          placeholder="Optional"
           value={email}
           onChangeText={setEmail}
-          placeholder="Optional"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          style={styles.input}
         />
-
-        <Text style={styles.label}>Phone</Text>
-        <TextInput
+        <Input
+          keyboardType="phone-pad"
+          label="Phone"
+          placeholder="Optional"
           value={phone}
           onChangeText={setPhone}
-          placeholder="Optional"
-          keyboardType="phone-pad"
-          style={styles.input}
         />
-
-        <Text style={styles.label}>Address</Text>
-        <TextInput
+        <Input
+          label="Address"
+          multiline
+          placeholder="Optional"
           value={address}
           onChangeText={setAddress}
-          placeholder="Optional"
-          style={[styles.input, styles.noteInput]}
-          multiline
         />
-
-        <Pressable
-          disabled={mutation.isPending}
-          onPress={() => {
-            void (async () => {
-              try {
-                await mutation.mutateAsync({
-                  name: name.trim(),
-                  contact_person: contactPerson.trim() || null,
-                  email: email.trim() || null,
-                  phone: phone.trim() || null,
-                  address: address.trim() || null,
-                });
-                router.back();
-              } catch (error) {
-                const message = error instanceof ApiError ? error.message : 'Could not create supplier.';
-                Alert.alert('Create failed', message);
-              }
-            })();
-          }}
-          style={[styles.button, mutation.isPending ? styles.buttonDisabled : null]}>
-          <Text style={styles.buttonText}>{mutation.isPending ? 'Saving…' : 'Create supplier'}</Text>
-        </Pressable>
-      </ScrollView>
+        <Button label="Create supplier" loading={mutation.isPending} onPress={handleSubmit} />
+      </FormScreen>
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  label: {
-    color: '#334155',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    marginTop: 12,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    borderWidth: 1,
-    fontSize: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  noteInput: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    marginTop: 24,
-    paddingVertical: 14,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-});

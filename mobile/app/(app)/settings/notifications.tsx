@@ -1,20 +1,18 @@
 import { Stack } from 'expo-router';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 
+import {
+  Card,
+  LoadingState,
+  ScreenScrollView,
+  SectionHeader,
+} from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
 } from '@/src/hooks/useNotifications';
+import { theme } from '@/src/theme';
 
 const EVENT_LABELS: Record<string, string> = {
   low_stock: 'Low stock alerts',
@@ -45,17 +43,17 @@ export default function NotificationSettingsScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Notifications' }} />
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Notification preferences</Text>
+      <ScreenScrollView>
+        <SectionHeader title="Notification preferences" />
         <Text style={styles.description}>
           Choose which push notifications you receive for this organization.
         </Text>
 
         {query.isLoading ? (
-          <ActivityIndicator size="large" />
+          <LoadingState />
         ) : (
           (query.data?.events ?? []).map((eventKey) => (
-            <View key={eventKey} style={styles.row}>
+            <Card key={eventKey} style={styles.row}>
               <View style={styles.rowBody}>
                 <Text style={styles.rowTitle}>{EVENT_LABELS[eventKey] ?? eventKey}</Text>
               </View>
@@ -64,51 +62,36 @@ export default function NotificationSettingsScreen() {
                 onValueChange={(value) => {
                   void togglePreference(eventKey, value);
                 }}
+                thumbColor={theme.colors.surface}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
                 value={query.data?.preferences[eventKey] ?? true}
               />
-            </View>
+            </Card>
           ))
         )}
-      </ScrollView>
+      </ScreenScrollView>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flexGrow: 1,
-    padding: 20,
-  },
-  title: {
-    color: '#0f172a',
-    fontSize: 24,
-    fontWeight: '700',
-  },
   description: {
-    color: '#64748b',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
-    marginTop: 8,
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.lg,
   },
   row: {
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    borderWidth: 1,
     flexDirection: 'row',
-    marginBottom: 10,
-    padding: 16,
+    marginBottom: theme.spacing.sm,
+    paddingVertical: theme.spacing.md,
   },
   rowBody: {
     flex: 1,
-    paddingRight: 12,
+    paddingRight: theme.spacing.md,
   },
   rowTitle: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '600',
+    ...theme.typography.bodyStrong,
+    color: theme.colors.text,
   },
 });

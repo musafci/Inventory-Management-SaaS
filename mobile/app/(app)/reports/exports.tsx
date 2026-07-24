@@ -1,18 +1,18 @@
 import { Stack } from 'expo-router';
 import { useState } from 'react';
+import { Alert, Share, StyleSheet, View } from 'react-native';
+
 import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  RefreshControl,
-  Share,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-
-import { OptimizedFlatList } from '@/components/OptimizedFlatList';
-
+  Button,
+  Card,
+  ErrorState,
+  ListRow,
+  LoadingState,
+  PaginatedListScreen,
+  ScreenContainer,
+  SectionHeader,
+  StatusBadge,
+} from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import type { ReportExportType } from '@/src/api/types';
 import { useAuth } from '@/src/auth/AuthContext';
@@ -22,6 +22,7 @@ import {
   useDownloadReportExport,
   useReportExports,
 } from '@/src/hooks/useReports';
+import { theme } from '@/src/theme';
 
 const EXPORT_TYPES: { type: ReportExportType; label: string }[] = [
   { type: 'stock_valuation', label: 'Stock valuation' },
@@ -32,6 +33,13 @@ const EXPORT_TYPES: { type: ReportExportType; label: string }[] = [
 
 function formatExportType(type: string): string {
   return type.replace(/_/g, ' ');
+}
+
+function exportStatusTone(status: string): 'default' | 'success' | 'warning' | 'danger' | 'info' {
+  if (status === 'completed') return 'success';
+  if (status === 'failed') return 'danger';
+  if (status === 'processing' || status === 'pending') return 'warning';
+  return 'default';
 }
 
 export default function ReportExportsScreen() {
@@ -88,164 +96,72 @@ export default function ReportExportsScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Report exports' }} />
-      <View style={styles.container}>
-        <View style={styles.actions}>
-          <Text style={styles.actionsTitle}>Queue new export</Text>
-          <View style={styles.buttonRow}>
-            {EXPORT_TYPES.map((item) => (
-              <Pressable
-                key={item.type}
-                disabled={createMutation.isPending}
-                onPress={() => handleCreate(item.type)}
-                style={styles.queueButton}>
-                <Text style={styles.queueButtonText}>{item.label}</Text>
-              </Pressable>
-            ))}
-          </View>
+      <Card style={styles.actions}>
+        <SectionHeader title="Queue new export" />
+        <View style={styles.buttonRow}>
+          {EXPORT_TYPES.map((item) => (
+            <Button
+              key={item.type}
+              disabled={createMutation.isPending}
+              label={item.label}
+              variant="ghost"
+              onPress={() => handleCreate(item.type)}
+            />
+          ))}
         </View>
+      </Card>
 
-        {query.isLoading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" />
-          </View>
-        ) : query.isError ? (
-          <View style={styles.centered}>
-            <Text style={styles.error}>Could not load exports.</Text>
-          </View>
-        ) : (
-          <OptimizedFlatList
-            data={exports}
-            keyExtractor={(item) => String(item.id)}
-            refreshControl={(
-              <RefreshControl
-                refreshing={query.isRefetching}
-                onRefresh={() => {
-                  void query.refetch();
-                }}
-              />
-            )}
-            ListEmptyComponent={(
-              <View style={styles.centered}>
-                <Text style={styles.empty}>No exports yet.</Text>
-              </View>
-            )}
-            renderItem={({ item }) => (
-              <View style={styles.row}>
-                <View style={styles.rowBody}>
-                  <Text style={styles.name}>{formatExportType(item.type)}</Text>
-                  <Text style={styles.meta}>
-                    {item.status}
-                    {item.created_at ? ` · ${item.created_at}` : ''}
-                  </Text>
-                  {item.error_message ? (
-                    <Text style={styles.errorText}>{item.error_message}</Text>
-                  ) : null}
-                </View>
-                {item.status === 'completed' || item.status === 'pending' || item.status === 'processing' ? (
-                  <Pressable
+      {query.isLoading ? (
+        <ScreenContainer><LoadingState /></ScreenContainer>
+      ) : query.isError ? (
+        <ScreenContainer><ErrorState message="Could not load exports." /></ScreenContainer>
+      ) : (
+        <PaginatedListScreen
+          data={exports}
+          emptyMessage="No exports yet."
+          isLoading={false}
+          isRefetching={query.isRefetching}
+          keyExtractor={(item) => String(item.id)}
+          onRefresh={() => {
+            void query.refetch();
+          }}
+          renderItem={(item) => (
+            <ListRow
+              right={
+                item.status === 'completed' || item.status === 'pending' || item.status === 'processing' ? (
+                  <Button
                     disabled={processingId === item.id}
+                    label={processingId === item.id ? '…' : 'Download'}
+                    variant="ghost"
                     onPress={() => handleDownload(item.id)}
-                    style={styles.downloadButton}>
-                    <Text style={styles.downloadText}>
-                      {processingId === item.id ? '…' : 'Download'}
-                    </Text>
-                  </Pressable>
-                ) : null}
-              </View>
-            )}
-          />
-        )}
-      </View>
+                  />
+                ) : (
+                  <StatusBadge label={item.status} tone={exportStatusTone(item.status)} />
+                )
+              }
+              showChevron={false}
+              subtitle={
+                item.error_message
+                  ? item.error_message
+                  : `${item.status}${item.created_at ? ` · ${item.created_at}` : ''}`
+              }
+              title={formatExportType(item.type)}
+            />
+          )}
+        />
+      )}
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flex: 1,
-  },
   actions: {
-    backgroundColor: '#fff',
-    borderBottomColor: '#e2e8f0',
-    borderBottomWidth: 1,
-    padding: 16,
-  },
-  actionsTitle: {
-    color: '#0f172a',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 12,
+    marginHorizontal: theme.spacing.xl,
+    marginTop: theme.spacing.lg,
   },
   buttonRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-  },
-  queueButton: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  queueButtonText: {
-    color: '#2563eb',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  error: {
-    color: '#b91c1c',
-    fontSize: 15,
-  },
-  empty: {
-    color: '#64748b',
-    fontSize: 15,
-  },
-  row: {
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderBottomColor: '#e2e8f0',
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  rowBody: {
-    flex: 1,
-  },
-  name: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  meta: {
-    color: '#64748b',
-    fontSize: 13,
-    marginTop: 4,
-    textTransform: 'capitalize',
-  },
-  errorText: {
-    color: '#b91c1c',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  downloadButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  downloadText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
+    gap: theme.spacing.sm,
   },
 });

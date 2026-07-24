@@ -1,25 +1,31 @@
-import { Link, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
-import { OptimizedFlatList } from '@/components/OptimizedFlatList';
+import {
+  HeaderAction,
+  ListRow,
+  PaginatedListScreen,
+  StatusBadge,
+  TextAction,
+} from '@/components/ui';
 
 import { ApiError } from '@/src/api/client';
 import { useAuth } from '@/src/auth/AuthContext';
 import { useDeletePurchaseOrder, usePurchaseOrders, usePurchaseOrdersList } from '@/src/hooks/useOrders';
 import { canCreatePurchaseOrder, canDeletePurchaseOrder } from '@/src/permissions';
+import { theme } from '@/src/theme';
 
 function formatStatus(status: string): string {
   return status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function orderStatusTone(status: string): 'default' | 'success' | 'warning' | 'danger' | 'info' {
+  if (status.includes('cancel')) return 'danger';
+  if (status.includes('deliver') || status.includes('received')) return 'success';
+  if (status.includes('draft')) return 'default';
+  if (status.includes('partial')) return 'warning';
+  return 'info';
 }
 
 export default function PurchaseOrdersScreen() {
@@ -68,155 +74,68 @@ export default function PurchaseOrdersScreen() {
           title: 'Purchase orders',
           headerRight: () => (
             canCreatePurchaseOrder(permissions) ? (
-              <Link href="/(app)/purchase-orders/new" style={styles.headerLink}>
-                Add
-              </Link>
+              <HeaderAction href="/(app)/purchase-orders/new" label="Add" />
             ) : null
           ),
         }}
       />
 
-      <View style={styles.container}>
-        <TextInput
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search PO number or supplier"
-          style={styles.search}
-          autoCapitalize="none"
-          clearButtonMode="while-editing"
-        />
-
-        {query.isLoading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" />
-          </View>
-        ) : (
-          <OptimizedFlatList
-            data={orders}
-            keyExtractor={(item) => String(item.id)}
-            refreshControl={(
-              <RefreshControl
-                refreshing={query.isRefetching}
-                onRefresh={() => {
-                  void query.refetch();
-                }}
+      <PaginatedListScreen
+        data={orders}
+        emptyMessage={emptyMessage}
+        hasNextPage={query.hasNextPage}
+        isFetchingNextPage={query.isFetchingNextPage}
+        isLoading={query.isLoading}
+        isRefetching={query.isRefetching}
+        keyExtractor={(item) => String(item.id)}
+        onEndReached={() => {
+          void query.fetchNextPage();
+        }}
+        onRefresh={() => {
+          void query.refetch();
+        }}
+        onSearchChange={setSearch}
+        renderItem={(item) => (
+          <View style={styles.row}>
+            <View style={styles.rowMain}>
+              <ListRow
+                href={`/(app)/purchase-orders/${item.id}`}
+                meta={item.total_amount}
+                right={(
+                  <StatusBadge
+                    label={formatStatus(item.status)}
+                    tone={orderStatusTone(item.status)}
+                  />
+                )}
+                showChevron
+                subtitle={item.supplier?.name ?? undefined}
+                title={item.po_number}
               />
-            )}
-            onEndReached={() => {
-              if (query.hasNextPage && !query.isFetchingNextPage) {
-                void query.fetchNextPage();
-              }
-            }}
-            onEndReachedThreshold={0.4}
-            ListEmptyComponent={(
-              <View style={styles.centered}>
-                <Text style={styles.empty}>{emptyMessage}</Text>
-              </View>
-            )}
-            ListFooterComponent={
-              query.isFetchingNextPage ? (
-                <ActivityIndicator style={styles.footerLoader} />
-              ) : null
-            }
-            renderItem={({ item }) => (
-              <View style={styles.row}>
-                <Link href={`/(app)/purchase-orders/${item.id}`} asChild>
-                  <Pressable style={styles.rowBodyPressable}>
-                    <View style={styles.rowBody}>
-                      <Text style={styles.name}>{item.po_number}</Text>
-                      <Text style={styles.meta}>
-                        {formatStatus(item.status)}
-                        {item.supplier?.name ? ` · ${item.supplier.name}` : ''}
-                      </Text>
-                    </View>
-                    <Text style={styles.amount}>{item.total_amount}</Text>
-                  </Pressable>
-                </Link>
-                {canDeletePurchaseOrder(permissions) ? (
-                  <Pressable onPress={() => handleDelete(item.id, item.po_number)}>
-                    <Text style={styles.deleteLink}>Delete</Text>
-                  </Pressable>
-                ) : null}
-              </View>
-            )}
-          />
+            </View>
+            {canDeletePurchaseOrder(permissions) ? (
+              <TextAction
+                label="Delete"
+                onPress={() => handleDelete(item.id, item.po_number)}
+                tone="danger"
+              />
+            ) : null}
+          </View>
         )}
-      </View>
+        search={search}
+        searchAccessibilityLabel="Search purchase orders"
+        searchPlaceholder="Search PO number or supplier"
+      />
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flex: 1,
-  },
-  headerLink: {
-    color: '#2563eb',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 16,
-  },
-  search: {
-    backgroundColor: '#fff',
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    borderWidth: 1,
-    fontSize: 16,
-    margin: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  empty: {
-    color: '#64748b',
-    fontSize: 15,
-    textAlign: 'center',
-  },
   row: {
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderBottomColor: '#e2e8f0',
-    borderBottomWidth: 1,
     flexDirection: 'row',
-    paddingRight: 16,
+    paddingRight: theme.spacing.lg,
   },
-  rowBodyPressable: {
-    alignItems: 'center',
+  rowMain: {
     flex: 1,
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  rowBody: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  name: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  meta: {
-    color: '#64748b',
-    fontSize: 13,
-    marginTop: 4,
-  },
-  amount: {
-    color: '#0f172a',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  deleteLink: {
-    color: '#b91c1c',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  footerLoader: {
-    marginVertical: 16,
   },
 });

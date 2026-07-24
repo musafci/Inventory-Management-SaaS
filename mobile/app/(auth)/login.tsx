@@ -1,20 +1,20 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
-import { Redirect } from 'expo-router';
-import { Link } from 'expo-router';
+import { Link, Redirect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SymbolView } from 'expo-symbols';
 
+import { Button, Card, Input } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { getApiBaseUrl } from '@/src/api/config';
 import { useAuth } from '@/src/auth/AuthContext';
+import { palette, shadow, theme } from '@/src/theme';
 
 export default function LoginScreen() {
   const { isAuthenticated, isLoading, login } = useAuth();
@@ -48,57 +48,77 @@ export default function LoginScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Oneapp Inventory</Text>
-        <Text style={styles.subtitle}>Sign in to your organization</Text>
+      <LinearGradient
+        colors={[palette.primary600, '#818cf8', palette.slate100]}
+        end={{ x: 0.5, y: 1 }}
+        start={{ x: 0, y: 0 }}
+        style={StyleSheet.absoluteFill}
+      />
 
-        <TextInput
-          accessibilityLabel="Email address"
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          placeholder="Email"
-          style={styles.input}
-          testID="login-email"
-          value={email}
-          onChangeText={setEmail}
-        />
+      <View style={styles.content}>
+        <View style={styles.brandRow}>
+          <View style={styles.logoWrap}>
+            <SymbolView
+              name={{ ios: 'shippingbox.fill', android: 'inventory_2', web: 'inventory_2' }}
+              size={28}
+              tintColor={theme.colors.primaryText}
+            />
+          </View>
+          <View>
+            <Text style={styles.brandTitle}>Oneapp Inventory</Text>
+            <Text style={styles.brandSubtitle}>Modern inventory for growing teams</Text>
+          </View>
+        </View>
 
-        <TextInput
-          accessibilityLabel="Password"
-          autoCapitalize="none"
-          placeholder="Password"
-          secureTextEntry
-          style={styles.input}
-          testID="login-password"
-          value={password}
-          onChangeText={setPassword}
-        />
+        <Card style={[styles.card, shadow('lg')]}>
+          <Text style={styles.title}>Welcome back</Text>
+          <Text style={styles.subtitle}>Sign in to your organization workspace</Text>
 
-        {error ? <Text accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
+          <Input
+            accessibilityLabel="Email address"
+            autoCapitalize="none"
+            autoComplete="email"
+            keyboardType="email-address"
+            label="Email"
+            placeholder="you@company.com"
+            testID="login-email"
+            value={email}
+            onChangeText={setEmail}
+          />
 
-        <Pressable
-          accessibilityLabel="Sign in"
-          accessibilityRole="button"
-          disabled={submitting || email.trim() === '' || password === ''}
-          onPress={handleSubmit}
-          style={[styles.button, submitting && styles.buttonDisabled]}
-          testID="login-submit">
-          {submitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Sign in</Text>
-          )}
-        </Pressable>
+          <Input
+            accessibilityLabel="Password"
+            autoCapitalize="none"
+            label="Password"
+            placeholder="Enter your password"
+            secureTextEntry
+            testID="login-password"
+            value={password}
+            onChangeText={setPassword}
+          />
 
-        <Link href="/(auth)/forgot-password" style={styles.link}>
-          Forgot password?
-        </Link>
-        <Link href="/(auth)/register" style={styles.link}>
-          Create an account
-        </Link>
+          {error ? <Text accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
 
-        <Text style={styles.apiHint}>API: {getApiBaseUrl()}</Text>
+          <Button
+            accessibilityLabel="Sign in"
+            disabled={email.trim() === '' || password === ''}
+            label="Sign in"
+            loading={submitting}
+            onPress={handleSubmit}
+            testID="login-submit"
+          />
+
+          <View style={styles.links}>
+            <Link href="/(auth)/forgot-password" style={styles.link}>
+              Forgot password?
+            </Link>
+            <Link href="/(auth)/register" style={styles.link}>
+              Create an account
+            </Link>
+          </View>
+
+          <Text style={styles.apiHint}>API: {getApiBaseUrl()}</Text>
+        </Card>
       </View>
     </KeyboardAvoidingView>
   );
@@ -106,70 +126,71 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#f8fafc',
+    flex: 1,
+  },
+  content: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
+    padding: theme.spacing.xl,
+  },
+  brandRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.xl,
+  },
+  logoWrap: {
+    alignItems: 'center',
+    backgroundColor: palette.primary600,
+    borderRadius: theme.radius.lg,
+    height: 56,
+    justifyContent: 'center',
+    width: 56,
+    ...shadow('md'),
+  },
+  brandTitle: {
+    color: theme.colors.text,
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  brandSubtitle: {
+    color: theme.colors.textSecondary,
+    fontSize: 14,
+    marginTop: 2,
   },
   card: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 24,
+    padding: theme.spacing.xxl,
   },
   title: {
-    color: '#0f172a',
-    fontSize: 28,
-    fontWeight: '700',
+    ...theme.typography.heading,
+    color: theme.colors.text,
+    fontSize: 24,
   },
   subtitle: {
-    color: '#64748b',
-    fontSize: 15,
-    marginBottom: 24,
-    marginTop: 8,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#cbd5e1',
-    borderRadius: 12,
-    borderWidth: 1,
-    fontSize: 16,
-    marginBottom: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.lg,
+    marginTop: theme.spacing.sm,
   },
   error: {
-    color: '#dc2626',
+    color: theme.colors.danger,
     fontSize: 14,
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#4f46e5',
-    borderRadius: 12,
-    marginTop: 4,
-    paddingVertical: 14,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  apiHint: {
-    color: '#94a3b8',
-    fontSize: 11,
-    marginTop: 16,
-    textAlign: 'center',
+  links: {
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.lg,
   },
   link: {
-    color: '#2563eb',
+    color: theme.colors.primary,
     fontSize: 15,
-    fontWeight: '600',
-    marginTop: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  apiHint: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    marginTop: theme.spacing.lg,
     textAlign: 'center',
   },
 });

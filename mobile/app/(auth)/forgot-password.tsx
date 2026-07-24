@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { Link, Stack } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
+import { Button, Card, Input } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import * as authApi from '@/src/api/auth';
+import { palette, shadow, theme } from '@/src/theme';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -45,42 +45,46 @@ export default function ForgotPasswordScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Reset password</Text>
-          <Text style={styles.subtitle}>
-            Enter your email and we will send a reset link if an account exists.
-          </Text>
+        <LinearGradient
+          colors={[palette.primary600, '#818cf8', palette.slate100]}
+          end={{ x: 0.5, y: 1 }}
+          start={{ x: 0, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.content}>
+          <Card style={[styles.card, shadow('lg')]}>
+            <Text style={styles.title}>Reset password</Text>
+            <Text style={styles.subtitle}>
+              Enter your email and we will send a reset link if an account exists.
+            </Text>
 
-          <TextInput
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            placeholder="Email"
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-          />
+            <Input
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              label="Email"
+              placeholder="you@company.com"
+              value={email}
+              onChangeText={setEmail}
+            />
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          {success ? <Text style={styles.success}>{success}</Text> : null}
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {success ? <Text style={styles.success}>{success}</Text> : null}
 
-          <Pressable
-            disabled={submitting || email.trim() === ''}
-            onPress={handleSubmit}
-            style={[styles.button, submitting && styles.buttonDisabled]}>
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Send reset link</Text>
-            )}
-          </Pressable>
+            <Button
+              disabled={email.trim() === ''}
+              label="Send reset link"
+              loading={submitting}
+              onPress={handleSubmit}
+            />
 
-          <Link href="/(auth)/reset-password" style={styles.link}>
-            Have a reset token? Enter it here
-          </Link>
-          <Link href="/(auth)/login" style={styles.secondaryLink}>
-            Back to sign in
-          </Link>
+            <Link href="/(auth)/reset-password" style={styles.link}>
+              Have a reset token? Enter it here
+            </Link>
+            <Link href="/(auth)/login" style={styles.secondaryLink}>
+              Back to sign in
+            </Link>
+          </Card>
         </View>
       </KeyboardAvoidingView>
     </>
@@ -89,77 +93,49 @@ export default function ForgotPasswordScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#f8fafc',
+    flex: 1,
+  },
+  content: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
+    padding: theme.spacing.xl,
   },
   card: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 24,
+    padding: theme.spacing.xxl,
   },
   title: {
-    color: '#0f172a',
-    fontSize: 28,
-    fontWeight: '700',
+    ...theme.typography.heading,
+    color: theme.colors.text,
+    fontSize: 24,
   },
   subtitle: {
-    color: '#64748b',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 24,
-    marginTop: 8,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#cbd5e1',
-    borderRadius: 12,
-    borderWidth: 1,
-    fontSize: 16,
-    marginBottom: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.lg,
+    marginTop: theme.spacing.sm,
   },
   error: {
-    color: '#dc2626',
+    color: theme.colors.danger,
     fontSize: 14,
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   success: {
-    color: '#15803d',
+    color: theme.colors.success,
     fontSize: 14,
     lineHeight: 20,
-    marginBottom: 12,
-  },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#4f46e5',
-    borderRadius: 12,
-    marginTop: 4,
-    paddingVertical: 14,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    marginBottom: theme.spacing.md,
   },
   link: {
-    color: '#2563eb',
+    color: theme.colors.primary,
     fontSize: 15,
-    fontWeight: '600',
-    marginTop: 20,
+    fontWeight: '700',
+    marginTop: theme.spacing.lg,
     textAlign: 'center',
   },
   secondaryLink: {
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     fontSize: 15,
-    marginTop: 12,
+    marginTop: theme.spacing.md,
     textAlign: 'center',
   },
 });

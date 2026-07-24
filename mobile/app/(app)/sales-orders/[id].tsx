@@ -1,19 +1,21 @@
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { LineItemsActionModal, type LineItemRow } from '@/components/LineItemsActionModal';
 import { PaymentActionModal } from '@/components/PaymentActionModal';
 import { RefundActionModal } from '@/components/RefundActionModal';
+import {
+  Button,
+  Card,
+  DetailRow,
+  EmptyState,
+  LoadingState,
+  ScreenContainer,
+  ScreenScrollView,
+  SectionHeader,
+  StatusBadge,
+} from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import type { PaymentMethod, SalesOrder, SalesOrderItem } from '@/src/api/types';
 import { useAuth } from '@/src/auth/AuthContext';
@@ -29,9 +31,18 @@ import {
   useSalesOrder,
 } from '@/src/hooks/useOrders';
 import { canCreatePayment, canUpdateSalesOrder } from '@/src/permissions';
+import { theme } from '@/src/theme';
 
 function formatStatus(status: string): string {
   return status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function orderStatusTone(status: string): 'default' | 'success' | 'warning' | 'danger' | 'info' {
+  if (status.includes('cancel')) return 'danger';
+  if (status.includes('deliver')) return 'success';
+  if (status.includes('draft')) return 'default';
+  if (status.includes('partial')) return 'warning';
+  return 'info';
 }
 
 function parseAmount(value: string | undefined): number {
@@ -107,17 +118,17 @@ export default function SalesOrderDetailScreen() {
 
   if (query.isLoading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-      </View>
+      <ScreenContainer>
+        <LoadingState />
+      </ScreenContainer>
     );
   }
 
   if (!query.data) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.empty}>Sales order not found.</Text>
-      </View>
+      <ScreenContainer>
+        <EmptyState title="Sales order not found." />
+      </ScreenContainer>
     );
   }
 
@@ -298,23 +309,20 @@ export default function SalesOrderDetailScreen() {
     <>
       <Stack.Screen options={{ title: order.order_number }} />
 
-      <ScrollView
-        contentContainerStyle={styles.container}
-        refreshControl={(
-          <RefreshControl
-            refreshing={query.isRefetching}
-            onRefresh={() => {
-              void query.refetch();
-            }}
-          />
-        )}>
+      <ScreenScrollView
+        refreshing={query.isRefetching}
+        onRefresh={() => {
+          void query.refetch();
+        }}>
         <View style={styles.statusRow}>
-          <Text style={styles.statusBadge}>{formatStatus(order.status)}</Text>
+          <StatusBadge label={formatStatus(order.status)} tone={orderStatusTone(order.status)} />
           <Text style={styles.metaText}>Order date: {order.order_date}</Text>
         </View>
 
         {organizationId !== null ? (
-          <Pressable
+          <Button
+            label="Share / print"
+            variant="ghost"
             onPress={() => {
               void shareOrderPrintHtml(
                 `/v1/sales-orders/${order.id}/print`,
@@ -324,9 +332,8 @@ export default function SalesOrderDetailScreen() {
                 Alert.alert('Print failed', error.message);
               });
             }}
-            style={styles.printButton}>
-            <Text style={styles.printButtonText}>Share / print</Text>
-          </Pressable>
+            style={styles.printButton}
+          />
         ) : null}
 
         <DetailRow label="Customer" value={order.customer?.name ?? `#${order.customer_id}`} />
@@ -337,9 +344,9 @@ export default function SalesOrderDetailScreen() {
 
         {order.items && order.items.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Line items</Text>
+            <SectionHeader title="Line items" />
             {order.items.map((item) => (
-              <View key={item.id} style={styles.itemRow}>
+              <Card key={item.id} style={styles.itemCard}>
                 <Text style={styles.itemName}>{productName(item, productLabels)}</Text>
                 <Text style={styles.itemMeta}>
                   Qty {item.quantity} · Fulfilled {item.quantity_fulfilled} · Returned{' '}
@@ -348,7 +355,7 @@ export default function SalesOrderDetailScreen() {
                 <Text style={styles.itemMeta}>
                   Unit price {item.unit_price} · Subtotal {item.subtotal}
                 </Text>
-              </View>
+              </Card>
             ))}
           </View>
         ) : null}
@@ -362,62 +369,69 @@ export default function SalesOrderDetailScreen() {
 
           {order.status === 'draft' ? (
             <>
-              <ActionButton
+              <Button
                 disabled={isPending}
                 label={confirmMutation.isPending ? 'Confirming…' : 'Confirm order'}
+                loading={confirmMutation.isPending}
                 onPress={handleConfirm}
               />
-              <ActionButton
+              <Button
                 disabled={isPending}
                 label={cancelMutation.isPending ? 'Cancelling…' : 'Cancel order'}
-                onPress={handleCancel}
+                loading={cancelMutation.isPending}
                 variant="danger"
+                onPress={handleCancel}
               />
             </>
           ) : null}
 
           {order.status === 'confirmed' ? (
             <>
-              <ActionButton
+              <Button
                 disabled={isPending}
                 label={fulfillMutation.isPending ? 'Fulfilling…' : 'Fulfill order'}
+                loading={fulfillMutation.isPending}
                 onPress={handleFulfill}
               />
-              <ActionButton
+              <Button
                 disabled={isPending}
                 label={cancelMutation.isPending ? 'Cancelling…' : 'Cancel order'}
-                onPress={handleCancel}
+                loading={cancelMutation.isPending}
                 variant="danger"
+                onPress={handleCancel}
               />
             </>
           ) : null}
 
           {order.status === 'shipped' ? (
-            <ActionButton
+            <Button
               disabled={isPending}
               label={deliverMutation.isPending ? 'Delivering…' : 'Mark delivered'}
+              loading={deliverMutation.isPending}
               onPress={handleDeliver}
             />
           ) : null}
 
           {isSalesOrderPayable(order) && canCreatePayment(permissions) ? (
-            <ActionButton
+            <Button
               disabled={isPending}
               label={payMutation.isPending ? 'Processing…' : 'Record payment'}
+              loading={payMutation.isPending}
               onPress={handlePay}
             />
           ) : null}
 
           {isSalesOrderRefundable(order) && canCreatePayment(permissions) ? (
-            <ActionButton
+            <Button
               disabled={isPending}
               label={refundMutation.isPending ? 'Processing…' : 'Process refund'}
-              onPress={handleRefund}
+              loading={refundMutation.isPending}
               variant="danger"
+              onPress={handleRefund}
             />
           ) : null}
         </View>
-      </ScrollView>
+      </ScreenScrollView>
 
       <LineItemsActionModal
         visible={fulfillVisible}
@@ -477,169 +491,48 @@ export default function SalesOrderDetailScreen() {
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
-    </View>
-  );
-}
-
-function ActionButton({
-  label,
-  onPress,
-  disabled,
-  variant = 'primary',
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  variant?: 'primary' | 'danger';
-}) {
-  return (
-    <Pressable
-      disabled={disabled}
-      onPress={onPress}
-      style={[
-        styles.actionButton,
-        variant === 'danger' ? styles.actionButtonDanger : null,
-        disabled ? styles.actionButtonDisabled : null,
-      ]}>
-      <Text
-        style={[
-          styles.actionButtonText,
-          variant === 'danger' ? styles.actionButtonTextDanger : null,
-        ]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  centered: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  empty: {
-    color: '#64748b',
-    fontSize: 15,
-  },
-  container: {
-    padding: 16,
-    paddingBottom: 40,
-  },
   statusRow: {
     alignItems: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 16,
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.lg,
   },
   printButton: {
     alignSelf: 'flex-start',
-    backgroundColor: '#e2e8f0',
-    borderRadius: 8,
-    marginBottom: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  printButtonText: {
-    color: '#0f172a',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  statusBadge: {
-    backgroundColor: '#dbeafe',
-    borderRadius: 999,
-    color: '#1d4ed8',
-    fontSize: 13,
-    fontWeight: '700',
-    overflow: 'hidden',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    marginBottom: theme.spacing.lg,
+    minHeight: 44,
   },
   metaText: {
-    color: '#64748b',
-    fontSize: 13,
-  },
-  row: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 10,
-    borderWidth: 1,
-    marginBottom: 10,
-    padding: 14,
-  },
-  label: {
-    color: '#64748b',
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  value: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '600',
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
   },
   section: {
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
-  sectionTitle: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  itemRow: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 10,
-    borderWidth: 1,
-    marginBottom: 8,
-    padding: 14,
+  itemCard: {
+    marginBottom: theme.spacing.sm,
+    padding: theme.spacing.md,
   },
   itemName: {
-    color: '#0f172a',
-    fontSize: 15,
-    fontWeight: '600',
+    ...theme.typography.bodyStrong,
+    color: theme.colors.text,
   },
   itemMeta: {
-    color: '#64748b',
-    fontSize: 13,
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   actions: {
-    gap: 10,
-    marginTop: 20,
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.xl,
   },
   editLink: {
-    color: '#2563eb',
+    color: theme.colors.primary,
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
     textAlign: 'center',
-  },
-  actionButton: {
-    alignItems: 'center',
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 14,
-  },
-  actionButtonDanger: {
-    backgroundColor: '#fee2e2',
-  },
-  actionButtonDisabled: {
-    opacity: 0.6,
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  actionButtonTextDanger: {
-    color: '#b91c1c',
   },
 });

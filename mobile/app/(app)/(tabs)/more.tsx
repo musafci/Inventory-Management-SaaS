@@ -1,108 +1,116 @@
 import { Link } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SymbolView } from 'expo-symbols';
 
+import { HubCard } from '@/components/HubCard';
+import { Button, Card, HubScreenLayout } from '@/components/ui';
 import { useAuth } from '@/src/auth/AuthContext';
 import { canAccessSettings } from '@/src/permissions';
+import { palette, shadow, theme } from '@/src/theme';
 
 export default function MoreScreen() {
   const { logout, permissions, user } = useAuth();
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.label}>Signed in as</Text>
-        <Text style={styles.value}>{user?.email}</Text>
-      </View>
+    <HubScreenLayout description="Account shortcuts and workspace tools." eyebrow="Account" title={user?.name ?? 'Account'}>
+      <LinearGradient
+        colors={[palette.primary600, '#818cf8']}
+        end={{ x: 1, y: 1 }}
+        start={{ x: 0, y: 0 }}
+        style={[styles.profileCard, shadow('md')]}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{(user?.name ?? 'U').slice(0, 1).toUpperCase()}</Text>
+        </View>
+        <View style={styles.profileBody}>
+          <Text style={styles.profileName}>{user?.name ?? 'User'}</Text>
+          <Text style={styles.profileEmail}>{user?.email}</Text>
+        </View>
+        <SymbolView
+          name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' }}
+          size={22}
+          tintColor="rgba(255,255,255,0.9)"
+        />
+      </LinearGradient>
 
       {canAccessSettings(permissions) ? (
-        <Link href="/(app)/settings" asChild>
-          <Pressable
-            accessibilityLabel="Settings"
-            accessibilityRole="button"
-            style={styles.linkCard}
-            testID="hub-settings">
-            <Text style={styles.linkTitle}>Settings</Text>
-            <Text style={styles.meta}>Organization, billing, team, and roles.</Text>
-          </Pressable>
-        </Link>
+        <HubCard
+          body="Organization, billing, team, and roles."
+          href="/(app)/settings"
+          icon={{ ios: 'gearshape.fill', android: 'settings', web: 'settings' }}
+          testID="hub-settings"
+          title="Settings"
+          tone="indigo"
+        />
       ) : null}
 
-      <Link href="/(app)/settings/sync" asChild>
-        <Pressable
-          accessibilityLabel="Sync status"
-          accessibilityRole="button"
-          style={styles.linkCard}
-          testID="hub-sync-status">
-          <Text style={styles.linkTitle}>Sync status</Text>
-          <Text style={styles.meta}>View pending changes and sync now.</Text>
-        </Pressable>
-      </Link>
+      <HubCard
+        body="View pending changes and sync now."
+        href="/(app)/settings/sync"
+        icon={{ ios: 'arrow.triangle.2.circlepath', android: 'sync', web: 'sync' }}
+        testID="hub-sync-status"
+        title="Sync status"
+        tone="sky"
+      />
 
-      <Pressable
-        accessibilityLabel="Sign out"
-        accessibilityRole="button"
-        onPress={() => logout()}
-        style={styles.logoutButton}>
-        <Text style={styles.logoutText}>Sign out</Text>
-      </Pressable>
-    </View>
+      <HubCard
+        body="View and revoke signed-in devices."
+        href="/(app)/settings/sessions"
+        icon={{ ios: 'iphone.and.arrow.forward', android: 'devices', web: 'devices' }}
+        testID="hub-sessions"
+        title="Active sessions"
+        tone="violet"
+      />
+
+      <Card style={styles.logoutCard}>
+        <Button
+          accessibilityLabel="Sign out"
+          label="Sign out"
+          onPress={() => logout()}
+          testID="sign-out-button"
+          variant="danger"
+        />
+      </Card>
+    </HubScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flex: 1,
-    padding: 20,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 16,
-  },
-  label: {
-    color: '#64748b',
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  value: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 8,
-  },
-  linkCard: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 16,
-  },
-  linkTitle: {
-    color: '#0f172a',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  meta: {
-    color: '#64748b',
-    fontSize: 14,
-    marginTop: 6,
-  },
-  logoutButton: {
+  profileCard: {
     alignItems: 'center',
-    backgroundColor: '#fee2e2',
-    borderRadius: 12,
-    marginTop: 8,
-    paddingVertical: 14,
+    borderRadius: theme.radius.xl,
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+    padding: theme.spacing.lg,
   },
-  logoutText: {
-    color: '#b91c1c',
-    fontSize: 16,
-    fontWeight: '600',
+  avatar: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderRadius: theme.radius.pill,
+    height: 52,
+    justifyContent: 'center',
+    width: 52,
+  },
+  avatarText: {
+    color: theme.colors.primaryText,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  profileBody: {
+    flex: 1,
+  },
+  profileName: {
+    color: theme.colors.primaryText,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  profileEmail: {
+    color: 'rgba(255,255,255,0.88)',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  logoutCard: {
+    marginTop: theme.spacing.sm,
   },
 });

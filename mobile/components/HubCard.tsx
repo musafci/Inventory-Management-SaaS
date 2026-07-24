@@ -1,47 +1,93 @@
-import { Link, type Href } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { type Href } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+
+import { NavPressable } from '@/components/ui/NavPressable';
+import { shadow, theme, type AccentTone, accentTones } from '@/src/theme';
+import { appIcon, type AppIcon } from '@/src/theme/icons';
 
 type HubCardProps = {
   href: Href;
   title: string;
   body: string;
   testID?: string;
+  tone?: AccentTone;
+  icon?: AppIcon;
 };
 
-export function HubCard({ href, title, body, testID }: HubCardProps) {
+export function HubCard({
+  href,
+  title,
+  body,
+  testID,
+  tone = 'indigo',
+  icon,
+}: HubCardProps) {
+  const accent = accentTones[tone];
+
   return (
-    <Link href={href} asChild>
-      <Pressable
-        accessibilityHint={`Opens ${title}`}
-        accessibilityLabel={title}
-        accessibilityRole="button"
-        style={styles.card}
-        testID={testID}>
+    <NavPressable
+      accessibilityHint={`Opens ${title}`}
+      accessibilityLabel={title}
+      accessibilityRole="button"
+      href={href}
+      style={[styles.card, shadow('md')]}
+      testID={testID}>
+      <View style={[styles.iconWrap, { backgroundColor: accent.soft }]}>
+        {icon ? (
+          <SymbolView name={appIcon(icon)} size={22} tintColor={accent.solid} />
+        ) : (
+          <SymbolView
+            name={{ ios: 'square.grid.2x2.fill', android: 'apps', web: 'apps' }}
+            size={22}
+            tintColor={accent.solid}
+          />
+        )}
+      </View>
+      <View style={styles.body}>
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardBody}>{body}</Text>
-      </Pressable>
-    </Link>
+      </View>
+      <SymbolView
+        name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
+        size={18}
+        tintColor={theme.colors.textMuted}
+      />
+    </NavPressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 16,
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    padding: theme.spacing.lg,
+  },
+  iconWrap: {
+    alignItems: 'center',
+    borderRadius: theme.radius.md,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  body: {
+    flex: 1,
+    minWidth: 0,
   },
   cardTitle: {
-    color: '#0f172a',
+    ...theme.typography.bodyStrong,
+    color: theme.colors.text,
     fontSize: 17,
-    fontWeight: '700',
   },
   cardBody: {
-    color: '#64748b',
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 6,
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
   },
 });

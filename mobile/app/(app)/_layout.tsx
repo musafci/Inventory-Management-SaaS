@@ -1,10 +1,23 @@
 import { Redirect, Stack } from 'expo-router';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { useAuth } from '@/src/auth/AuthContext';
 import { useNotificationNavigation } from '@/src/notifications/handler';
+import { theme } from '@/src/theme';
+
+const stackScreenOptions = {
+  headerStyle: { backgroundColor: theme.colors.background },
+  headerTitleStyle: {
+    color: theme.colors.text,
+    fontSize: 18,
+    fontWeight: '800' as const,
+  },
+  headerTintColor: theme.colors.primary,
+  headerShadowVisible: false,
+  contentStyle: { backgroundColor: theme.colors.background },
+};
 
 export default function AppLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -12,8 +25,8 @@ export default function AppLayout() {
 
   if (isLoading) {
     return (
-      <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center' }}>
-        <ActivityIndicator size="large" />
+      <View style={styles.loading}>
+        <ActivityIndicator color={theme.colors.primary} size="large" />
       </View>
     );
   }
@@ -26,7 +39,7 @@ export default function AppLayout() {
     <>
       <ImpersonationBanner />
       <OfflineBanner />
-      <Stack>
+      <Stack screenOptions={stackScreenOptions}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="products/index" options={{ title: 'Products' }} />
         <Stack.Screen name="products/new" options={{ title: 'New product' }} />
@@ -85,3 +98,12 @@ export default function AppLayout() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+    flex: 1,
+    justifyContent: 'center',
+  },
+});

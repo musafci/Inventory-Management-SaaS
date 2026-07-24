@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { theme } from '@/src/theme';
 import type { Warehouse } from '@/src/api/types';
 
 type WarehouseFilterProps = {
@@ -39,33 +40,35 @@ export function WarehouseFilter({ warehouses, value, onChange }: WarehouseFilter
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    marginBottom: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
   },
   label: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
+    ...theme.typography.label,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.sm,
   },
   row: {
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   chip: {
-    backgroundColor: '#e2e8f0',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   chipSelected: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   chipText: {
-    color: '#334155',
+    color: theme.colors.textSecondary,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   chipTextSelected: {
-    color: '#fff',
+    color: theme.colors.primaryText,
   },
 });

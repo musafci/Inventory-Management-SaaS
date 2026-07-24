@@ -1,18 +1,21 @@
 import { Stack } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 import { WarehouseFilter } from '@/components/WarehouseFilter';
-
+import {
+  EmptyState,
+  ErrorState,
+  ListRow,
+  LoadingState,
+  MetricTile,
+  PaginatedListScreen,
+  ScreenContainer,
+  SectionHeader,
+} from '@/components/ui';
 import { useWarehouses } from '@/src/hooks/useInventory';
 import { useStockValuation } from '@/src/hooks/useReports';
+import { theme } from '@/src/theme';
 
 export default function StockValuationScreen() {
   const [warehouseId, setWarehouseId] = useState<number | null>(null);
@@ -24,140 +27,59 @@ export default function StockValuationScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Stock valuation' }} />
-      <View style={styles.container}>
-        {query.isLoading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" />
-          </View>
-        ) : query.isError ? (
-          <View style={styles.centered}>
-            <Text style={styles.error}>Could not load stock valuation report.</Text>
-          </View>
-        ) : report ? (
-          <OptimizedFlatList
-            data={report.by_warehouse}
-            keyExtractor={(item) => String(item.warehouse_id)}
-            refreshControl={(
-              <RefreshControl
-                refreshing={query.isRefetching}
-                onRefresh={() => {
-                  void query.refetch();
-                }}
+      {query.isLoading ? (
+        <ScreenContainer><LoadingState /></ScreenContainer>
+      ) : query.isError ? (
+        <ScreenContainer><ErrorState message="Could not load stock valuation report." /></ScreenContainer>
+      ) : report ? (
+        <PaginatedListScreen
+          data={report.by_warehouse}
+          emptyMessage="No warehouse data."
+          isLoading={false}
+          isRefetching={query.isRefetching}
+          keyExtractor={(item) => String(item.warehouse_id)}
+          onRefresh={() => {
+            void query.refetch();
+          }}
+          ListHeaderComponent={(
+            <View style={styles.header}>
+              <WarehouseFilter
+                warehouses={warehouses}
+                value={warehouseId}
+                onChange={setWarehouseId}
               />
-            )}
-            ListHeaderComponent={(
-              <View style={styles.summary}>
-                <WarehouseFilter
-                  warehouses={warehouses}
-                  value={warehouseId}
-                  onChange={setWarehouseId}
-                />
-                <View style={styles.summaryCard}>
-                  <Text style={styles.summaryLabel}>Total value</Text>
-                  <Text style={styles.summaryValue}>{report.total_value}</Text>
-                </View>
-                <View style={styles.summaryCard}>
-                  <Text style={styles.summaryLabel}>Total units</Text>
-                  <Text style={styles.summaryValue}>{report.total_units}</Text>
-                </View>
-                <Text style={styles.sectionTitle}>By warehouse</Text>
+              <View style={styles.metrics}>
+                <MetricTile label="Total value" value={report.total_value} tone="indigo" />
+                <MetricTile label="Total units" value={String(report.total_units)} tone="sky" />
               </View>
-            )}
-            ListEmptyComponent={(
-              <View style={styles.centered}>
-                <Text style={styles.empty}>No warehouse data.</Text>
-              </View>
-            )}
-            renderItem={({ item }) => (
-              <View style={styles.row}>
-                <View style={styles.rowBody}>
-                  <Text style={styles.name}>{item.warehouse_name}</Text>
-                  <Text style={styles.meta}>{item.total_units} units</Text>
-                </View>
-                <Text style={styles.amount}>{item.total_value}</Text>
-              </View>
-            )}
-          />
-        ) : null}
-      </View>
+              <SectionHeader title="By warehouse" />
+            </View>
+          )}
+          renderItem={(item) => (
+            <ListRow
+              meta={item.total_value}
+              showChevron={false}
+              subtitle={`${item.total_units} units`}
+              title={item.warehouse_name}
+            />
+          )}
+        />
+      ) : (
+        <ScreenContainer><EmptyState title="No report data available." /></ScreenContainer>
+      )}
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flex: 1,
+  header: {
+    paddingTop: theme.spacing.lg,
   },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  error: {
-    color: '#b91c1c',
-    fontSize: 15,
-  },
-  empty: {
-    color: '#64748b',
-    fontSize: 15,
-  },
-  summary: {
-    padding: 16,
-    paddingBottom: 0,
-  },
-  summaryCard: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 16,
-  },
-  summaryLabel: {
-    color: '#64748b',
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  summaryValue: {
-    color: '#0f172a',
-    fontSize: 24,
-    fontWeight: '700',
-    marginTop: 8,
-  },
-  sectionTitle: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  row: {
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderBottomColor: '#e2e8f0',
-    borderBottomWidth: 1,
+  metrics: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  rowBody: {
-    flex: 1,
-  },
-  name: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  meta: {
-    color: '#64748b',
-    fontSize: 13,
-    marginTop: 4,
-  },
-  amount: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '700',
+    flexWrap: 'wrap',
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
   },
 });

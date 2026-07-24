@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { theme } from '@/src/theme';
+
 type PlaceholderScreenProps = {
   title: string;
   description: string;
@@ -16,19 +18,17 @@ export function PlaceholderScreen({ title, description }: PlaceholderScreenProps
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.background,
     flex: 1,
-    padding: 20,
+    padding: theme.spacing.xl,
   },
   title: {
-    color: '#0f172a',
-    fontSize: 28,
-    fontWeight: '700',
+    ...theme.typography.title,
+    color: theme.colors.text,
   },
   description: {
-    color: '#64748b',
-    fontSize: 15,
-    lineHeight: 22,
-    marginTop: 10,
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
   },
 });

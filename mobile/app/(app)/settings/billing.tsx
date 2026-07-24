@@ -1,21 +1,24 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Stack } from 'expo-router';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
+import {
+  Button,
+  Card,
+  DetailRow,
+  ErrorState,
+  LoadingState,
+  ScreenContainer,
+  ScreenScrollView,
+  SectionHeader,
+} from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import {
   useBillingOverview,
   useBillingPortalSession,
   useCheckoutSession,
 } from '@/src/hooks/useBilling';
+import { theme } from '@/src/theme';
 
 export default function BillingSettingsScreen() {
   const query = useBillingOverview();
@@ -57,194 +60,116 @@ export default function BillingSettingsScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Billing' }} />
-      <ScrollView contentContainerStyle={styles.container}>
-        {query.isLoading ? (
-          <ActivityIndicator size="large" style={styles.loader} />
-        ) : query.isError ? (
-          <Text style={styles.error}>Could not load billing information.</Text>
-        ) : billing ? (
-          <>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Current subscription</Text>
-              {subscription ? (
-                <>
-                  <Text style={styles.cardValue}>{currentPlan?.name ?? 'Active plan'}</Text>
-                  <Text style={styles.meta}>Status: {subscription.status}</Text>
-                  {subscription.billing_interval ? (
-                    <Text style={styles.meta}>Interval: {subscription.billing_interval}</Text>
-                  ) : null}
-                  {subscription.current_period_ends_at ? (
-                    <Text style={styles.meta}>
-                      Renews: {subscription.current_period_ends_at}
-                    </Text>
-                  ) : null}
-                  {subscription.trial_ends_at ? (
-                    <Text style={styles.meta}>Trial ends: {subscription.trial_ends_at}</Text>
-                  ) : null}
-                </>
-              ) : (
-                <Text style={styles.meta}>No active subscription.</Text>
-              )}
-            </View>
-
-            {!billing.stripe_configured ? (
-              <View style={styles.card}>
-                <Text style={styles.meta}>Stripe billing is not configured for this environment.</Text>
-              </View>
-            ) : null}
-
-            {subscription && billing.stripe_configured ? (
-              <Pressable
-                disabled={portalMutation.isPending}
-                onPress={openPortal}
-                style={[styles.button, styles.secondaryButton]}>
-                <Text style={styles.secondaryButtonText}>
-                  {portalMutation.isPending ? 'Opening…' : 'Manage subscription'}
-                </Text>
-              </Pressable>
-            ) : null}
-
-            <Text style={styles.sectionTitle}>Available plans</Text>
-            {billing.available_plans.map((plan) => (
-              <View key={plan.id} style={styles.planCard}>
-                <Text style={styles.planName}>{plan.name}</Text>
-                <Text style={styles.planPrice}>
-                  {plan.price_monthly}/mo · {plan.price_annual}/yr
-                  {plan.is_custom ? ' · Custom' : ''}
-                </Text>
-                {billing.stripe_configured && !plan.is_custom ? (
-                  <View style={styles.planActions}>
-                    <Pressable
-                      disabled={checkoutMutation.isPending}
-                      onPress={() => openCheckout(plan.slug, 'monthly')}
-                      style={styles.upgradeButton}>
-                      <Text style={styles.upgradeButtonText}>
-                        {currentPlan?.slug === plan.slug ? 'Current (monthly)' : 'Monthly'}
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      disabled={checkoutMutation.isPending}
-                      onPress={() => openCheckout(plan.slug, 'annual')}
-                      style={[styles.upgradeButton, styles.upgradeButtonSecondary]}>
-                      <Text style={[styles.upgradeButtonText, styles.upgradeButtonTextSecondary]}>
-                        {currentPlan?.slug === plan.slug ? 'Current (yearly)' : 'Yearly'}
-                      </Text>
-                    </Pressable>
-                  </View>
+      {query.isLoading ? (
+        <ScreenContainer><LoadingState /></ScreenContainer>
+      ) : query.isError ? (
+        <ScreenContainer><ErrorState message="Could not load billing information." /></ScreenContainer>
+      ) : billing ? (
+        <ScreenScrollView>
+          <Card>
+            <Text style={styles.cardLabel}>Current subscription</Text>
+            {subscription ? (
+              <>
+                <Text style={styles.cardValue}>{currentPlan?.name ?? 'Active plan'}</Text>
+                <DetailRow label="Status" value={subscription.status} />
+                {subscription.billing_interval ? (
+                  <DetailRow label="Interval" value={subscription.billing_interval} />
                 ) : null}
-              </View>
-            ))}
-          </>
-        ) : null}
-      </ScrollView>
+                {subscription.current_period_ends_at ? (
+                  <DetailRow label="Renews" value={subscription.current_period_ends_at} />
+                ) : null}
+                {subscription.trial_ends_at ? (
+                  <DetailRow label="Trial ends" value={subscription.trial_ends_at} />
+                ) : null}
+              </>
+            ) : (
+              <Text style={styles.meta}>No active subscription.</Text>
+            )}
+          </Card>
+
+          {!billing.stripe_configured ? (
+            <Card muted>
+              <Text style={styles.meta}>Stripe billing is not configured for this environment.</Text>
+            </Card>
+          ) : null}
+
+          {subscription && billing.stripe_configured ? (
+            <Button
+              disabled={portalMutation.isPending}
+              label={portalMutation.isPending ? 'Opening…' : 'Manage subscription'}
+              loading={portalMutation.isPending}
+              variant="secondary"
+              onPress={openPortal}
+            />
+          ) : null}
+
+          <SectionHeader title="Available plans" />
+          {billing.available_plans.map((plan) => (
+            <Card key={plan.id} style={styles.planCard}>
+              <Text style={styles.planName}>{plan.name}</Text>
+              <Text style={styles.planPrice}>
+                {plan.price_monthly}/mo · {plan.price_annual}/yr
+                {plan.is_custom ? ' · Custom' : ''}
+              </Text>
+              {billing.stripe_configured && !plan.is_custom ? (
+                <View style={styles.planActions}>
+                  <Button
+                    disabled={checkoutMutation.isPending}
+                    label={currentPlan?.slug === plan.slug ? 'Current (monthly)' : 'Monthly'}
+                    onPress={() => openCheckout(plan.slug, 'monthly')}
+                    style={styles.planButton}
+                  />
+                  <Button
+                    disabled={checkoutMutation.isPending}
+                    label={currentPlan?.slug === plan.slug ? 'Current (yearly)' : 'Yearly'}
+                    variant="secondary"
+                    onPress={() => openCheckout(plan.slug, 'annual')}
+                    style={styles.planButton}
+                  />
+                </View>
+              ) : null}
+            </Card>
+          ))}
+        </ScreenScrollView>
+      ) : null}
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flexGrow: 1,
-    padding: 16,
-    paddingBottom: 40,
-  },
-  loader: {
-    marginTop: 32,
-  },
-  error: {
-    color: '#b91c1c',
-    fontSize: 15,
-    padding: 16,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 16,
-    padding: 16,
-  },
   cardLabel: {
-    color: '#64748b',
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    ...theme.typography.label,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.sm,
   },
   cardValue: {
-    color: '#0f172a',
-    fontSize: 20,
-    fontWeight: '700',
-    marginTop: 8,
+    ...theme.typography.heading,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.md,
   },
   meta: {
-    color: '#64748b',
-    fontSize: 13,
-    marginTop: 6,
-  },
-  sectionTitle: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
-    marginTop: 8,
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
   },
   planCard: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 16,
+    marginBottom: theme.spacing.md,
   },
   planName: {
-    color: '#0f172a',
-    fontSize: 17,
-    fontWeight: '700',
+    ...theme.typography.heading,
+    color: theme.colors.text,
   },
   planPrice: {
-    color: '#64748b',
-    fontSize: 14,
-    marginTop: 6,
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
   },
   planActions: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.md,
   },
-  upgradeButton: {
-    alignItems: 'center',
-    backgroundColor: '#2563eb',
-    borderRadius: 8,
+  planButton: {
     flex: 1,
-    paddingVertical: 10,
-  },
-  upgradeButtonSecondary: {
-    backgroundColor: '#fff',
-    borderColor: '#2563eb',
-    borderWidth: 1,
-  },
-  upgradeButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  upgradeButtonTextSecondary: {
-    color: '#2563eb',
-  },
-  button: {
-    alignItems: 'center',
-    borderRadius: 10,
-    marginBottom: 16,
-    paddingVertical: 14,
-  },
-  secondaryButton: {
-    backgroundColor: '#fff',
-    borderColor: '#2563eb',
-    borderWidth: 1,
-  },
-  secondaryButtonText: {
-    color: '#2563eb',
-    fontSize: 16,
-    fontWeight: '700',
+    minHeight: 44,
   },
 });

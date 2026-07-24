@@ -1,13 +1,15 @@
 import { Stack, type Href } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
 
 import { HubCard } from '@/components/HubCard';
+import { HubScreenLayout } from '@/components/ui';
 import { useAuth } from '@/src/auth/AuthContext';
 import {
   canManageRoles,
   canManageUsers,
   canViewOrganization,
 } from '@/src/permissions';
+import type { AccentTone } from '@/src/theme';
+import type { AppIcon } from '@/src/theme/icons';
 
 type SettingsLink = {
   href: Href;
@@ -15,6 +17,8 @@ type SettingsLink = {
   body: string;
   testID: string;
   visible: boolean;
+  tone?: AccentTone;
+  icon?: AppIcon;
 };
 
 export default function SettingsHubScreen() {
@@ -27,6 +31,8 @@ export default function SettingsHubScreen() {
       body: 'View and edit organization details.',
       testID: 'hub-settings-organization',
       visible: canViewOrganization(permissions),
+      tone: 'indigo',
+      icon: { ios: 'building.2.fill', android: 'business', web: 'business' },
     },
     {
       href: '/(app)/settings/billing',
@@ -34,6 +40,8 @@ export default function SettingsHubScreen() {
       body: 'Subscription, plans, and payment portal.',
       testID: 'hub-settings-billing',
       visible: canViewOrganization(permissions),
+      tone: 'emerald',
+      icon: { ios: 'creditcard.fill', android: 'payments', web: 'payments' },
     },
     {
       href: '/(app)/settings/team',
@@ -41,6 +49,8 @@ export default function SettingsHubScreen() {
       body: 'Manage team members and invitations.',
       testID: 'hub-settings-team',
       visible: canManageUsers(permissions),
+      tone: 'sky',
+      icon: { ios: 'person.3.fill', android: 'groups', web: 'groups' },
     },
     {
       href: '/(app)/settings/roles',
@@ -48,6 +58,8 @@ export default function SettingsHubScreen() {
       body: 'Create and manage custom roles.',
       testID: 'hub-settings-roles',
       visible: canManageRoles(permissions),
+      tone: 'violet',
+      icon: { ios: 'key.fill', android: 'vpn_key', web: 'vpn_key' },
     },
     {
       href: '/(app)/settings/privacy',
@@ -55,6 +67,8 @@ export default function SettingsHubScreen() {
       body: 'Export data and request account deletion.',
       testID: 'hub-settings-privacy',
       visible: canViewOrganization(permissions),
+      tone: 'rose',
+      icon: { ios: 'hand.raised.fill', android: 'privacy_tip', web: 'privacy_tip' },
     },
     {
       href: '/(app)/settings/notifications' as Href,
@@ -62,6 +76,8 @@ export default function SettingsHubScreen() {
       body: 'Push notification preferences.',
       testID: 'hub-settings-notifications',
       visible: canViewOrganization(permissions),
+      tone: 'amber',
+      icon: { ios: 'bell.fill', android: 'notifications', web: 'notifications' },
     },
     {
       href: '/(app)/settings/sync',
@@ -69,6 +85,8 @@ export default function SettingsHubScreen() {
       body: 'Pending changes and manual sync.',
       testID: 'hub-settings-sync',
       visible: true,
+      tone: 'indigo',
+      icon: { ios: 'arrow.triangle.2.circlepath', android: 'sync', web: 'sync' },
     },
     {
       href: '/(app)/settings/sessions' as Href,
@@ -76,6 +94,8 @@ export default function SettingsHubScreen() {
       body: 'View and revoke signed-in devices.',
       testID: 'hub-settings-sessions',
       visible: true,
+      tone: 'sky',
+      icon: { ios: 'iphone.and.arrow.forward', android: 'devices', web: 'devices' },
     },
   ];
 
@@ -84,42 +104,22 @@ export default function SettingsHubScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Settings' }} />
-      <View style={styles.container}>
-        <Text accessibilityRole="header" style={styles.title}>Settings</Text>
-        <Text style={styles.description}>
-          Manage your organization, team, billing, and data preferences.
-        </Text>
-
+      <HubScreenLayout
+        description="Manage your organization, team, billing, and data preferences."
+        eyebrow="Settings"
+        title="Workspace controls">
         {visibleLinks.map((link) => (
           <HubCard
             key={link.testID}
-            href={link.href}
-            title={link.title}
             body={link.body}
+            href={link.href}
+            icon={link.icon}
             testID={link.testID}
+            title={link.title}
+            tone={link.tone}
           />
         ))}
-      </View>
+      </HubScreenLayout>
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    color: '#0f172a',
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  description: {
-    color: '#64748b',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 20,
-    marginTop: 10,
-  },
-});

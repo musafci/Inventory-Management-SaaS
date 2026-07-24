@@ -1,5 +1,8 @@
 import { Link } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+
+import { EmptyState } from '@/components/ui';
+import { theme } from '@/src/theme';
 
 type EmptyCatalogPromptProps = {
   missingCategories: boolean;
@@ -26,9 +29,14 @@ export function EmptyCatalogPrompt({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.helper}>
-        Add at least one {label} before creating products.
-      </Text>
+      <EmptyState
+        body={
+          canCreate
+            ? `Add at least one ${label} before creating products.`
+            : `Ask an admin to add at least one ${label}.`
+        }
+        title="Catalog setup required"
+      />
       {canCreate ? (
         <View style={styles.links}>
           {missingCategories ? (
@@ -52,21 +60,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
-  },
-  helper: {
-    color: '#64748b',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
-    textAlign: 'center',
+    padding: theme.spacing.xxl,
   },
   links: {
     alignItems: 'center',
-    gap: 12,
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.lg,
   },
   link: {
-    color: '#2563eb',
+    color: theme.colors.primary,
     fontSize: 16,
     fontWeight: '600',
   },

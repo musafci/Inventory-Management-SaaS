@@ -1,16 +1,11 @@
-import { Link, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
 
-import { OptimizedFlatList } from '@/components/OptimizedFlatList';
+import {
+  HeaderAction,
+  ListRow,
+  PaginatedListScreen,
+} from '@/components/ui';
 
 import { useAuth } from '@/src/auth/AuthContext';
 import { useProductsList, useProducts } from '@/src/hooks/useProducts';
@@ -41,138 +36,41 @@ export default function ProductsScreen() {
           title: 'Products',
           headerRight: () => (
             canCreateInventory(permissions) ? (
-              <Link href="/(app)/products/new" style={styles.headerLink}>
-                Add
-              </Link>
+              <HeaderAction href="/(app)/products/new" label="Add" />
             ) : null
           ),
         }}
       />
 
-      <View style={styles.container}>
-        <TextInput
-          accessibilityLabel="Search products"
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search name, SKU, or barcode"
-          style={styles.search}
-          autoCapitalize="none"
-          clearButtonMode="while-editing"
-        />
-
-        {query.isLoading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" />
-          </View>
-        ) : (
-          <OptimizedFlatList
-            data={products}
-            keyExtractor={(item) => String(item.id)}
-            refreshControl={(
-              <RefreshControl
-                refreshing={query.isRefetching}
-                onRefresh={() => {
-                  void query.refetch();
-                }}
-              />
-            )}
-            onEndReached={() => {
-              if (query.hasNextPage && !query.isFetchingNextPage) {
-                void query.fetchNextPage();
-              }
-            }}
-            onEndReachedThreshold={0.4}
-            ListEmptyComponent={(
-              <View style={styles.centered}>
-                <Text style={styles.empty}>{emptyMessage}</Text>
-              </View>
-            )}
-            ListFooterComponent={
-              query.isFetchingNextPage ? (
-                <ActivityIndicator style={styles.footerLoader} />
-              ) : null
+      <PaginatedListScreen
+        data={products}
+        emptyMessage={emptyMessage}
+        hasNextPage={query.hasNextPage}
+        isFetchingNextPage={query.isFetchingNextPage}
+        isLoading={query.isLoading}
+        isRefetching={query.isRefetching}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={(item) => (
+          <ListRow
+            href={`/(app)/products/${item.id}`}
+            meta={item.selling_price}
+            subtitle={
+              `${item.sku ? `SKU ${item.sku}` : 'No SKU'}${item.barcode ? ` · ${item.barcode}` : ''}`
             }
-            renderItem={({ item }) => (
-              <Link href={`/(app)/products/${item.id}`} asChild>
-                <Pressable style={styles.row}>
-                  <View style={styles.rowBody}>
-                    <Text style={styles.name}>{item.name}</Text>
-                    <Text style={styles.meta}>
-                      {item.sku ? `SKU ${item.sku}` : 'No SKU'}
-                      {item.barcode ? ` · ${item.barcode}` : ''}
-                    </Text>
-                  </View>
-                  <Text style={styles.price}>{item.selling_price}</Text>
-                </Pressable>
-              </Link>
-            )}
+            title={item.name}
           />
         )}
-      </View>
+        search={search}
+        searchAccessibilityLabel="Search products"
+        searchPlaceholder="Search name, SKU, or barcode"
+        onEndReached={() => {
+          void query.fetchNextPage();
+        }}
+        onRefresh={() => {
+          void query.refetch();
+        }}
+        onSearchChange={setSearch}
+      />
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flex: 1,
-  },
-  headerLink: {
-    color: '#2563eb',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 16,
-  },
-  search: {
-    backgroundColor: '#fff',
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    borderWidth: 1,
-    fontSize: 16,
-    margin: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  empty: {
-    color: '#64748b',
-    fontSize: 15,
-    textAlign: 'center',
-  },
-  row: {
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderBottomColor: '#e2e8f0',
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  rowBody: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  name: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  meta: {
-    color: '#64748b',
-    fontSize: 13,
-    marginTop: 4,
-  },
-  price: {
-    color: '#0f172a',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  footerLoader: {
-    marginVertical: 16,
-  },
-});

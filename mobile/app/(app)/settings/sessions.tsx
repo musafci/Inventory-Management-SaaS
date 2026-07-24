@@ -1,17 +1,15 @@
 import { Stack } from 'expo-router';
+import { Alert, StyleSheet, Text } from 'react-native';
+
 import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-
-import { OptimizedFlatList } from '@/components/OptimizedFlatList';
-
+  ListRow,
+  LoadingState,
+  PaginatedListScreen,
+  ScreenContainer,
+  TextAction,
+} from '@/components/ui';
 import { useRevokeSession, useSessions } from '@/src/hooks/useSessions';
+import { theme } from '@/src/theme';
 
 function formatDate(value: string | null): string {
   if (!value) {
@@ -45,104 +43,50 @@ export default function SessionsScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Active sessions' }} />
-      <View style={styles.container}>
-        <Text style={styles.description}>
-          Devices and apps where your account is signed in. Revoke any session you do not recognize.
-        </Text>
+      <Text style={styles.description}>
+        Devices and apps where your account is signed in. Revoke any session you do not recognize.
+      </Text>
 
-        {query.isLoading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" />
-          </View>
-        ) : (
-          <OptimizedFlatList
-            data={query.data ?? []}
-            keyExtractor={(item) => item.id}
-            refreshControl={(
-              <RefreshControl
-                refreshing={query.isRefetching}
-                onRefresh={() => {
-                  void query.refetch();
-                }}
-              />
-            )}
-            ListEmptyComponent={(
-              <View style={styles.centered}>
-                <Text style={styles.empty}>No active sessions found.</Text>
-              </View>
-            )}
-            renderItem={({ item }) => (
-              <View style={styles.row}>
-                <View style={styles.rowBody}>
-                  <Text style={styles.name}>
-                    {item.name ?? 'Mobile app'}
-                    {item.is_current ? ' (this device)' : ''}
-                  </Text>
-                  <Text style={styles.meta}>Signed in: {formatDate(item.created_at)}</Text>
-                  {item.expires_at ? (
-                    <Text style={styles.meta}>Expires: {formatDate(item.expires_at)}</Text>
-                  ) : null}
-                </View>
-                <Pressable
-                  disabled={revokeMutation.isPending}
-                  onPress={() => handleRevoke(item.id, item.is_current)}>
-                  <Text style={styles.revokeLink}>Revoke</Text>
-                </Pressable>
-              </View>
-            )}
-          />
-        )}
-      </View>
+      {query.isLoading ? (
+        <ScreenContainer><LoadingState /></ScreenContainer>
+      ) : (
+        <PaginatedListScreen
+          data={query.data ?? []}
+          emptyMessage="No active sessions found."
+          isLoading={false}
+          isRefetching={query.isRefetching}
+          keyExtractor={(item) => item.id}
+          onRefresh={() => {
+            void query.refetch();
+          }}
+          renderItem={(item) => (
+            <ListRow
+              right={(
+                <TextAction
+                  label="Revoke"
+                  tone="danger"
+                  onPress={() => handleRevoke(item.id, item.is_current)}
+                />
+              )}
+              showChevron={false}
+              subtitle={`Signed in: ${formatDate(item.created_at)}${
+                item.expires_at ? ` · Expires: ${formatDate(item.expires_at)}` : ''
+              }`}
+              title={`${item.name ?? 'Mobile app'}${item.is_current ? ' (this device)' : ''}`}
+            />
+          )}
+        />
+      )}
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flex: 1,
-  },
   description: {
-    color: '#64748b',
-    fontSize: 14,
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  empty: {
-    color: '#64748b',
-    fontSize: 15,
-  },
-  row: {
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderBottomColor: '#e2e8f0',
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  rowBody: {
-    flex: 1,
-  },
-  name: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  meta: {
-    color: '#64748b',
-    fontSize: 13,
-    marginTop: 4,
-  },
-  revokeLink: {
-    color: '#b91c1c',
-    fontSize: 14,
-    fontWeight: '600',
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.lg,
   },
 });

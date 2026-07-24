@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
-import { View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { OrgSwitcher } from '@/components/OrgSwitcher';
 import Colors from '@/constants/Colors';
@@ -14,18 +14,27 @@ import {
   canViewReports,
   canViewSales,
 } from '@/src/permissions';
+import { theme } from '@/src/theme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
   const { permissions, user } = useAuth();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: colors.tint,
+        tabBarInactiveTintColor: colors.tabIconDefault,
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarItemStyle: styles.tabBarItem,
         headerShown: useClientOnlyValue(false, true),
+        headerStyle: styles.header,
+        headerTitleStyle: styles.headerTitle,
+        headerShadowVisible: false,
         headerRight: () => (
-          <View style={{ marginRight: 12 }}>
+          <View style={styles.headerRight}>
             <OrgSwitcher />
           </View>
         ),
@@ -36,8 +45,12 @@ export default function TabLayout() {
           title: 'Home',
           href: canViewDashboard(permissions) ? undefined : null,
           tabBarAccessibilityLabel: 'Home tab',
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={color} size={24} />
+          tabBarIcon: ({ color, focused }) => (
+            <SymbolView
+              name={{ ios: focused ? 'house.fill' : 'house', android: 'home', web: 'home' }}
+              tintColor={color}
+              size={24}
+            />
           ),
         }}
       />
@@ -47,8 +60,12 @@ export default function TabLayout() {
           title: 'Inventory',
           href: canViewInventory(permissions) ? undefined : null,
           tabBarAccessibilityLabel: 'Inventory tab',
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'shippingbox.fill', android: 'inventory', web: 'inventory' }} tintColor={color} size={24} />
+          tabBarIcon: ({ color, focused }) => (
+            <SymbolView
+              name={{ ios: focused ? 'shippingbox.fill' : 'shippingbox', android: 'inventory', web: 'inventory' }}
+              tintColor={color}
+              size={24}
+            />
           ),
         }}
       />
@@ -57,8 +74,12 @@ export default function TabLayout() {
         options={{
           title: 'Sales',
           href: canViewSales(permissions) ? undefined : null,
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'cart.fill', android: 'shopping_cart', web: 'shopping_cart' }} tintColor={color} size={24} />
+          tabBarIcon: ({ color, focused }) => (
+            <SymbolView
+              name={{ ios: focused ? 'cart.fill' : 'cart', android: 'shopping_cart', web: 'shopping_cart' }}
+              tintColor={color}
+              size={24}
+            />
           ),
         }}
       />
@@ -67,8 +88,12 @@ export default function TabLayout() {
         options={{
           title: 'Purchasing',
           href: canViewPurchasing(permissions) ? undefined : null,
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'truck.box.fill', android: 'local_shipping', web: 'local_shipping' }} tintColor={color} size={24} />
+          tabBarIcon: ({ color, focused }) => (
+            <SymbolView
+              name={{ ios: focused ? 'truck.box.fill' : 'truck.box', android: 'local_shipping', web: 'local_shipping' }}
+              tintColor={color}
+              size={24}
+            />
           ),
         }}
       />
@@ -77,8 +102,12 @@ export default function TabLayout() {
         options={{
           title: 'Reports',
           href: canViewReports(permissions) ? undefined : null,
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'chart.bar.fill', android: 'bar_chart', web: 'bar_chart' }} tintColor={color} size={24} />
+          tabBarIcon: ({ color, focused }) => (
+            <SymbolView
+              name={{ ios: focused ? 'chart.bar.fill' : 'chart.bar', android: 'bar_chart', web: 'bar_chart' }}
+              tintColor={color}
+              size={24}
+            />
           ),
         }}
       />
@@ -87,8 +116,12 @@ export default function TabLayout() {
         options={{
           title: 'More',
           tabBarAccessibilityLabel: 'More tab',
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'ellipsis.circle.fill', android: 'more_horiz', web: 'more_horiz' }} tintColor={color} size={24} />
+          tabBarIcon: ({ color, focused }) => (
+            <SymbolView
+              name={{ ios: focused ? 'person.crop.circle.fill' : 'person.crop.circle', android: 'account_circle', web: 'account_circle' }}
+              tintColor={color}
+              size={24}
+            />
           ),
           headerTitle: user?.name ?? 'Account',
         }}
@@ -96,3 +129,32 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: theme.colors.surface,
+    borderTopColor: theme.colors.border,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    height: Platform.OS === 'ios' ? 88 : 68,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 10,
+    paddingTop: 8,
+  },
+  tabBarLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  tabBarItem: {
+    paddingTop: 2,
+  },
+  header: {
+    backgroundColor: theme.colors.background,
+  },
+  headerTitle: {
+    color: theme.colors.text,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  headerRight: {
+    marginRight: theme.spacing.md,
+  },
+});

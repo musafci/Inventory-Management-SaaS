@@ -7,8 +7,11 @@ import {
   Text,
   View,
 } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
+import { AnimatedPressable } from '@/components/ui/AnimatedPressable';
 import { useAuth } from '@/src/auth/AuthContext';
+import { shadow, theme } from '@/src/theme';
 
 export function OrgSwitcher() {
   const { organizations, organizationId, switchOrganization } = useAuth();
@@ -18,9 +21,16 @@ export function OrgSwitcher() {
     const organization = organizations[0];
 
     return organization ? (
-      <Text style={styles.singleOrg} numberOfLines={1}>
-        {organization.name}
-      </Text>
+      <View style={styles.singleWrap}>
+        <SymbolView
+          name={{ ios: 'building.2.fill', android: 'business', web: 'business' }}
+          size={14}
+          tintColor={theme.colors.textSecondary}
+        />
+        <Text style={styles.singleOrg} numberOfLines={1}>
+          {organization.name}
+        </Text>
+      </View>
     ) : null;
   }
 
@@ -28,15 +38,25 @@ export function OrgSwitcher() {
 
   return (
     <>
-      <Pressable onPress={() => setOpen(true)} style={styles.trigger}>
+      <AnimatedPressable onPress={() => setOpen(true)} style={[styles.trigger, shadow('sm')]}>
+        <SymbolView
+          name={{ ios: 'building.2.fill', android: 'business', web: 'business' }}
+          size={14}
+          tintColor={theme.colors.primary}
+        />
         <Text style={styles.triggerText} numberOfLines={1}>
           {current?.name ?? 'Select organization'}
         </Text>
-      </Pressable>
+        <SymbolView
+          name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }}
+          size={14}
+          tintColor={theme.colors.textSecondary}
+        />
+      </AnimatedPressable>
 
       <Modal animationType="slide" transparent visible={open} onRequestClose={() => setOpen(false)}>
         <View style={styles.backdrop}>
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, shadow('lg')]}>
             <Text style={styles.sheetTitle}>Switch organization</Text>
             <ScrollView>
               {organizations.map((organization) => (
@@ -50,8 +70,17 @@ export function OrgSwitcher() {
                     await switchOrganization(organization.id);
                     setOpen(false);
                   }}>
-                  <Text style={styles.optionText}>{organization.name}</Text>
-                  <Text style={styles.optionMeta}>{organization.role ?? organization.plan}</Text>
+                  <View style={styles.optionBody}>
+                    <Text style={styles.optionText}>{organization.name}</Text>
+                    <Text style={styles.optionMeta}>{organization.role ?? organization.plan}</Text>
+                  </View>
+                  {organization.id === organizationId ? (
+                    <SymbolView
+                      name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }}
+                      size={20}
+                      tintColor={theme.colors.primary}
+                    />
+                  ) : null}
                 </Pressable>
               ))}
             </ScrollView>
@@ -66,70 +95,85 @@ export function OrgSwitcher() {
 }
 
 const styles = StyleSheet.create({
+  singleWrap: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    maxWidth: 180,
+  },
   singleOrg: {
-    color: '#64748b',
-    fontSize: 13,
-    maxWidth: 160,
-  },
-  trigger: {
-    backgroundColor: '#f1f5f9',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  triggerText: {
-    color: '#0f172a',
+    color: theme.colors.textSecondary,
     fontSize: 13,
     fontWeight: '600',
-    maxWidth: 160,
+  },
+  trigger: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    maxWidth: 190,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  triggerText: {
+    color: theme.colors.text,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
   },
   backdrop: {
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: theme.colors.overlay,
     flex: 1,
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl,
     maxHeight: '70%',
-    padding: 20,
+    padding: theme.spacing.xl,
   },
   sheetTitle: {
-    color: '#0f172a',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 12,
+    ...theme.typography.heading,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.md,
   },
   option: {
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
+    alignItems: 'center',
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
     borderWidth: 1,
-    marginBottom: 10,
-    padding: 14,
+    flexDirection: 'row',
+    marginBottom: theme.spacing.sm,
+    padding: theme.spacing.lg,
   },
   optionActive: {
-    backgroundColor: '#eef2ff',
-    borderColor: '#6366f1',
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primary,
+  },
+  optionBody: {
+    flex: 1,
   },
   optionText: {
-    color: '#0f172a',
-    fontSize: 15,
-    fontWeight: '600',
+    ...theme.typography.bodyStrong,
+    color: theme.colors.text,
   },
   optionMeta: {
-    color: '#64748b',
-    fontSize: 12,
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   closeButton: {
     alignItems: 'center',
-    marginTop: 8,
-    paddingVertical: 12,
+    marginTop: theme.spacing.sm,
+    paddingVertical: theme.spacing.md,
   },
   closeButtonText: {
-    color: '#6366f1',
+    color: theme.colors.primary,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

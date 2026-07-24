@@ -1,14 +1,14 @@
 import { Stack } from 'expo-router';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, StyleSheet, Text } from 'react-native';
 
+import {
+  Button,
+  Card,
+  ErrorState,
+  LoadingState,
+  ScreenContainer,
+  ScreenScrollView,
+} from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import {
   useCancelOrganizationDeletion,
@@ -16,6 +16,7 @@ import {
   useQueueOrganizationExport,
   useRequestOrganizationDeletion,
 } from '@/src/hooks/useOrganization';
+import { theme } from '@/src/theme';
 
 export default function PrivacySettingsScreen() {
   const orgQuery = useOrganization();
@@ -95,137 +96,89 @@ export default function PrivacySettingsScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Privacy & data' }} />
-      <ScrollView contentContainerStyle={styles.container}>
-        {orgQuery.isLoading ? (
-          <ActivityIndicator size="large" style={styles.loader} />
-        ) : org ? (
-          <>
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Data export</Text>
-              <Text style={styles.cardBody}>
-                Request a full export of your organization data. You will receive an email when the
-                export is ready to download.
-              </Text>
-              <Pressable
-                disabled={exportMutation.isPending}
-                onPress={handleExport}
-                style={styles.button}>
-                <Text style={styles.buttonText}>
-                  {exportMutation.isPending ? 'Queuing…' : 'Queue data export'}
-                </Text>
-              </Pressable>
-            </View>
+      {orgQuery.isLoading ? (
+        <ScreenContainer><LoadingState /></ScreenContainer>
+      ) : org ? (
+        <ScreenScrollView>
+          <Card>
+            <Text style={styles.cardTitle}>Data export</Text>
+            <Text style={styles.cardBody}>
+              Request a full export of your organization data. You will receive an email when the
+              export is ready to download.
+            </Text>
+            <Button
+              disabled={exportMutation.isPending}
+              label={exportMutation.isPending ? 'Queuing…' : 'Queue data export'}
+              loading={exportMutation.isPending}
+              onPress={handleExport}
+              style={styles.action}
+            />
+          </Card>
 
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Account deletion</Text>
-              {org.deletion_requested_at ? (
-                <>
-                  <Text style={styles.warning}>
-                    Deletion requested on {org.deletion_requested_at}
-                  </Text>
-                  {org.deletion_scheduled_for ? (
-                    <Text style={styles.cardBody}>
-                      Scheduled for: {org.deletion_scheduled_for}
-                    </Text>
-                  ) : null}
-                  <Pressable
-                    disabled={cancelDeletionMutation.isPending}
-                    onPress={handleCancelDeletion}
-                    style={[styles.button, styles.secondaryButton]}>
-                    <Text style={styles.secondaryButtonText}>
-                      {cancelDeletionMutation.isPending ? 'Cancelling…' : 'Cancel deletion'}
-                    </Text>
-                  </Pressable>
-                </>
-              ) : (
-                <>
+          <Card>
+            <Text style={styles.cardTitle}>Account deletion</Text>
+            {org.deletion_requested_at ? (
+              <>
+                <Text style={styles.warning}>
+                  Deletion requested on {org.deletion_requested_at}
+                </Text>
+                {org.deletion_scheduled_for ? (
                   <Text style={styles.cardBody}>
-                    Request permanent deletion of your organization and all associated data after a
-                    grace period.
+                    Scheduled for: {org.deletion_scheduled_for}
                   </Text>
-                  <Pressable
-                    disabled={requestDeletionMutation.isPending}
-                    onPress={handleRequestDeletion}
-                    style={[styles.button, styles.dangerButton]}>
-                    <Text style={styles.buttonText}>
-                      {requestDeletionMutation.isPending ? 'Requesting…' : 'Request deletion'}
-                    </Text>
-                  </Pressable>
-                </>
-              )}
-            </View>
-          </>
-        ) : (
-          <Text style={styles.error}>Could not load organization.</Text>
-        )}
-      </ScrollView>
+                ) : null}
+                <Button
+                  disabled={cancelDeletionMutation.isPending}
+                  label={cancelDeletionMutation.isPending ? 'Cancelling…' : 'Cancel deletion'}
+                  loading={cancelDeletionMutation.isPending}
+                  variant="secondary"
+                  onPress={handleCancelDeletion}
+                  style={styles.action}
+                />
+              </>
+            ) : (
+              <>
+                <Text style={styles.cardBody}>
+                  Request permanent deletion of your organization and all associated data after a
+                  grace period.
+                </Text>
+                <Button
+                  disabled={requestDeletionMutation.isPending}
+                  label={requestDeletionMutation.isPending ? 'Requesting…' : 'Request deletion'}
+                  loading={requestDeletionMutation.isPending}
+                  variant="danger"
+                  onPress={handleRequestDeletion}
+                  style={styles.action}
+                />
+              </>
+            )}
+          </Card>
+        </ScreenScrollView>
+      ) : (
+        <ScreenContainer><ErrorState message="Could not load organization." /></ScreenContainer>
+      )}
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flexGrow: 1,
-    padding: 16,
-    paddingBottom: 40,
-  },
-  loader: {
-    marginTop: 32,
-  },
-  error: {
-    color: '#b91c1c',
-    fontSize: 15,
-    padding: 16,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 16,
-    padding: 16,
-  },
   cardTitle: {
-    color: '#0f172a',
-    fontSize: 17,
-    fontWeight: '700',
+    ...theme.typography.heading,
+    color: theme.colors.text,
   },
   cardBody: {
-    color: '#64748b',
-    fontSize: 14,
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
   warning: {
-    color: '#b45309',
+    color: theme.colors.warning,
     fontSize: 14,
     fontWeight: '600',
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    marginTop: 16,
-    paddingVertical: 12,
-  },
-  secondaryButton: {
-    backgroundColor: '#fff',
-    borderColor: '#2563eb',
-    borderWidth: 1,
-  },
-  dangerButton: {
-    backgroundColor: '#b91c1c',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  secondaryButtonText: {
-    color: '#2563eb',
-    fontSize: 15,
-    fontWeight: '700',
+  action: {
+    marginTop: theme.spacing.lg,
   },
 });

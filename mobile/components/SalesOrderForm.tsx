@@ -1,21 +1,14 @@
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { EmptyWarehousesPrompt } from '@/components/EmptyWarehousesPrompt';
+import { Button, ChipSelect, FormScreen, Input, LoadingState } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import type { SalesOrder, SalesOrderPayload } from '@/src/api/types';
-import { EmptyWarehousesPrompt } from '@/components/EmptyWarehousesPrompt';
 import { useCachedProductsForPicker, useWarehouses } from '@/src/hooks/useInventory';
 import { useCreateSalesOrder, useUpdateSalesOrder } from '@/src/hooks/useOrders';
 import { useCustomersList } from '@/src/hooks/usePartners';
+import { theme } from '@/src/theme';
 
 type SalesOrderFormProps = {
   order?: SalesOrder;
@@ -80,11 +73,7 @@ export function SalesOrderForm({ order, onSuccess }: SalesOrderFormProps) {
   }, [isEditing, productId, products, unitPrice]);
 
   if (warehousesQuery.isLoading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+    return <LoadingState />;
   }
 
   if (warehouses.length === 0) {
@@ -95,7 +84,7 @@ export function SalesOrderForm({ order, onSuccess }: SalesOrderFormProps) {
 
   if (customers.length === 0) {
     return (
-      <View style={styles.loading}>
+      <View style={styles.emptyWrap}>
         <Text style={styles.helper}>Add a customer before creating sales orders.</Text>
       </View>
     );
@@ -166,55 +155,38 @@ export function SalesOrderForm({ order, onSuccess }: SalesOrderFormProps) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.label}>Customer</Text>
-      <View style={styles.chipRow}>
-        {customers.slice(0, 20).map((customer) => (
-          <Pressable
-            key={customer.id}
-            onPress={() => setCustomerId(customer.id)}
-            style={[styles.chip, customerId === customer.id ? styles.chipSelected : null]}>
-            <Text
-              style={[
-                styles.chipText,
-                customerId === customer.id ? styles.chipTextSelected : null,
-              ]}>
-              {customer.name}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+    <FormScreen>
+      <ChipSelect
+        label="Customer"
+        options={customers.slice(0, 20).map((customer) => ({
+          label: customer.name,
+          value: String(customer.id),
+        }))}
+        value={String(customerId)}
+        onChange={(value) => setCustomerId(Number(value))}
+      />
 
-      <Text style={styles.label}>Warehouse</Text>
-      <View style={styles.chipRow}>
-        {warehouses.map((warehouse) => (
-          <Pressable
-            key={warehouse.id}
-            onPress={() => setWarehouseId(warehouse.id)}
-            style={[styles.chip, warehouseId === warehouse.id ? styles.chipSelected : null]}>
-            <Text
-              style={[
-                styles.chipText,
-                warehouseId === warehouse.id ? styles.chipTextSelected : null,
-              ]}>
-              {warehouse.name}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <ChipSelect
+        label="Warehouse"
+        options={warehouses.map((warehouse) => ({
+          label: warehouse.name,
+          value: String(warehouse.id),
+        }))}
+        value={String(warehouseId)}
+        onChange={(value) => setWarehouseId(Number(value))}
+      />
 
-      <Text style={styles.label}>Product search</Text>
-      <TextInput
+      <Input
+        label="Product search"
+        placeholder="Search cached products"
         value={productSearch}
         onChangeText={(value) => {
           setProductSearch(value);
           setProductId(0);
         }}
-        placeholder="Search cached products"
-        style={styles.input}
       />
 
-      <Text style={styles.label}>Product</Text>
+      <Text style={styles.fieldLabel}>Product</Text>
       {products.length === 0 ? (
         <Text style={styles.helper}>No cached products match. Sync or search again.</Text>
       ) : (
@@ -239,117 +211,79 @@ export function SalesOrderForm({ order, onSuccess }: SalesOrderFormProps) {
         </View>
       )}
 
-      <Text style={styles.label}>Quantity</Text>
-      <TextInput
+      <Input
+        keyboardType="number-pad"
+        label="Quantity"
         value={quantity}
         onChangeText={setQuantity}
-        keyboardType="number-pad"
-        style={styles.input}
       />
 
-      <Text style={styles.label}>Unit price</Text>
-      <TextInput
+      <Input
+        keyboardType="decimal-pad"
+        label="Unit price"
         value={unitPrice}
         onChangeText={setUnitPrice}
-        keyboardType="decimal-pad"
-        style={styles.input}
       />
 
-      <Text style={styles.label}>Order date</Text>
-      <TextInput
+      <Input
+        autoCapitalize="none"
+        label="Order date"
+        placeholder="YYYY-MM-DD"
         value={orderDate}
         onChangeText={setOrderDate}
-        placeholder="YYYY-MM-DD"
-        autoCapitalize="none"
-        style={styles.input}
       />
 
-      <Pressable
-        disabled={mutation.isPending}
-        onPress={() => {
-          void handleSubmit();
-        }}
-        style={[styles.button, mutation.isPending ? styles.buttonDisabled : null]}>
-        <Text style={styles.buttonText}>
-          {mutation.isPending
-            ? 'Saving…'
-            : isEditing
-              ? 'Save changes'
-              : 'Create sales order'}
-        </Text>
-      </Pressable>
-    </ScrollView>
+      <Button
+        label={isEditing ? 'Save changes' : 'Create sales order'}
+        loading={mutation.isPending}
+        onPress={() => void handleSubmit()}
+      />
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  loading: {
+  emptyWrap: {
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
+    padding: theme.spacing.xxxl,
   },
   helper: {
-    color: '#64748b',
-    fontSize: 15,
-    lineHeight: 22,
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
-  label: {
-    color: '#334155',
-    fontSize: 14,
+  fieldLabel: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
     fontWeight: '600',
-    marginBottom: 8,
-    marginTop: 12,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    borderWidth: 1,
-    fontSize: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    marginBottom: theme.spacing.sm,
   },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
   },
   chip: {
-    backgroundColor: '#e2e8f0',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: theme.colors.surfaceMuted,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   chipSelected: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   chipText: {
-    color: '#334155',
+    color: theme.colors.textSecondary,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   chipTextSelected: {
-    color: '#fff',
-  },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    marginTop: 24,
-    paddingVertical: 14,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    color: theme.colors.primaryText,
   },
 });

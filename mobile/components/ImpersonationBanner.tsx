@@ -1,6 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
+import { AnimatedPressable } from '@/components/ui/AnimatedPressable';
 import { useAuth } from '@/src/auth/AuthContext';
+import { palette, theme } from '@/src/theme';
 
 export function ImpersonationBanner() {
   const { impersonation, organizations, organizationId, exitImpersonation } = useAuth();
@@ -13,6 +16,13 @@ export function ImpersonationBanner() {
 
   return (
     <View style={styles.banner}>
+      <View style={styles.iconWrap}>
+        <SymbolView
+          name={{ ios: 'eye.fill', android: 'visibility', web: 'visibility' }}
+          size={16}
+          tintColor={palette.amber700}
+        />
+      </View>
       <View style={styles.bodyWrap}>
         <Text style={styles.title}>Support impersonation active</Text>
         <Text style={styles.body}>
@@ -23,7 +33,7 @@ export function ImpersonationBanner() {
           <Text style={styles.reason}>{impersonation.reason}</Text>
         ) : null}
       </View>
-      <Pressable
+      <AnimatedPressable
         accessibilityLabel="Exit impersonation"
         accessibilityRole="button"
         onPress={() => {
@@ -31,7 +41,7 @@ export function ImpersonationBanner() {
         }}
         style={styles.exitButton}>
         <Text style={styles.exitText}>Exit</Text>
-      </Pressable>
+      </AnimatedPressable>
     </View>
   );
 }
@@ -39,21 +49,29 @@ export function ImpersonationBanner() {
 const styles = StyleSheet.create({
   banner: {
     alignItems: 'center',
-    backgroundColor: '#fef3c7',
-    borderBottomColor: '#fcd34d',
+    backgroundColor: palette.amber50,
+    borderBottomColor: '#fde68a',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+  },
+  iconWrap: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.sm,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
   },
   bodyWrap: {
     flex: 1,
   },
   title: {
-    color: '#78350f',
+    color: palette.amber700,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   body: {
     color: '#92400e',
@@ -66,16 +84,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   exitButton: {
-    backgroundColor: '#fff',
-    borderColor: '#f59e0b',
-    borderRadius: 8,
+    backgroundColor: theme.colors.surface,
+    borderColor: palette.amber500,
+    borderRadius: theme.radius.pill,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
   },
   exitText: {
-    color: '#92400e',
+    color: palette.amber700,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

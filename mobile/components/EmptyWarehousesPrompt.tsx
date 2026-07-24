@@ -1,5 +1,8 @@
 import { Link } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+
+import { EmptyState } from '@/components/ui';
+import { theme } from '@/src/theme';
 
 type EmptyWarehousesPromptProps = {
   message: string;
@@ -9,7 +12,7 @@ type EmptyWarehousesPromptProps = {
 export function EmptyWarehousesPrompt({ message, canCreate = true }: EmptyWarehousesPromptProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.helper}>{message}</Text>
+      <EmptyState body={message} title="No warehouses yet" />
       {canCreate ? (
         <Link href="/(app)/warehouses/new" style={styles.link}>
           Add warehouse
@@ -24,18 +27,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
-  },
-  helper: {
-    color: '#64748b',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
-    textAlign: 'center',
+    padding: theme.spacing.xxl,
   },
   link: {
-    color: '#2563eb',
+    color: theme.colors.primary,
     fontSize: 16,
     fontWeight: '600',
+    marginTop: theme.spacing.lg,
   },
 });

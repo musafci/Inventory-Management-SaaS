@@ -1,18 +1,12 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
+import { Button, Card, ScreenScrollView, SectionHeader } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import type { CsvImportResult } from '@/src/api/imports';
 import { useNetwork } from '@/src/network/NetworkContext';
+import { theme } from '@/src/theme';
 
 type CsvImportFormProps = {
   title: string;
@@ -83,20 +77,22 @@ export function CsvImportForm({
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScreenScrollView>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Required columns</Text>
+      <Card style={styles.card}>
+        <SectionHeader title="Required columns" />
         <Text style={styles.columns}>{requiredColumns.join(', ')}</Text>
         {optionalColumns.length > 0 ? (
           <>
-            <Text style={[styles.sectionTitle, styles.sectionSpacing]}>Optional columns</Text>
+            <View style={styles.sectionSpacing}>
+              <SectionHeader title="Optional columns" />
+            </View>
             <Text style={styles.columns}>{optionalColumns.join(', ')}</Text>
           </>
         ) : null}
-      </View>
+      </Card>
 
       {!isConnected ? (
         <View style={styles.offlineBanner}>
@@ -104,26 +100,20 @@ export function CsvImportForm({
         </View>
       ) : null}
 
-      <Pressable
-        disabled={isImporting || !isConnected}
-        onPress={() => {
-          void pickAndImport();
-        }}
-        style={[styles.button, isImporting || !isConnected ? styles.buttonDisabled : null]}>
-        {isImporting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Choose CSV file</Text>
-        )}
-      </Pressable>
+      <Button
+        disabled={!isConnected}
+        label="Choose CSV file"
+        loading={isImporting}
+        onPress={() => void pickAndImport()}
+      />
 
       {fileName ? (
         <Text style={styles.fileName}>Selected: {fileName}</Text>
       ) : null}
 
       {result ? (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Results</Text>
+        <Card style={styles.card}>
+          <SectionHeader title="Results" />
           <Text style={styles.resultLine}>Imported: {result.imported}</Text>
           <Text style={styles.resultLine}>Failed: {result.failed}</Text>
           {result.errors.map((error) => (
@@ -132,104 +122,70 @@ export function CsvImportForm({
               <Text style={styles.errorMessage}>{error.messages.join(' ')}</Text>
             </View>
           ))}
-        </View>
+        </Card>
       ) : null}
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8fafc',
-    flexGrow: 1,
-    padding: 20,
-  },
   title: {
-    color: '#0f172a',
-    fontSize: 24,
-    fontWeight: '700',
+    ...theme.typography.title,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.sm,
   },
   description: {
-    color: '#64748b',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
-    marginTop: 8,
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.lg,
   },
   card: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 16,
-    padding: 16,
-  },
-  sectionTitle: {
-    color: '#64748b',
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    marginBottom: theme.spacing.lg,
   },
   sectionSpacing: {
-    marginTop: 12,
+    marginTop: theme.spacing.md,
   },
   columns: {
-    color: '#0f172a',
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 6,
+    ...theme.typography.body,
+    color: theme.colors.text,
+    marginTop: theme.spacing.sm,
   },
   offlineBanner: {
-    backgroundColor: '#fef3c7',
-    borderColor: '#fcd34d',
-    borderRadius: 12,
+    backgroundColor: theme.colors.warningSoft,
+    borderColor: theme.colors.warning,
+    borderRadius: theme.radius.sm,
     borderWidth: 1,
-    marginBottom: 16,
-    padding: 12,
+    marginBottom: theme.spacing.lg,
+    padding: theme.spacing.md,
   },
   offlineText: {
-    color: '#92400e',
+    color: theme.colors.warning,
     fontSize: 14,
   },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#2563eb',
-    borderRadius: 12,
-    paddingVertical: 14,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
   fileName: {
-    color: '#64748b',
-    fontSize: 13,
-    marginTop: 12,
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.md,
   },
   resultLine: {
-    color: '#0f172a',
-    fontSize: 15,
-    marginTop: 6,
+    ...theme.typography.bodyStrong,
+    color: theme.colors.text,
+    marginTop: theme.spacing.sm,
   },
   errorRow: {
-    borderTopColor: '#e2e8f0',
+    borderTopColor: theme.colors.border,
     borderTopWidth: 1,
-    marginTop: 10,
-    paddingTop: 10,
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
   },
   errorTitle: {
-    color: '#b91c1c',
+    color: theme.colors.danger,
     fontSize: 13,
     fontWeight: '700',
   },
   errorMessage: {
-    color: '#64748b',
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
   },
 });
