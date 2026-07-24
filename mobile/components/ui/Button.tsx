@@ -1,32 +1,137 @@
-import { ActivityIndicator, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { type Href } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { AnimatedPressable } from './AnimatedPressable';
-import { shadow, theme } from '@/src/theme';
+import { NavPressable } from './NavPressable';
+import {
+  buttonGradients,
+  palette,
+  shadow,
+  theme,
+  type ButtonGradientVariant,
+} from '@/src/theme';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type ButtonVariant =
+  | ButtonGradientVariant
+  | 'secondary'
+  | 'ghost';
+
+type ButtonSize = 'default' | 'compact';
 
 type ButtonProps = {
   label: string;
   onPress?: () => void;
+  href?: Href;
   disabled?: boolean;
   loading?: boolean;
   variant?: ButtonVariant;
+  size?: ButtonSize;
   style?: StyleProp<ViewStyle>;
   testID?: string;
   accessibilityLabel?: string;
 };
 
+const GRADIENT_VARIANTS = new Set<ButtonVariant>(['primary', 'danger', 'success', 'warning']);
+
+function isGradientVariant(variant: ButtonVariant): variant is ButtonGradientVariant {
+  return GRADIENT_VARIANTS.has(variant);
+}
+
+function spinnerColor(variant: ButtonVariant): string {
+  if (isGradientVariant(variant)) {
+    return theme.colors.primaryText;
+  }
+
+  return theme.colors.primary;
+}
+
+const sizeStyles = {
+  default: {
+    base: {
+      borderRadius: theme.radius.md,
+      minHeight: 44,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: 10,
+    },
+    label: {
+      fontSize: 14,
+    },
+  },
+  compact: {
+    base: {
+      alignSelf: 'auto' as const,
+      borderRadius: theme.radius.md,
+      minHeight: 36,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+    label: {
+      fontSize: 13,
+    },
+  },
+};
+
 export function Button({
   label,
   onPress,
+  href,
   disabled = false,
   loading = false,
   variant = 'primary',
+  size = 'default',
   style,
   testID,
   accessibilityLabel,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const isGradient = isGradientVariant(variant);
+
+  const content = loading ? (
+    <ActivityIndicator color={spinnerColor(variant)} size="small" />
+  ) : (
+    <Text style={[styles.label, sizeStyles[size].label, labelStyles[variant]]}>{label}</Text>
+  );
+
+  const buttonStyle = [
+    styles.base,
+    sizeStyles[size].base,
+    isGradient ? styles.gradientShell : variantStyles[variant],
+    isGradient ? shadow('md') : variant === 'secondary' ? shadow('sm') : null,
+    isDisabled ? styles.disabled : null,
+    style,
+  ];
+
+  const inner = (
+    <>
+      {isGradient ? (
+        isDisabled ? (
+          <View style={[StyleSheet.absoluteFill, styles.disabledGradient]} />
+        ) : (
+          <LinearGradient
+            colors={[...buttonGradients[variant]]}
+            end={{ x: 1, y: 0.5 }}
+            start={{ x: 0, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
+        )
+      ) : null}
+      {content}
+    </>
+  );
+
+  if (href && !isDisabled) {
+    return (
+      <NavPressable
+        accessibilityLabel={accessibilityLabel ?? label}
+        accessibilityRole="button"
+        href={href}
+        style={buttonStyle}
+        testID={testID}>
+        {inner}
+      </NavPressable>
+    );
+  }
 
   return (
     <AnimatedPressable
@@ -34,19 +139,9 @@ export function Button({
       accessibilityRole="button"
       disabled={isDisabled}
       onPress={onPress}
-      style={[
-        styles.base,
-        variantStyles[variant],
-        isDisabled ? styles.disabled : null,
-        variant === 'primary' ? shadow('sm') : null,
-        style,
-      ]}
+      style={buttonStyle}
       testID={testID}>
-      {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? theme.colors.primaryText : theme.colors.primary} />
-      ) : (
-        <Text style={[styles.label, labelStyles[variant]]}>{label}</Text>
-      )}
+      {inner}
     </AnimatedPressable>
   );
 }
@@ -54,35 +149,36 @@ export function Button({
 const styles = StyleSheet.create({
   base: {
     alignItems: 'center',
-    borderRadius: theme.radius.md,
+    alignSelf: 'stretch',
     justifyContent: 'center',
-    minHeight: 50,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    overflow: 'hidden',
+  },
+  gradientShell: {
+    backgroundColor: palette.primary600,
   },
   disabled: {
-    opacity: 0.55,
+    opacity: 0.5,
+  },
+  disabledGradient: {
+    backgroundColor: palette.slate400,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
+    textAlign: 'center',
+    zIndex: 1,
   },
 });
 
 const variantStyles = StyleSheet.create({
-  primary: {
-    backgroundColor: theme.colors.primary,
-  },
   secondary: {
     backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.primary,
-    borderWidth: 1.5,
+    borderColor: palette.slate200,
+    borderWidth: 1,
   },
   ghost: {
     backgroundColor: theme.colors.primarySoft,
-  },
-  danger: {
-    backgroundColor: theme.colors.dangerSoft,
+    borderColor: palette.primary200,
+    borderWidth: 1,
   },
 });
 
@@ -91,12 +187,18 @@ const labelStyles = StyleSheet.create({
     color: theme.colors.primaryText,
   },
   secondary: {
-    color: theme.colors.primary,
+    color: palette.slate700,
   },
   ghost: {
-    color: theme.colors.primary,
+    color: palette.primary700,
   },
   danger: {
-    color: theme.colors.danger,
+    color: theme.colors.primaryText,
+  },
+  success: {
+    color: theme.colors.primaryText,
+  },
+  warning: {
+    color: theme.colors.primaryText,
   },
 });

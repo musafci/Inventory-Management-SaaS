@@ -1,6 +1,7 @@
+import { type Href } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
-import { Link, type Href } from 'expo-router';
 
+import { Button } from './Button';
 import { TextAction } from './TextAction';
 import { shadow, theme } from '@/src/theme';
 
@@ -29,9 +30,7 @@ export function EntityListCard({
       </View>
       <View style={styles.actions}>
         {canEdit && editHref ? (
-          <Link href={editHref}>
-            <Text style={styles.editLink}>Edit</Text>
-          </Link>
+          <Button href={editHref} label="Edit" size="compact" style={styles.actionButton} variant="secondary" />
         ) : null}
         {canDelete && onDelete ? (
           <TextAction label="Delete" onPress={onDelete} tone="danger" />
@@ -72,9 +71,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: theme.spacing.sm,
   },
-  editLink: {
-    color: theme.colors.primary,
-    fontSize: 14,
-    fontWeight: '700',
+  actionButton: {
+    alignSelf: 'auto',
+    minWidth: 72,
   },
 });

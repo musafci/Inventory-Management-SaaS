@@ -7,7 +7,7 @@ import { HubCard } from '@/components/HubCard';
 import { Button, Card, HubScreenLayout } from '@/components/ui';
 import { useAuth } from '@/src/auth/AuthContext';
 import { canAccessSettings } from '@/src/permissions';
-import { palette, shadow, theme } from '@/src/theme';
+import { gradients, palette, shadow, theme } from '@/src/theme';
 
 export default function MoreScreen() {
   const { logout, permissions, user } = useAuth();
@@ -15,7 +15,7 @@ export default function MoreScreen() {
   return (
     <HubScreenLayout description="Account shortcuts and workspace tools." eyebrow="Account" title={user?.name ?? 'Account'}>
       <LinearGradient
-        colors={[palette.primary600, '#818cf8']}
+        colors={[...gradients.primary]}
         end={{ x: 1, y: 1 }}
         start={{ x: 0, y: 0 }}
         style={[styles.profileCard, shadow('md')]}>
@@ -40,7 +40,7 @@ export default function MoreScreen() {
           icon={{ ios: 'gearshape.fill', android: 'settings', web: 'settings' }}
           testID="hub-settings"
           title="Settings"
-          tone="indigo"
+          tone="sky"
         />
       ) : null}
 

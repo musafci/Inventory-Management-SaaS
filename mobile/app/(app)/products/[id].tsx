@@ -1,9 +1,9 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 
-import { DetailRow, DetailScreen, ErrorState, HeaderAction } from '@/components/ui';
+import { DetailRow, DetailScreen, ErrorState, HeaderAction, StatusBadge } from '@/components/ui';
 import { useAuth } from '@/src/auth/AuthContext';
-import { useDeleteProduct, useProduct } from '@/src/hooks/useProducts';
+import { useCategories, useDeleteProduct, useProduct, useUnits } from '@/src/hooks/useProducts';
 import { canDeleteInventory, canUpdateInventory } from '@/src/permissions';
 
 export default function ProductDetailScreen() {
@@ -12,6 +12,8 @@ export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const productId = Number(id);
   const query = useProduct(Number.isFinite(productId) ? productId : null);
+  const categoriesQuery = useCategories();
+  const unitsQuery = useUnits();
   const deleteMutation = useDeleteProduct();
 
   if (!query.isLoading && !query.data) {
@@ -24,6 +26,12 @@ export default function ProductDetailScreen() {
   }
 
   const product = query.data;
+  const categoryName = product
+    ? categoriesQuery.data?.find((item) => item.id === product.category_id)?.name
+    : undefined;
+  const unitName = product
+    ? unitsQuery.data?.find((item) => item.id === product.unit_id)?.name
+    : undefined;
 
   const handleDelete = () => {
     if (!product) {
@@ -67,6 +75,8 @@ export default function ProductDetailScreen() {
           <>
             <DetailRow label="SKU" value={product.sku ?? '—'} />
             <DetailRow label="Barcode" value={product.barcode ?? '—'} />
+            <DetailRow label="Category" value={categoryName ?? `#${product.category_id}`} />
+            <DetailRow label="Unit" value={unitName ?? `#${product.unit_id}`} />
             <DetailRow label="Cost price" value={product.cost_price} />
             <DetailRow label="Selling price" value={product.selling_price} />
             <DetailRow label="Tax rate" value={`${product.tax_rate}%`} />
@@ -74,7 +84,15 @@ export default function ProductDetailScreen() {
               label="Reorder point"
               value={product.reorder_point === null ? '—' : String(product.reorder_point)}
             />
-            <DetailRow label="Status" value={product.is_active ? 'Active' : 'Inactive'} />
+            <DetailRow
+              label="Status"
+              value={
+                <StatusBadge
+                  label={product.is_active ? 'Active' : 'Inactive'}
+                  tone={product.is_active ? 'success' : 'default'}
+                />
+              }
+            />
           </>
         ) : null}
       </DetailScreen>

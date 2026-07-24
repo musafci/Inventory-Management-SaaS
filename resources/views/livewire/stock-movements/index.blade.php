@@ -27,9 +27,9 @@
                             $typeColors = [
                                 'purchase_in' => 'bg-emerald-100 text-emerald-700',
                                 'sale_out' => 'bg-red-100 text-red-700',
-                                'adjustment_in' => 'bg-blue-100 text-blue-700',
+                                'adjustment_in' => 'bg-primary-100 text-primary-700',
                                 'adjustment_out' => 'bg-orange-100 text-orange-700',
-                                'transfer_in' => 'bg-indigo-100 text-indigo-700',
+                                'transfer_in' => 'bg-primary-100 text-primary-700',
                                 'transfer_out' => 'bg-purple-100 text-purple-700',
                             ];
                             $type = $item['type'] ?? '';

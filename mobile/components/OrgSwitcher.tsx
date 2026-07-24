@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
+import { Button } from '@/components/ui/Button';
 import { AnimatedPressable } from '@/components/ui/AnimatedPressable';
 import { useAuth } from '@/src/auth/AuthContext';
 import { shadow, theme } from '@/src/theme';
@@ -84,9 +85,7 @@ export function OrgSwitcher() {
                 </Pressable>
               ))}
             </ScrollView>
-            <Pressable onPress={() => setOpen(false)} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>Close</Text>
-            </Pressable>
+            <Button label="Close" onPress={() => setOpen(false)} variant="secondary" />
           </View>
         </View>
       </Modal>
@@ -165,15 +164,5 @@ const styles = StyleSheet.create({
     ...theme.typography.caption,
     color: theme.colors.textSecondary,
     marginTop: 4,
-  },
-  closeButton: {
-    alignItems: 'center',
-    marginTop: theme.spacing.sm,
-    paddingVertical: theme.spacing.md,
-  },
-  closeButtonText: {
-    color: theme.colors.primary,
-    fontSize: 15,
-    fontWeight: '700',
   },
 });

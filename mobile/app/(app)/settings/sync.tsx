@@ -75,13 +75,17 @@ export default function SyncSettingsScreen() {
                   <View style={styles.failedActions}>
                     <Button
                       label="Retry"
-                      variant="ghost"
+                      size="compact"
+                      style={styles.failedActionButton}
+                      variant="secondary"
                       onPress={() => {
                         void retryMutation(item.id);
                       }}
                     />
                     <Button
                       label="Dismiss"
+                      size="compact"
+                      style={styles.failedActionButton}
                       variant="danger"
                       onPress={() => {
                         Alert.alert('Dismiss change', 'Remove this failed mutation from the queue?', [
@@ -141,5 +145,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: theme.spacing.sm,
     marginTop: theme.spacing.md,
+  },
+  failedActionButton: {
+    flex: 1,
   },
 });

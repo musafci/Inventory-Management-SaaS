@@ -13,7 +13,7 @@
     </div>
 
     <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="stat-card stat-card-indigo">
+        <div class="stat-card stat-card-primary">
             <p class="text-sm font-medium text-slate-500">Total events</p>
             <p class="mt-1 text-3xl font-bold tracking-tight text-slate-900">{{ number_format($summary['total'] ?? 0) }}</p>
         </div>

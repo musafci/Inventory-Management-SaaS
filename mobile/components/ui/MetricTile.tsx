@@ -1,14 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
-import { shadow, theme, type AccentTone, accentTones } from '@/src/theme';
+import { shadow, theme, accentFor, type LegacyAccentTone } from '@/src/theme';
 import { appIcon, type AppIcon } from '@/src/theme/icons';
 
 type MetricTileProps = {
   label: string;
   value: string;
   meta?: string;
-  tone?: AccentTone;
+  tone?: LegacyAccentTone;
   icon?: AppIcon;
 };
 
@@ -16,10 +16,10 @@ export function MetricTile({
   label,
   value,
   meta,
-  tone = 'indigo',
+  tone = 'sky',
   icon,
 }: MetricTileProps) {
-  const accent = accentTones[tone];
+  const accent = accentFor(tone);
 
   return (
     <View style={[styles.tile, shadow('md')]}>

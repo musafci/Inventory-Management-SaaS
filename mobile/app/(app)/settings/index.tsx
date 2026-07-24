@@ -8,7 +8,7 @@ import {
   canManageUsers,
   canViewOrganization,
 } from '@/src/permissions';
-import type { AccentTone } from '@/src/theme';
+import type { LegacyAccentTone } from '@/src/theme';
 import type { AppIcon } from '@/src/theme/icons';
 
 type SettingsLink = {
@@ -17,7 +17,7 @@ type SettingsLink = {
   body: string;
   testID: string;
   visible: boolean;
-  tone?: AccentTone;
+  tone?: LegacyAccentTone;
   icon?: AppIcon;
 };
 
@@ -31,7 +31,7 @@ export default function SettingsHubScreen() {
       body: 'View and edit organization details.',
       testID: 'hub-settings-organization',
       visible: canViewOrganization(permissions),
-      tone: 'indigo',
+      tone: 'sky',
       icon: { ios: 'building.2.fill', android: 'business', web: 'business' },
     },
     {
@@ -85,7 +85,7 @@ export default function SettingsHubScreen() {
       body: 'Pending changes and manual sync.',
       testID: 'hub-settings-sync',
       visible: true,
-      tone: 'indigo',
+      tone: 'sky',
       icon: { ios: 'arrow.triangle.2.circlepath', android: 'sync', web: 'sync' },
     },
     {

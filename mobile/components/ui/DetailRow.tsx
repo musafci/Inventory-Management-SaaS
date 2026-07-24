@@ -1,17 +1,22 @@
+import { type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/src/theme';
 
 type DetailRowProps = {
   label: string;
-  value: string;
+  value: ReactNode;
 };
 
 export function DetailRow({ label, value }: DetailRowProps) {
   return (
     <View style={styles.row}>
       <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
+      {typeof value === 'string' || typeof value === 'number' ? (
+        <Text style={styles.value}>{value}</Text>
+      ) : (
+        <View style={styles.valueWrap}>{value}</View>
+      )}
     </View>
   );
 }
@@ -32,5 +37,8 @@ const styles = StyleSheet.create({
     ...theme.typography.bodyStrong,
     color: theme.colors.text,
     fontSize: 16,
+  },
+  valueWrap: {
+    marginTop: 2,
   },
 });

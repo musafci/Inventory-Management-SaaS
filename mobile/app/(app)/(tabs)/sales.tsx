@@ -4,7 +4,7 @@ import { HubCard } from '@/components/HubCard';
 import { HubScreenLayout } from '@/components/ui';
 import { useAuth } from '@/src/auth/AuthContext';
 import { canCreateCustomer } from '@/src/permissions';
-import type { AccentTone } from '@/src/theme';
+import type { LegacyAccentTone } from '@/src/theme';
 import type { AppIcon } from '@/src/theme/icons';
 
 type SalesLink = {
@@ -13,7 +13,7 @@ type SalesLink = {
   body: string;
   testID: string;
   visible?: boolean;
-  tone?: AccentTone;
+  tone?: LegacyAccentTone;
   icon?: AppIcon;
 };
 
@@ -34,7 +34,7 @@ export default function SalesScreen() {
       title: 'Sales orders',
       body: 'Create orders, fulfill shipments, and collect payments.',
       testID: 'hub-sales-orders',
-      tone: 'indigo',
+      tone: 'sky',
       icon: { ios: 'cart.fill', android: 'shopping_cart', web: 'shopping_cart' },
     },
     {

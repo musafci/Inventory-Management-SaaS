@@ -22,7 +22,7 @@ import {
   canViewInventoryReports,
   canViewReports,
 } from '@/src/permissions';
-import { palette, shadow, theme } from '@/src/theme';
+import { gradients, palette, shadow, theme } from '@/src/theme';
 
 function formatStatus(status: string): string {
   return status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
@@ -60,7 +60,7 @@ export default function HomeScreen() {
   return (
     <ScreenScrollView refreshing={isRefetching} onRefresh={() => { void refetch(); }}>
       <LinearGradient
-        colors={[palette.primary600, palette.primary500, '#818cf8']}
+        colors={[...gradients.primaryHero]}
         end={{ x: 1, y: 1 }}
         start={{ x: 0, y: 0 }}
         style={[styles.hero, shadow('lg')]}>
@@ -86,7 +86,7 @@ export default function HomeScreen() {
             href="/(app)/products/new"
             icon={{ ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' }}
             label="Add product"
-            tone="indigo"
+            tone="sky"
           />
         ) : null}
         {canCreateSalesOrder(permissions) ? (
@@ -138,7 +138,7 @@ export default function HomeScreen() {
             icon={{ ios: 'cube.box.fill', android: 'inventory', web: 'inventory' }}
             label="Products"
             meta={`${stats.total_stock_items} stock items`}
-            tone="indigo"
+            tone="sky"
             value={String(stats.total_products)}
           />
           <MetricTile
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   alertRow: {
     alignItems: 'center',
     backgroundColor: palette.amber50,
-    borderColor: '#fde68a',
+    borderColor: palette.amber200,
     borderRadius: theme.radius.md,
     borderWidth: 1,
     flexDirection: 'row',

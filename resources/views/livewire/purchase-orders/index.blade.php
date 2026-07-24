@@ -38,7 +38,7 @@
                                 @php
                                     $statusColors = [
                                         'draft' => 'bg-gray-100 text-gray-700',
-                                        'sent' => 'bg-blue-100 text-blue-700',
+                                        'sent' => 'bg-primary-100 text-primary-700',
                                         'partially_received' => 'bg-amber-100 text-amber-700',
                                         'received' => 'bg-emerald-100 text-emerald-700',
                                         'cancelled' => 'bg-red-100 text-red-700',
@@ -68,7 +68,7 @@
                                         <button wire:click="editItem({{ $item['id'] }})" class="text-gray-400 hover:text-primary-600 transition-colors" title="Edit">
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" /></svg>
                                         </button>
-                                        <button @click.prevent="$store.confirm.open('Send Purchase Order', 'Send this purchase order to the supplier?', 'warning', () => $wire.send({{ $item['id'] }}), 'Send')" class="text-gray-400 hover:text-blue-600 transition-colors" title="Send">
+                                        <button @click.prevent="$store.confirm.open('Send Purchase Order', 'Send this purchase order to the supplier?', 'warning', () => $wire.send({{ $item['id'] }}), 'Send')" class="text-gray-400 hover:text-primary-600 transition-colors" title="Send">
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
                                         </button>
                                     @endif

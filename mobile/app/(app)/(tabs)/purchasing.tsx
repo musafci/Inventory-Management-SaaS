@@ -4,7 +4,7 @@ import { HubCard } from '@/components/HubCard';
 import { HubScreenLayout } from '@/components/ui';
 import { useAuth } from '@/src/auth/AuthContext';
 import { canCreateSupplier } from '@/src/permissions';
-import type { AccentTone } from '@/src/theme';
+import type { LegacyAccentTone } from '@/src/theme';
 import type { AppIcon } from '@/src/theme/icons';
 
 type PurchasingLink = {
@@ -13,7 +13,7 @@ type PurchasingLink = {
   body: string;
   testID: string;
   visible?: boolean;
-  tone?: AccentTone;
+  tone?: LegacyAccentTone;
   icon?: AppIcon;
 };
 
@@ -34,7 +34,7 @@ export default function PurchasingScreen() {
       title: 'Purchase orders',
       body: 'Create orders, receive stock, and record payments.',
       testID: 'hub-purchase-orders',
-      tone: 'indigo',
+      tone: 'sky',
       icon: { ios: 'shippingbox.fill', android: 'inventory_2', web: 'inventory_2' },
     },
     {

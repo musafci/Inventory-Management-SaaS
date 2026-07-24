@@ -3,18 +3,18 @@ import { type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
 import { NavPressable } from './NavPressable';
-import { shadow, theme, type AccentTone, accentTones } from '@/src/theme';
+import { shadow, theme, accentFor, type LegacyAccentTone } from '@/src/theme';
 import { appIcon, type AppIcon } from '@/src/theme/icons';
 
 type QuickActionProps = {
   label: string;
   href: Href;
-  tone?: AccentTone;
+  tone?: LegacyAccentTone;
   icon?: AppIcon;
 };
 
-export function QuickAction({ label, href, tone = 'indigo', icon }: QuickActionProps) {
-  const accent = accentTones[tone];
+export function QuickAction({ label, href, tone = 'sky', icon }: QuickActionProps) {
+  const accent = accentFor(tone);
 
   return (
     <NavPressable href={href} style={[styles.chip, shadow('sm'), { backgroundColor: accent.soft }]}>

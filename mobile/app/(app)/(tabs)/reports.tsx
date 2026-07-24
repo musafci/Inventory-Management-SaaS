@@ -9,7 +9,7 @@ import {
   canViewPurchaseReports,
   canViewSalesReports,
 } from '@/src/permissions';
-import type { AccentTone } from '@/src/theme';
+import type { LegacyAccentTone } from '@/src/theme';
 import type { AppIcon } from '@/src/theme/icons';
 
 type ReportLink = {
@@ -18,7 +18,7 @@ type ReportLink = {
   body: string;
   testID: string;
   visible: boolean;
-  tone?: AccentTone;
+  tone?: LegacyAccentTone;
   icon?: AppIcon;
 };
 
@@ -32,7 +32,7 @@ export default function ReportsScreen() {
       body: 'Total inventory value and breakdown by warehouse.',
       testID: 'hub-report-stock-valuation',
       visible: canViewInventoryReports(permissions),
-      tone: 'indigo',
+      tone: 'sky',
       icon: { ios: 'dollarsign.circle.fill', android: 'paid', web: 'paid' },
     },
     {

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import { theme } from '@/src/theme';
+import { buttonGradients, palette, theme } from '@/src/theme';
 
 type ChipOption<T extends string> = {
   label: string;
@@ -14,6 +15,32 @@ type ChipSelectProps<T extends string> = {
   onChange: (value: T) => void;
 };
 
+function SelectChip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[styles.chip, selected ? styles.chipSelectedShell : null]}>
+      {selected ? (
+        <LinearGradient
+          colors={[...buttonGradients.primary]}
+          end={{ x: 1, y: 0.5 }}
+          start={{ x: 0, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
+      <Text style={[styles.chipText, selected ? styles.chipTextSelected : null]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export function ChipSelect<T extends string>({
   label,
   options,
@@ -24,20 +51,14 @@ export function ChipSelect<T extends string>({
     <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <View style={styles.row}>
-        {options.map((option) => {
-          const selected = option.value === value;
-
-          return (
-            <Pressable
-              key={option.value}
-              onPress={() => onChange(option.value)}
-              style={[styles.chip, selected ? styles.chipSelected : null]}>
-              <Text style={[styles.chipText, selected ? styles.chipTextSelected : null]}>
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {options.map((option) => (
+          <SelectChip
+            key={option.value}
+            label={option.label}
+            selected={option.value === value}
+            onPress={() => onChange(option.value)}
+          />
+        ))}
       </View>
     </View>
   );
@@ -60,20 +81,22 @@ const styles = StyleSheet.create({
   },
   chip: {
     backgroundColor: theme.colors.surfaceMuted,
-    borderColor: theme.colors.border,
+    borderColor: palette.slate200,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
+    overflow: 'hidden',
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  chipSelected: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
+  chipSelectedShell: {
+    backgroundColor: palette.primary600,
+    borderColor: palette.primary600,
   },
   chipText: {
-    color: theme.colors.textSecondary,
+    color: palette.slate700,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
+    zIndex: 1,
   },
   chipTextSelected: {
     color: theme.colors.primaryText,

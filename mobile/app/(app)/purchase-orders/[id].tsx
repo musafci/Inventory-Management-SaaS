@@ -1,4 +1,4 @@
-import { Link, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
@@ -60,6 +60,7 @@ function productName(
 }
 
 export default function PurchaseOrderDetailScreen() {
+  const router = useRouter();
   const { permissions, organizationId } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const orderId = Number(id);
@@ -245,7 +246,7 @@ export default function PurchaseOrderDetailScreen() {
         {organizationId !== null ? (
           <Button
             label="Share / print"
-            variant="ghost"
+            variant="secondary"
             onPress={() => {
               void shareOrderPrintHtml(
                 `/v1/purchase-orders/${order.id}/print`,
@@ -259,11 +260,13 @@ export default function PurchaseOrderDetailScreen() {
           />
         ) : null}
 
-        <DetailRow label="Supplier" value={order.supplier?.name ?? `#${order.supplier_id}`} />
-        <DetailRow label="Warehouse" value={warehouseLabels.get(order.warehouse_id) ?? `#${order.warehouse_id}`} />
-        <DetailRow label="Total amount" value={order.total_amount} />
-        <DetailRow label="Amount paid" value={order.amount_paid ?? '0.00'} />
-        <DetailRow label="Amount due" value={order.amount_due ?? '0.00'} />
+        <Card>
+          <DetailRow label="Supplier" value={order.supplier?.name ?? `#${order.supplier_id}`} />
+          <DetailRow label="Warehouse" value={warehouseLabels.get(order.warehouse_id) ?? `#${order.warehouse_id}`} />
+          <DetailRow label="Total amount" value={order.total_amount} />
+          <DetailRow label="Amount paid" value={order.amount_paid ?? '0.00'} />
+          <DetailRow label="Amount due" value={order.amount_due ?? '0.00'} />
+        </Card>
 
         {order.items && order.items.length > 0 ? (
           <View style={styles.section}>
@@ -285,9 +288,11 @@ export default function PurchaseOrderDetailScreen() {
 
         <View style={styles.actions}>
           {order.status === 'draft' && canUpdatePurchaseOrder(permissions) ? (
-            <Link href={`/(app)/purchase-orders/${order.id}/edit`} style={styles.editLink}>
-              Edit draft
-            </Link>
+            <Button
+              label="Edit draft"
+              variant="secondary"
+              onPress={() => router.push(`/(app)/purchase-orders/${order.id}/edit`)}
+            />
           ) : null}
 
           {order.status === 'draft' ? (
@@ -411,12 +416,5 @@ const styles = StyleSheet.create({
   actions: {
     gap: theme.spacing.sm,
     marginTop: theme.spacing.xl,
-  },
-  editLink: {
-    color: theme.colors.primary,
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: theme.spacing.xs,
-    textAlign: 'center',
   },
 });

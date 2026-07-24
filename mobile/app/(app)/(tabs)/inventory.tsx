@@ -4,7 +4,7 @@ import { HubCard } from '@/components/HubCard';
 import { HubScreenLayout } from '@/components/ui';
 import { useAuth } from '@/src/auth/AuthContext';
 import { canCreateInventory } from '@/src/permissions';
-import type { AccentTone } from '@/src/theme';
+import type { LegacyAccentTone } from '@/src/theme';
 import type { AppIcon } from '@/src/theme/icons';
 
 type InventoryLink = {
@@ -13,7 +13,7 @@ type InventoryLink = {
   body: string;
   testID: string;
   visible?: boolean;
-  tone?: AccentTone;
+  tone?: LegacyAccentTone;
   icon?: AppIcon;
 };
 
@@ -26,7 +26,7 @@ export default function InventoryScreen() {
       title: 'Products',
       body: 'Browse, search, create, and edit products.',
       testID: 'hub-products',
-      tone: 'indigo',
+      tone: 'sky',
       icon: { ios: 'cube.box.fill', android: 'inventory', web: 'inventory' },
     },
     {
@@ -75,7 +75,7 @@ export default function InventoryScreen() {
       body: 'Bulk upload products from a CSV file.',
       testID: 'hub-import-products',
       visible: canCreateInventory(permissions),
-      tone: 'indigo',
+      tone: 'sky',
       icon: { ios: 'square.and.arrow.down.fill', android: 'download', web: 'download' },
     },
   ];

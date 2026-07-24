@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text } from 'react-native';
+import { Alert, StyleSheet } from 'react-native';
 
 import {
   Button,
@@ -9,6 +9,7 @@ import {
   ErrorState,
   Input,
   LoadingState,
+  ScreenContainer,
   ScreenScrollView,
 } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
@@ -54,55 +55,71 @@ export default function OrganizationSettingsScreen() {
     })();
   };
 
+  if (query.isLoading) {
+    return (
+      <ScreenContainer>
+        <Stack.Screen options={{ title: 'Organization' }} />
+        <LoadingState />
+      </ScreenContainer>
+    );
+  }
+
+  if (query.isError) {
+    return (
+      <ScreenContainer>
+        <Stack.Screen options={{ title: 'Organization' }} />
+        <ErrorState message="Could not load organization." />
+      </ScreenContainer>
+    );
+  }
+
+  if (!org) {
+    return null;
+  }
+
   return (
     <>
       <Stack.Screen options={{ title: 'Organization' }} />
-      {query.isLoading ? (
-        <LoadingState />
-      ) : query.isError ? (
-        <ErrorState message="Could not load organization." />
-      ) : org ? (
-        <ScreenScrollView>
-          <Card style={styles.card}>
-            <DetailRow label="Plan" value={org.plan} />
-            <Text style={styles.meta}>Status: {org.status}</Text>
-            {org.slug ? <Text style={styles.meta}>Slug: {org.slug}</Text> : null}
-            {org.users_count !== undefined ? (
-              <Text style={styles.meta}>{org.users_count} team members</Text>
-            ) : null}
-          </Card>
+      <ScreenScrollView>
+        <Card style={styles.card}>
+          <DetailRow label="Plan" value={org.plan} />
+          <DetailRow label="Status" value={org.status} />
+          {org.slug ? <DetailRow label="Slug" value={org.slug} /> : null}
+          {org.users_count !== undefined ? (
+            <DetailRow label="Team members" value={String(org.users_count)} />
+          ) : null}
+        </Card>
 
-          {canEdit ? (
-            <Card style={styles.card}>
-              <Input label="Name" value={name} onChangeText={setName} />
-              <Input
-                autoCapitalize="none"
-                keyboardType="email-address"
-                label="Email"
-                value={email}
-                onChangeText={setEmail}
-              />
-              <Input
-                keyboardType="phone-pad"
-                label="Phone"
-                value={phone}
-                onChangeText={setPhone}
-              />
-              <Button
-                label="Save changes"
-                loading={updateMutation.isPending}
-                onPress={handleSubmit}
-              />
-            </Card>
-          ) : (
-            <Card style={styles.card}>
-              <DetailRow label="Name" value={org.name} />
-              <DetailRow label="Email" value={org.email} />
-              {org.phone ? <DetailRow label="Phone" value={org.phone} /> : null}
-            </Card>
-          )}
-        </ScreenScrollView>
-      ) : null}
+        {canEdit ? (
+          <Card style={styles.card}>
+            <Input label="Name" value={name} onChangeText={setName} />
+            <Input
+              autoCapitalize="none"
+              keyboardType="email-address"
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+            />
+            <Input
+              keyboardType="phone-pad"
+              label="Phone"
+              value={phone}
+              onChangeText={setPhone}
+            />
+            <Button
+              label="Save changes"
+              loading={updateMutation.isPending}
+              onPress={handleSubmit}
+            />
+          </Card>
+        ) : (
+          <Card style={styles.card}>
+            <DetailRow label="Name" value={org.name} />
+            <DetailRow label="Email" value={org.email} />
+            {org.phone ? <DetailRow label="Phone" value={org.phone} /> : null}
+          </Card>
+        )}
+      </ScreenScrollView>
     </>
   );
 }
@@ -110,10 +127,5 @@ export default function OrganizationSettingsScreen() {
 const styles = StyleSheet.create({
   card: {
     marginBottom: theme.spacing.lg,
-  },
-  meta: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm,
   },
 });

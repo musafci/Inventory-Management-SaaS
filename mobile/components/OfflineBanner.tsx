@@ -47,11 +47,11 @@ const styles = StyleSheet.create({
   },
   offline: {
     backgroundColor: palette.amber50,
-    borderBottomColor: '#fde68a',
+    borderBottomColor: palette.amber200,
   },
   syncing: {
-    backgroundColor: theme.colors.infoSoft,
-    borderBottomColor: '#bae6fd',
+    backgroundColor: theme.colors.primarySoft,
+    borderBottomColor: palette.primary200,
   },
   text: {
     color: theme.colors.text,

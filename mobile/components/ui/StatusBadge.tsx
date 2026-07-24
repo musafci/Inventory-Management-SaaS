@@ -14,7 +14,7 @@ const toneStyles: Record<StatusTone, { bg: string; text: string }> = {
   success: { bg: theme.colors.successSoft, text: theme.colors.success },
   warning: { bg: theme.colors.warningSoft, text: theme.colors.warning },
   danger: { bg: theme.colors.dangerSoft, text: theme.colors.danger },
-  info: { bg: theme.colors.infoSoft, text: theme.colors.info },
+  info: { bg: theme.colors.primarySoft, text: theme.colors.primary },
 };
 
 export function StatusBadge({ label, tone = 'default' }: StatusBadgeProps) {

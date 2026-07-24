@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { NavPressable } from '@/components/ui/NavPressable';
-import { shadow, theme, type AccentTone, accentTones } from '@/src/theme';
+import { shadow, theme, accentFor, type LegacyAccentTone } from '@/src/theme';
 import { appIcon, type AppIcon } from '@/src/theme/icons';
 
 type HubCardProps = {
@@ -11,7 +11,7 @@ type HubCardProps = {
   title: string;
   body: string;
   testID?: string;
-  tone?: AccentTone;
+  tone?: LegacyAccentTone;
   icon?: AppIcon;
 };
 
@@ -20,10 +20,10 @@ export function HubCard({
   title,
   body,
   testID,
-  tone = 'indigo',
+  tone = 'sky',
   icon,
 }: HubCardProps) {
-  const accent = accentTones[tone];
+  const accent = accentFor(tone);
 
   return (
     <NavPressable

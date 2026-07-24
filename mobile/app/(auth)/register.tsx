@@ -13,7 +13,7 @@ import { SymbolView } from 'expo-symbols';
 import { Button, Card, Input } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { useAuth } from '@/src/auth/AuthContext';
-import { palette, shadow, theme } from '@/src/theme';
+import { gradients, palette, shadow, theme } from '@/src/theme';
 
 export default function RegisterScreen() {
   const { isAuthenticated, isLoading, register } = useAuth();
@@ -61,7 +61,7 @@ export default function RegisterScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}>
         <LinearGradient
-          colors={[palette.primary600, '#818cf8', palette.slate100]}
+          colors={[...gradients.authBackground]}
           end={{ x: 0.5, y: 1 }}
           start={{ x: 0, y: 0 }}
           style={StyleSheet.absoluteFill}

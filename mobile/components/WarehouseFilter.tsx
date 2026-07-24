@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import { theme } from '@/src/theme';
+import { buttonGradients, palette, theme } from '@/src/theme';
 import type { Warehouse } from '@/src/api/types';
 
 type WarehouseFilterProps = {
@@ -9,29 +10,43 @@ type WarehouseFilterProps = {
   onChange: (warehouseId: number | null) => void;
 };
 
+function FilterChip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[styles.chip, selected ? styles.chipSelectedShell : null]}>
+      {selected ? (
+        <LinearGradient
+          colors={[...buttonGradients.primary]}
+          end={{ x: 1, y: 0.5 }}
+          start={{ x: 0, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
+      <Text style={[styles.chipText, selected ? styles.chipTextSelected : null]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export function WarehouseFilter({ warehouses, value, onChange }: WarehouseFilterProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Warehouse</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        <Pressable
-          onPress={() => onChange(null)}
-          style={[styles.chip, value === null ? styles.chipSelected : null]}>
-          <Text style={[styles.chipText, value === null ? styles.chipTextSelected : null]}>All</Text>
-        </Pressable>
+        <FilterChip label="All" selected={value === null} onPress={() => onChange(null)} />
         {warehouses.map((warehouse) => (
-          <Pressable
+          <FilterChip
             key={warehouse.id}
+            label={warehouse.name}
+            selected={value === warehouse.id}
             onPress={() => onChange(warehouse.id)}
-            style={[styles.chip, value === warehouse.id ? styles.chipSelected : null]}>
-            <Text
-              style={[
-                styles.chipText,
-                value === warehouse.id ? styles.chipTextSelected : null,
-              ]}>
-              {warehouse.name}
-            </Text>
-          </Pressable>
+          />
         ))}
       </ScrollView>
     </View>
@@ -53,20 +68,22 @@ const styles = StyleSheet.create({
   },
   chip: {
     backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
+    borderColor: palette.slate200,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
+    overflow: 'hidden',
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  chipSelected: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
+  chipSelectedShell: {
+    backgroundColor: palette.primary600,
+    borderColor: palette.primary600,
   },
   chipText: {
-    color: theme.colors.textSecondary,
+    color: palette.slate700,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
+    zIndex: 1,
   },
   chipTextSelected: {
     color: theme.colors.primaryText,

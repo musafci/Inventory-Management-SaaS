@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { Alert, StyleSheet, Text } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import {
   ListRow,
@@ -40,12 +40,17 @@ export default function SessionsScreen() {
     ]);
   };
 
-  return (
-    <>
-      <Stack.Screen options={{ title: 'Active sessions' }} />
+  const listHeader = (
+    <View style={styles.descriptionWrap}>
       <Text style={styles.description}>
         Devices and apps where your account is signed in. Revoke any session you do not recognize.
       </Text>
+    </View>
+  );
+
+  return (
+    <>
+      <Stack.Screen options={{ title: 'Active sessions' }} />
 
       {query.isLoading ? (
         <ScreenContainer><LoadingState /></ScreenContainer>
@@ -56,6 +61,7 @@ export default function SessionsScreen() {
           isLoading={false}
           isRefetching={query.isRefetching}
           keyExtractor={(item) => item.id}
+          ListHeaderComponent={listHeader}
           onRefresh={() => {
             void query.refetch();
           }}
@@ -82,11 +88,14 @@ export default function SessionsScreen() {
 }
 
 const styles = StyleSheet.create({
+  descriptionWrap: {
+    paddingBottom: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+  },
   description: {
     ...theme.typography.caption,
     color: theme.colors.textSecondary,
     lineHeight: 20,
-    paddingHorizontal: theme.spacing.xl,
-    paddingTop: theme.spacing.lg,
   },
 });

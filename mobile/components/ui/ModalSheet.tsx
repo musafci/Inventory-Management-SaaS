@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { Button } from './Button';
 import { shadow, theme } from '@/src/theme';
 
 type ModalSheetProps = {
@@ -20,10 +21,19 @@ export function ModalSheet({ visible, title, children, footer, onClose }: ModalS
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             {children}
           </ScrollView>
-          {footer}
-          <Pressable onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeText}>Cancel</Text>
-          </Pressable>
+          {footer ? (
+            <View style={styles.footerRow}>
+              <Button
+                label="Cancel"
+                onPress={onClose}
+                style={styles.footerButton}
+                variant="secondary"
+              />
+              <View style={styles.footerButton}>{footer}</View>
+            </View>
+          ) : (
+            <Button label="Cancel" onPress={onClose} variant="secondary" />
+          )}
         </View>
       </View>
     </Modal>
@@ -51,14 +61,12 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: theme.spacing.md,
   },
-  closeButton: {
-    alignItems: 'center',
+  footerRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
     marginTop: theme.spacing.sm,
-    paddingVertical: theme.spacing.md,
   },
-  closeText: {
-    color: theme.colors.textSecondary,
-    fontSize: 15,
-    fontWeight: '700',
+  footerButton: {
+    flex: 1,
   },
 });

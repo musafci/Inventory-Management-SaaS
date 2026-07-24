@@ -49,7 +49,7 @@ export default function StockValuationScreen() {
                 onChange={setWarehouseId}
               />
               <View style={styles.metrics}>
-                <MetricTile label="Total value" value={report.total_value} tone="indigo" />
+                <MetricTile label="Total value" value={report.total_value} tone="sky" />
                 <MetricTile label="Total units" value={String(report.total_units)} tone="sky" />
               </View>
               <SectionHeader title="By warehouse" />

@@ -33,9 +33,8 @@ export default function SalesSummaryScreen() {
     });
   };
 
-  return (
-    <>
-      <Stack.Screen options={{ title: 'Sales summary' }} />
+  const filterHeader = (
+    <View style={styles.header}>
       <Card style={styles.filters}>
         <Input
           autoCapitalize="none"
@@ -53,6 +52,22 @@ export default function SalesSummaryScreen() {
         />
         <Button label="Apply filters" onPress={applyFilters} />
       </Card>
+      {report ? (
+        <>
+          <View style={styles.metrics}>
+            <MetricTile label="Orders" value={String(report.order_count)} tone="emerald" />
+            <MetricTile label="Total amount" value={report.total_amount} tone="sky" />
+            <MetricTile label="Payments received" value={report.payments_received} tone="sky" />
+          </View>
+          <SectionHeader title="By status" />
+        </>
+      ) : null}
+    </View>
+  );
+
+  return (
+    <>
+      <Stack.Screen options={{ title: 'Sales summary' }} />
 
       {query.isLoading ? (
         <ScreenContainer><LoadingState /></ScreenContainer>
@@ -65,19 +80,10 @@ export default function SalesSummaryScreen() {
           isLoading={false}
           isRefetching={query.isRefetching}
           keyExtractor={(item) => item.status}
+          ListHeaderComponent={filterHeader}
           onRefresh={() => {
             void query.refetch();
           }}
-          ListHeaderComponent={(
-            <View style={styles.header}>
-              <View style={styles.metrics}>
-                <MetricTile label="Orders" value={String(report.order_count)} tone="emerald" />
-                <MetricTile label="Total amount" value={report.total_amount} tone="indigo" />
-                <MetricTile label="Payments received" value={report.payments_received} tone="sky" />
-              </View>
-              <SectionHeader title="By status" />
-            </View>
-          )}
           renderItem={(item) => (
             <ListRow
               meta={item.total_amount}
@@ -95,12 +101,12 @@ export default function SalesSummaryScreen() {
 }
 
 const styles = StyleSheet.create({
-  filters: {
-    marginHorizontal: theme.spacing.xl,
-    marginTop: theme.spacing.lg,
-  },
   header: {
     paddingTop: theme.spacing.md,
+  },
+  filters: {
+    marginBottom: theme.spacing.md,
+    marginHorizontal: theme.spacing.lg,
   },
   metrics: {
     flexDirection: 'row',

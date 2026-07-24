@@ -37,7 +37,7 @@
         }
         .print-btn {
             border: none;
-            background: #4f46e5;
+            background: linear-gradient(to right, #38bdf8, #0284c7);
             color: #fff;
         }
         .print-btn-secondary {

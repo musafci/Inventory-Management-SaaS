@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
-import { AnimatedPressable } from '@/components/ui/AnimatedPressable';
+import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/src/auth/AuthContext';
 import { palette, theme } from '@/src/theme';
 
@@ -33,15 +33,16 @@ export function ImpersonationBanner() {
           <Text style={styles.reason}>{impersonation.reason}</Text>
         ) : null}
       </View>
-      <AnimatedPressable
+      <Button
         accessibilityLabel="Exit impersonation"
-        accessibilityRole="button"
+        label="Exit"
         onPress={() => {
           void exitImpersonation();
         }}
-        style={styles.exitButton}>
-        <Text style={styles.exitText}>Exit</Text>
-      </AnimatedPressable>
+        size="compact"
+        style={styles.exitButton}
+        variant="secondary"
+      />
     </View>
   );
 }
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
   banner: {
     alignItems: 'center',
     backgroundColor: palette.amber50,
-    borderBottomColor: '#fde68a',
+    borderBottomColor: palette.amber200,
     borderBottomWidth: 1,
     flexDirection: 'row',
     gap: theme.spacing.md,
@@ -74,26 +75,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   body: {
-    color: '#92400e',
+    color: palette.amber800,
     fontSize: 13,
     marginTop: 4,
   },
   reason: {
-    color: '#a16207',
+    color: palette.amber700,
     fontSize: 12,
     marginTop: 4,
   },
   exitButton: {
-    backgroundColor: theme.colors.surface,
-    borderColor: palette.amber500,
-    borderRadius: theme.radius.pill,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  exitText: {
-    color: palette.amber700,
-    fontSize: 13,
-    fontWeight: '800',
+    alignSelf: 'auto',
   },
 });

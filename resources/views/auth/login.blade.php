@@ -9,7 +9,7 @@
             <p class="mt-2 text-sm text-slate-500">
                 Sign in to your account or
                 <a href="/register" class="font-semibold text-primary-600 hover:text-primary-500">create an organization</a>
-                · <a href="{{ route('platform.login') }}" class="font-semibold text-violet-600 hover:text-violet-500">Platform admin</a>
+                · <a href="{{ route('platform.login') }}" class="font-semibold text-primary-600 hover:text-primary-500">Platform admin</a>
             </p>
         </div>
 

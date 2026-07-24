@@ -12,7 +12,7 @@
     <div class="auth-panel relative hidden w-0 flex-1 flex-col justify-between overflow-hidden lg:flex lg:w-1/2 xl:w-[45%]">
         <div class="absolute inset-0 opacity-30">
             <div class="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-primary-500/30 blur-3xl"></div>
-            <div class="absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-indigo-400/20 blur-3xl"></div>
+            <div class="absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-primary-400/20 blur-3xl"></div>
         </div>
 
         <div class="relative px-12 pt-12">

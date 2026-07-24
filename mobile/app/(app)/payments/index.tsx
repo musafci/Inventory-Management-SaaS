@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-import { ListRow, PaginatedListScreen } from '@/components/ui';
+import { ListRow, PaginatedListScreen, StatusBadge } from '@/components/ui';
 
 import { usePayments, usePaymentsList } from '@/src/hooks/usePayments';
 
@@ -18,6 +18,14 @@ function formatPayableType(payableType: string): string {
 
 function formatStatus(status: string): string {
   return status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function paymentStatusTone(status: string): 'default' | 'success' | 'warning' | 'danger' | 'info' {
+  if (status.includes('fail')) return 'danger';
+  if (status.includes('refund')) return 'warning';
+  if (status.includes('complete') || status.includes('paid')) return 'success';
+  if (status.includes('pending')) return 'warning';
+  return 'info';
 }
 
 export default function PaymentsScreen() {
@@ -45,8 +53,14 @@ export default function PaymentsScreen() {
         renderItem={(item) => (
           <ListRow
             href={`/(app)/payments/${item.id}`}
+            right={
+              <StatusBadge
+                label={formatStatus(item.status)}
+                tone={paymentStatusTone(item.status)}
+              />
+            }
             showChevron
-            subtitle={`${formatStatus(String(item.method))} · ${formatStatus(item.status)}\n${formatPayableType(item.payable_type)} #${item.payable_id}`}
+            subtitle={`${formatStatus(String(item.method))} · ${formatPayableType(item.payable_type)} #${item.payable_id}`}
             title={item.amount}
           />
         )}

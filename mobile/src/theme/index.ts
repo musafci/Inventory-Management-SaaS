@@ -1,11 +1,18 @@
 import { Platform, type TextStyle, type ViewStyle } from 'react-native';
 
+/** Tailwind sky scale — primary brand (sky-400 → sky-600 gradient) */
 export const palette = {
-  primary50: '#eef2ff',
-  primary100: '#e0e7ff',
-  primary500: '#6366f1',
-  primary600: '#4f46e5',
-  primary700: '#4338ca',
+  primary50: '#f0f9ff',
+  primary100: '#e0f2fe',
+  primary200: '#bae6fd',
+  primary300: '#7dd3fc',
+  primary400: '#38bdf8',
+  primary500: '#0ea5e9',
+  primary600: '#0284c7',
+  primary700: '#0369a1',
+  primary800: '#075985',
+  primary900: '#0c4a6e',
+  primary950: '#082f49',
 
   slate50: '#f8fafc',
   slate100: '#f1f5f9',
@@ -20,17 +27,23 @@ export const palette = {
   emerald500: '#10b981',
   emerald600: '#059669',
 
+  red500: '#ef4444',
+  red600: '#dc2626',
+
   amber50: '#fffbeb',
+  amber200: '#fde68a',
+  amber400: '#fbbf24',
   amber500: '#f59e0b',
   amber700: '#b45309',
+  amber800: '#92400e',
 
   rose50: '#fff1f2',
   rose500: '#f43f5e',
   rose600: '#e11d48',
 
-  sky50: '#f0f9ff',
-  sky500: '#0ea5e9',
-  sky600: '#0284c7',
+  cyan50: '#ecfeff',
+  cyan500: '#06b6d4',
+  cyan600: '#0891b2',
 
   violet50: '#f5f3ff',
   violet500: '#8b5cf6',
@@ -39,6 +52,26 @@ export const palette = {
   white: '#ffffff',
   black: '#000000',
 } as const;
+
+/** Brand gradients — matches web `.stat-card-sky` / `.btn-primary` */
+export const gradients = {
+  /** Horizontal accent bar: sky-400 → sky-600 */
+  primary: [palette.primary400, palette.primary600] as const,
+  /** Hero banners and buttons */
+  primaryHero: [palette.primary400, palette.primary500, palette.primary600] as const,
+  /** Auth screen background fade */
+  authBackground: [palette.primary400, palette.primary600, palette.slate100] as const,
+} as const;
+
+/** Matches web `.btn-primary`, `.btn-danger`, `.btn-success`, `.btn-warning` */
+export const buttonGradients = {
+  primary: [palette.primary400, palette.primary600] as const,
+  danger: [palette.red600, palette.red500] as const,
+  success: [palette.emerald600, palette.emerald500] as const,
+  warning: [palette.amber500, palette.amber400] as const,
+} as const;
+
+export type ButtonGradientVariant = keyof typeof buttonGradients;
 
 export const theme = {
   colors: {
@@ -51,6 +84,7 @@ export const theme = {
     textSecondary: palette.slate500,
     textMuted: palette.slate400,
     primary: palette.primary600,
+    primaryLight: palette.primary400,
     primarySoft: palette.primary50,
     primaryText: palette.white,
     success: palette.emerald600,
@@ -59,8 +93,8 @@ export const theme = {
     warningSoft: palette.amber50,
     danger: palette.rose600,
     dangerSoft: palette.rose50,
-    info: palette.sky600,
-    infoSoft: palette.sky50,
+    info: palette.cyan600,
+    infoSoft: palette.cyan50,
     overlay: 'rgba(15, 23, 42, 0.5)',
   },
   spacing: {
@@ -125,13 +159,24 @@ export function shadow(size: ShadowSize): ViewStyle {
   };
 }
 
-export type AccentTone = 'indigo' | 'emerald' | 'amber' | 'sky' | 'violet' | 'rose';
+export type AccentTone = 'sky' | 'emerald' | 'amber' | 'cyan' | 'violet' | 'rose';
+
+/** @deprecated Use `sky` — kept as alias for existing `tone="indigo"` call sites */
+export type LegacyAccentTone = AccentTone | 'indigo';
 
 export const accentTones: Record<AccentTone, { soft: string; solid: string; text: string }> = {
-  indigo: { soft: palette.primary50, solid: palette.primary600, text: palette.primary700 },
+  sky: { soft: palette.primary50, solid: palette.primary600, text: palette.primary700 },
   emerald: { soft: palette.emerald50, solid: palette.emerald500, text: palette.emerald600 },
   amber: { soft: palette.amber50, solid: palette.amber500, text: palette.amber700 },
-  sky: { soft: palette.sky50, solid: palette.sky500, text: palette.sky600 },
+  cyan: { soft: palette.cyan50, solid: palette.cyan500, text: palette.cyan600 },
   violet: { soft: palette.violet50, solid: palette.violet500, text: palette.violet600 },
   rose: { soft: palette.rose50, solid: palette.rose500, text: palette.rose600 },
 };
+
+export function resolveAccentTone(tone: LegacyAccentTone): AccentTone {
+  return tone === 'indigo' ? 'sky' : tone;
+}
+
+export function accentFor(tone: LegacyAccentTone = 'sky') {
+  return accentTones[resolveAccentTone(tone)];
+}

@@ -93,23 +93,28 @@ export default function ReportExportsScreen() {
 
   const exports = query.data ?? [];
 
-  return (
-    <>
-      <Stack.Screen options={{ title: 'Report exports' }} />
-      <Card style={styles.actions}>
-        <SectionHeader title="Queue new export" />
-        <View style={styles.buttonRow}>
+  const listHeader = (
+    <Card style={styles.actions}>
+      <SectionHeader title="Queue new export" />
+      <View style={styles.buttonRow}>
           {EXPORT_TYPES.map((item) => (
             <Button
               key={item.type}
               disabled={createMutation.isPending}
               label={item.label}
-              variant="ghost"
+              size="compact"
+              style={styles.queueButton}
+              variant="secondary"
               onPress={() => handleCreate(item.type)}
             />
           ))}
-        </View>
-      </Card>
+      </View>
+    </Card>
+  );
+
+  return (
+    <>
+      <Stack.Screen options={{ title: 'Report exports' }} />
 
       {query.isLoading ? (
         <ScreenContainer><LoadingState /></ScreenContainer>
@@ -122,6 +127,7 @@ export default function ReportExportsScreen() {
           isLoading={false}
           isRefetching={query.isRefetching}
           keyExtractor={(item) => String(item.id)}
+          ListHeaderComponent={listHeader}
           onRefresh={() => {
             void query.refetch();
           }}
@@ -132,7 +138,7 @@ export default function ReportExportsScreen() {
                   <Button
                     disabled={processingId === item.id}
                     label={processingId === item.id ? '…' : 'Download'}
-                    variant="ghost"
+                    variant="secondary"
                     onPress={() => handleDownload(item.id)}
                   />
                 ) : (
@@ -156,12 +162,15 @@ export default function ReportExportsScreen() {
 
 const styles = StyleSheet.create({
   actions: {
-    marginHorizontal: theme.spacing.xl,
-    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    marginHorizontal: theme.spacing.lg,
   },
   buttonRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: theme.spacing.sm,
+  },
+  queueButton: {
+    alignSelf: 'auto',
   },
 });
