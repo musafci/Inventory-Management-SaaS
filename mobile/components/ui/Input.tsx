@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
 import { theme } from '@/src/theme';
@@ -10,6 +10,8 @@ type InputProps = TextInputProps & {
 };
 
 export function Input({ label, error, hint, style, multiline, ...props }: InputProps) {
+  const [focused, setFocused] = useState(false);
+
   return (
     <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
@@ -19,9 +21,18 @@ export function Input({ label, error, hint, style, multiline, ...props }: InputP
           styles.input,
           multiline ? styles.multiline : null,
           error ? styles.inputError : null,
+          focused ? styles.inputFocused : null,
           style,
         ]}
         multiline={multiline}
+        onFocus={(e) => {
+          setFocused(true);
+          props.onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          props.onBlur?.(e);
+        }}
         {...props}
       />
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
@@ -53,6 +64,14 @@ const styles = StyleSheet.create({
   multiline: {
     minHeight: 96,
     textAlignVertical: 'top',
+  },
+  inputFocused: {
+    borderColor: theme.colors.primary,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 0,
   },
   inputError: {
     borderColor: theme.colors.danger,

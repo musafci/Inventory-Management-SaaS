@@ -5,7 +5,7 @@ import { SymbolView } from 'expo-symbols';
 
 import { AnimatedPressable } from './AnimatedPressable';
 import { NavPressable } from './NavPressable';
-import { shadow, theme } from '@/src/theme';
+import { palette, shadow, theme } from '@/src/theme';
 
 type ListRowProps = {
   title: string;
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
+    borderColor: `${palette.slate900}0D`,
     borderRadius: theme.radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',

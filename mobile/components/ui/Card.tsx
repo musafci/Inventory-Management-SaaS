@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { shadow, theme } from '@/src/theme';
+import { palette, shadow, theme } from '@/src/theme';
 
 type CardProps = {
   children: ReactNode;
@@ -27,11 +27,15 @@ export function Card({ children, style, elevated = true, muted = false }: CardPr
 const styles = StyleSheet.create({
   card: {
     backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
     borderRadius: theme.radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${palette.slate900}0D`,
     overflow: 'hidden',
     padding: theme.spacing.lg,
+    ...(Platform.OS === 'web' ? {
+      backdropFilter: 'blur(4px)',
+      WebkitBackdropFilter: 'blur(4px)',
+    } : {}),
   },
   muted: {
     backgroundColor: theme.colors.surfaceMuted,

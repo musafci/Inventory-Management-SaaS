@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { NavPressable } from '@/components/ui/NavPressable';
-import { shadow, theme, accentFor, type LegacyAccentTone } from '@/src/theme';
+import { shadow, theme, palette, accentFor, type LegacyAccentTone } from '@/src/theme';
 import { appIcon, type AppIcon } from '@/src/theme/icons';
 
 type HubCardProps = {
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   card: {
     alignItems: 'center',
     backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
+    borderColor: `${palette.slate900}0D`,
     borderRadius: theme.radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
