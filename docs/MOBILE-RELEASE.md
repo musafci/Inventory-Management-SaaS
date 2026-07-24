@@ -59,17 +59,28 @@ Install [Maestro](https://maestro.mobile.dev), start the app on a simulator/devi
 
 ```bash
 cd mobile
-maestro test .maestro/smoke/login.yaml
-maestro test .maestro/smoke/inventory.yaml
+maestro test .maestro/smoke/all.yaml
 ```
+
+Individual flows:
+
+| Flow | Coverage |
+|------|----------|
+| `smoke/login.yaml` | Login |
+| `smoke/inventory.yaml` | Inventory hub, products, sync |
+| `smoke/purchasing.yaml` | Suppliers, purchase orders |
+| `smoke/sales.yaml` | Customers, sales orders |
+| `smoke/settings.yaml` | Reports, settings, sessions |
 
 Override credentials:
 
 ```bash
-maestro test -e LOGIN_EMAIL=user@test.com -e LOGIN_PASSWORD=secret .maestro/smoke/login.yaml
+maestro test -e LOGIN_EMAIL=user@test.com -e LOGIN_PASSWORD=secret .maestro/smoke/all.yaml
 ```
 
 Requires demo user from `php artisan app:setup` or your staging org.
+
+See [MOBILE-TEST-PLAN.md](../docs/MOBILE-TEST-PLAN.md) for the full manual QA matrix.
 
 ## Unit tests
 

@@ -1,41 +1,59 @@
-import { Link, type Href } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { type Href } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { HubCard } from '@/components/HubCard';
 import { useAuth } from '@/src/auth/AuthContext';
 import { canCreateSupplier } from '@/src/permissions';
+
+type PurchasingLink = {
+  href: Href;
+  title: string;
+  body: string;
+  testID: string;
+  visible?: boolean;
+};
 
 export default function PurchasingScreen() {
   const { permissions } = useAuth();
 
+  const links: PurchasingLink[] = [
+    {
+      href: '/(app)/suppliers',
+      title: 'Suppliers',
+      body: 'Browse, create, edit, and delete suppliers.',
+      testID: 'hub-suppliers',
+    },
+    {
+      href: '/(app)/purchase-orders',
+      title: 'Purchase orders',
+      body: 'Create orders, receive stock, and record payments.',
+      testID: 'hub-purchase-orders',
+    },
+    {
+      href: '/(app)/imports/suppliers' as Href,
+      title: 'Import suppliers (CSV)',
+      body: 'Bulk upload suppliers from a CSV file.',
+      testID: 'hub-import-suppliers',
+      visible: canCreateSupplier(permissions),
+    },
+  ];
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Purchasing</Text>
+      <Text accessibilityRole="header" style={styles.title}>Purchasing</Text>
       <Text style={styles.description}>
         Manage suppliers and purchase orders from the modules below.
       </Text>
 
-      <Link href="/(app)/suppliers" asChild>
-        <Pressable style={styles.card}>
-          <Text style={styles.cardTitle}>Suppliers</Text>
-          <Text style={styles.cardBody}>Browse, create, edit, and delete suppliers.</Text>
-        </Pressable>
-      </Link>
-
-      <Link href="/(app)/purchase-orders" asChild>
-        <Pressable style={styles.card}>
-          <Text style={styles.cardTitle}>Purchase orders</Text>
-          <Text style={styles.cardBody}>Create orders, receive stock, and record payments.</Text>
-        </Pressable>
-      </Link>
-
-      {canCreateSupplier(permissions) ? (
-        <Link href={'/(app)/imports/suppliers' as Href} asChild>
-          <Pressable style={styles.card}>
-            <Text style={styles.cardTitle}>Import suppliers (CSV)</Text>
-            <Text style={styles.cardBody}>Bulk upload suppliers from a CSV file.</Text>
-          </Pressable>
-        </Link>
-      ) : null}
+      {links.filter((link) => link.visible !== false).map((link) => (
+        <HubCard
+          key={link.testID}
+          href={link.href}
+          title={link.title}
+          body={link.body}
+          testID={link.testID}
+        />
+      ))}
     </View>
   );
 }
@@ -57,24 +75,5 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 20,
     marginTop: 10,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 16,
-  },
-  cardTitle: {
-    color: '#0f172a',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  cardBody: {
-    color: '#64748b',
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 6,
   },
 });

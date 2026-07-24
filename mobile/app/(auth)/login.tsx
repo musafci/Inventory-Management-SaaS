@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Redirect } from 'expo-router';
+import { Link } from 'expo-router';
 
 import { ApiError } from '@/src/api/client';
 import { getApiBaseUrl } from '@/src/api/config';
@@ -90,6 +91,13 @@ export default function LoginScreen() {
           )}
         </Pressable>
 
+        <Link href="/(auth)/forgot-password" style={styles.link}>
+          Forgot password?
+        </Link>
+        <Link href="/(auth)/register" style={styles.link}>
+          Create an account
+        </Link>
+
         <Text style={styles.apiHint}>API: {getApiBaseUrl()}</Text>
       </View>
     </KeyboardAvoidingView>
@@ -154,6 +162,13 @@ const styles = StyleSheet.create({
   apiHint: {
     color: '#94a3b8',
     fontSize: 11,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  link: {
+    color: '#2563eb',
+    fontSize: 15,
+    fontWeight: '600',
     marginTop: 16,
     textAlign: 'center',
   },

@@ -296,4 +296,23 @@ class AuthController extends ApiController
 
         return response()->noContent();
     }
+
+    public function exitImpersonation(Request $request): JsonResponse
+    {
+        $tokenId = $this->authService->extractTokenIdFromBearer($request->bearerToken());
+
+        if ($tokenId === null) {
+            return $this->error('Invalid access token.', [], 400);
+        }
+
+        $log = $this->impersonationService->endForImpersonatedUser($request->user(), $tokenId);
+
+        if ($log === null) {
+            return $this->error('No active impersonation session.', [], 404);
+        }
+
+        return $this->success([
+            'message' => 'Impersonation session ended.',
+        ]);
+    }
 }

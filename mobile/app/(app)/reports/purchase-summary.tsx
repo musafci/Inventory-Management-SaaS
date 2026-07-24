@@ -2,7 +2,6 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -10,6 +9,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 
 import { usePurchaseSummary } from '@/src/hooks/useReports';
 
@@ -63,7 +64,7 @@ export default function PurchaseSummaryScreen() {
             <Text style={styles.error}>Could not load purchase summary.</Text>
           </View>
         ) : report ? (
-          <FlatList
+          <OptimizedFlatList
             data={report.by_status}
             keyExtractor={(item) => item.status}
             refreshControl={(

@@ -51,6 +51,7 @@ Route::prefix('v1')->group(function (): void {
             Route::post('logout', [AuthController::class, 'logout']);
             Route::get('sessions', [AuthController::class, 'sessions']);
             Route::delete('sessions/{tokenId}', [AuthController::class, 'revokeSession']);
+            Route::post('impersonation/exit', [AuthController::class, 'exitImpersonation']);
         });
     });
 

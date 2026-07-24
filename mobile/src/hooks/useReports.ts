@@ -27,13 +27,13 @@ export function useStockValuation(warehouseId?: number | null) {
   });
 }
 
-export function useLowStockReport() {
+export function useLowStockReport(warehouseId?: number | null) {
   const { organizationId } = useAuth();
 
   return useQuery({
-    queryKey: ['report-low-stock', organizationId],
+    queryKey: ['report-low-stock', organizationId, warehouseId],
     enabled: organizationId !== null,
-    queryFn: () => reportsApi.fetchLowStock(organizationId),
+    queryFn: () => reportsApi.fetchLowStock(organizationId, warehouseId ?? undefined),
   });
 }
 

@@ -1,13 +1,14 @@
 import { Link, Stack } from 'expo-router';
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 
 import { usePayments, usePaymentsList } from '@/src/hooks/usePayments';
 
@@ -41,7 +42,7 @@ export default function PaymentsScreen() {
             <ActivityIndicator size="large" />
           </View>
         ) : (
-          <FlatList
+          <OptimizedFlatList
             data={payments}
             keyExtractor={(item) => String(item.id)}
             refreshControl={(

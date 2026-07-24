@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 import { useSync } from '@/src/sync/SyncContext';
 
 function formatSyncedAt(value: string | null): string {
@@ -60,7 +61,7 @@ export default function SyncSettingsScreen() {
             <Text style={styles.failedDescription}>
               These queued actions could not be applied. Retry after fixing the issue, or dismiss to remove them.
             </Text>
-            <FlatList
+            <OptimizedFlatList
               data={failedMutations}
               keyExtractor={(item) => String(item.id)}
               scrollEnabled={false}

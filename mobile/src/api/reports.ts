@@ -61,8 +61,11 @@ export async function fetchStockValuation(
 
 export async function fetchLowStock(
   organizationId?: number | null,
+  warehouseId?: number | null,
 ): Promise<LowStockItem[]> {
-  return apiRequest<LowStockItem[]>('/v1/reports/low-stock', { organizationId });
+  const query = warehouseId ? `?warehouse_id=${warehouseId}` : '';
+
+  return apiRequest<LowStockItem[]>(`/v1/reports/low-stock${query}`, { organizationId });
 }
 
 export async function fetchSalesSummary(

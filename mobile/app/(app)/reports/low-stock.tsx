@@ -1,18 +1,25 @@
 import { Link, Stack } from 'expo-router';
+import { useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
+import { WarehouseFilter } from '@/components/WarehouseFilter';
+
+import { useWarehouses } from '@/src/hooks/useInventory';
 import { useLowStockReport } from '@/src/hooks/useReports';
 
 export default function LowStockScreen() {
-  const query = useLowStockReport();
+  const [warehouseId, setWarehouseId] = useState<number | null>(null);
+  const warehousesQuery = useWarehouses();
+  const query = useLowStockReport(warehouseId);
   const items = query.data ?? [];
+  const warehouses = warehousesQuery.data ?? [];
 
   return (
     <>
@@ -27,7 +34,7 @@ export default function LowStockScreen() {
             <Text style={styles.error}>Could not load low stock report.</Text>
           </View>
         ) : (
-          <FlatList
+          <OptimizedFlatList
             data={items}
             keyExtractor={(item) => String(item.stock_id)}
             refreshControl={(
@@ -36,6 +43,13 @@ export default function LowStockScreen() {
                 onRefresh={() => {
                   void query.refetch();
                 }}
+              />
+            )}
+            ListHeaderComponent={(
+              <WarehouseFilter
+                warehouses={warehouses}
+                value={warehouseId}
+                onChange={setWarehouseId}
               />
             )}
             ListEmptyComponent={(

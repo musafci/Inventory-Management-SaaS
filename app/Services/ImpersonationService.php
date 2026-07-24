@@ -74,6 +74,25 @@ class ImpersonationService
         return $log->fresh();
     }
 
+    public function endForImpersonatedUser(User $user, string $tokenId): ?ImpersonationLog
+    {
+        $log = ImpersonationLog::query()
+            ->where('impersonated_user_id', $user->id)
+            ->where('token_id', $tokenId)
+            ->whereNull('ended_at')
+            ->first();
+
+        if ($log === null) {
+            return null;
+        }
+
+        $log->forceFill(['ended_at' => now()])->save();
+
+        Token::query()->whereKey($tokenId)->update(['revoked' => true]);
+
+        return $log->fresh();
+    }
+
     /**
      * @return array<string, mixed>|null
      */

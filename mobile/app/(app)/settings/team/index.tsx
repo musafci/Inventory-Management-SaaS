@@ -2,13 +2,14 @@ import { Link, Stack } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 
 import { ApiError } from '@/src/api/client';
 import { useDeleteTeamMember, useTeamMembers } from '@/src/hooks/useTeam';
@@ -61,7 +62,7 @@ export default function TeamSettingsScreen() {
             <Text style={styles.error}>Could not load team members.</Text>
           </View>
         ) : (
-          <FlatList
+          <OptimizedFlatList
             data={members}
             keyExtractor={(item) => String(item.id)}
             refreshControl={(
@@ -86,9 +87,14 @@ export default function TeamSettingsScreen() {
                     {item.role ?? 'No role'} · {item.status}
                   </Text>
                 </View>
-                <Pressable onPress={() => handleDelete(item.id, item.name)}>
-                  <Text style={styles.deleteLink}>Remove</Text>
-                </Pressable>
+                <View style={styles.actions}>
+                  <Link href={`/(app)/settings/team/${item.id}/edit`} style={styles.editLink}>
+                    Edit
+                  </Link>
+                  <Pressable onPress={() => handleDelete(item.id, item.name)}>
+                    <Text style={styles.deleteLink}>Remove</Text>
+                  </Pressable>
+                </View>
               </View>
             )}
           />
@@ -143,6 +149,15 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 13,
     marginTop: 4,
+  },
+  actions: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  editLink: {
+    color: '#2563eb',
+    fontSize: 14,
+    fontWeight: '600',
   },
   deleteLink: {
     color: '#b91c1c',

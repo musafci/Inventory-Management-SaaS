@@ -63,6 +63,13 @@ export async function listCachedWarehouses(organizationId: number): Promise<Ware
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+export async function deleteCachedWarehouse(
+  organizationId: number,
+  warehouseId: number,
+): Promise<void> {
+  warehouses.delete(warehouseKey(organizationId, warehouseId));
+}
+
 export async function listCachedStocks(organizationId: number, search?: string): Promise<Stock[]> {
   const prefix = `${organizationId}:`;
   let items = [...stocks.entries()]

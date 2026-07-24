@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 
 import { ApiError } from '@/src/api/client';
-import type { PurchaseOrderPayload } from '@/src/api/types';
+import type { PurchaseOrder, PurchaseOrderPayload } from '@/src/api/types';
+import { EmptyWarehousesPrompt } from '@/components/EmptyWarehousesPrompt';
 import { useCachedProductsForPicker, useWarehouses } from '@/src/hooks/useInventory';
-import { useCreatePurchaseOrder } from '@/src/hooks/useOrders';
+import { useCreatePurchaseOrder, useUpdatePurchaseOrder } from '@/src/hooks/useOrders';
 import { useSuppliersList } from '@/src/hooks/usePartners';
 
 type PurchaseOrderFormProps = {
+  order?: PurchaseOrder;
   onSuccess: (orderId: number) => void;
 };
 
@@ -24,42 +26,58 @@ function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
-  const mutation = useCreatePurchaseOrder();
+export function PurchaseOrderForm({ order, onSuccess }: PurchaseOrderFormProps) {
+  const isEditing = order !== undefined;
+  const createMutation = useCreatePurchaseOrder();
+  const updateMutation = useUpdatePurchaseOrder(order?.id ?? 0);
+  const mutation = isEditing ? updateMutation : createMutation;
   const warehousesQuery = useWarehouses();
   const suppliers = useSuppliersList('');
   const [productSearch, setProductSearch] = useState('');
   const productsQuery = useCachedProductsForPicker(productSearch);
-  const [supplierId, setSupplierId] = useState(0);
-  const [warehouseId, setWarehouseId] = useState(0);
-  const [productId, setProductId] = useState(0);
-  const [quantity, setQuantity] = useState('1');
-  const [unitCost, setUnitCost] = useState('');
-  const [orderDate, setOrderDate] = useState(todayIsoDate());
+  const firstItem = order?.items?.[0];
+  const [supplierId, setSupplierId] = useState(order?.supplier_id ?? 0);
+  const [warehouseId, setWarehouseId] = useState(order?.warehouse_id ?? 0);
+  const [productId, setProductId] = useState(firstItem?.product_id ?? 0);
+  const [quantity, setQuantity] = useState(String(firstItem?.quantity_ordered ?? 1));
+  const [unitCost, setUnitCost] = useState(firstItem?.unit_cost ?? '');
+  const [orderDate, setOrderDate] = useState(order?.order_date ?? todayIsoDate());
 
   const warehouses = warehousesQuery.data ?? [];
   const products = productsQuery.data ?? [];
 
   useEffect(() => {
+    if (isEditing) {
+      return;
+    }
+
     if (supplierId === 0 && suppliers[0]) {
       setSupplierId(suppliers[0].id);
     }
-  }, [supplierId, suppliers]);
+  }, [isEditing, supplierId, suppliers]);
 
   useEffect(() => {
+    if (isEditing) {
+      return;
+    }
+
     if (warehouseId === 0 && warehouses[0]) {
       setWarehouseId(warehouses[0].id);
     }
-  }, [warehouseId, warehouses]);
+  }, [isEditing, warehouseId, warehouses]);
 
   useEffect(() => {
+    if (isEditing) {
+      return;
+    }
+
     if (productId === 0 && products[0]) {
       setProductId(products[0].id);
       if (!unitCost) {
         setUnitCost(products[0].cost_price);
       }
     }
-  }, [productId, products, unitCost]);
+  }, [isEditing, productId, products, unitCost]);
 
   if (warehousesQuery.isLoading) {
     return (
@@ -71,9 +89,7 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
 
   if (warehouses.length === 0) {
     return (
-      <View style={styles.loading}>
-        <Text style={styles.helper}>Create a warehouse on the web app before creating purchase orders.</Text>
-      </View>
+      <EmptyWarehousesPrompt message="Add a warehouse before creating purchase orders." />
     );
   }
 
@@ -128,20 +144,24 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
     };
 
     try {
-      const order = await mutation.mutateAsync(payload);
+      const orderResult = await mutation.mutateAsync(payload);
 
-      if (order) {
-        onSuccess(order.id);
-      } else {
+      if (orderResult) {
+        onSuccess(orderResult.id);
+      } else if (!isEditing) {
         Alert.alert(
           'Queued offline',
           'Purchase order will be created when you reconnect.',
         );
         onSuccess(0);
+      } else {
+        onSuccess(order?.id ?? 0);
       }
     } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Could not create purchase order.';
-      Alert.alert('Create failed', message);
+      const message = error instanceof ApiError
+        ? error.message
+        : `Could not ${isEditing ? 'update' : 'create'} purchase order.`;
+      Alert.alert(isEditing ? 'Update failed' : 'Create failed', message);
     }
   };
 
@@ -250,7 +270,13 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
           void handleSubmit();
         }}
         style={[styles.button, mutation.isPending ? styles.buttonDisabled : null]}>
-        <Text style={styles.buttonText}>{mutation.isPending ? 'Saving…' : 'Create purchase order'}</Text>
+        <Text style={styles.buttonText}>
+          {mutation.isPending
+            ? 'Saving…'
+            : isEditing
+              ? 'Save changes'
+              : 'Create purchase order'}
+        </Text>
       </Pressable>
     </ScrollView>
   );

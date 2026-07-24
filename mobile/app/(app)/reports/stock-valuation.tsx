@@ -1,18 +1,25 @@
 import { Stack } from 'expo-router';
+import { useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
+import { WarehouseFilter } from '@/components/WarehouseFilter';
+
+import { useWarehouses } from '@/src/hooks/useInventory';
 import { useStockValuation } from '@/src/hooks/useReports';
 
 export default function StockValuationScreen() {
-  const query = useStockValuation();
+  const [warehouseId, setWarehouseId] = useState<number | null>(null);
+  const warehousesQuery = useWarehouses();
+  const query = useStockValuation(warehouseId);
   const report = query.data;
+  const warehouses = warehousesQuery.data ?? [];
 
   return (
     <>
@@ -27,7 +34,7 @@ export default function StockValuationScreen() {
             <Text style={styles.error}>Could not load stock valuation report.</Text>
           </View>
         ) : report ? (
-          <FlatList
+          <OptimizedFlatList
             data={report.by_warehouse}
             keyExtractor={(item) => String(item.warehouse_id)}
             refreshControl={(
@@ -40,6 +47,11 @@ export default function StockValuationScreen() {
             )}
             ListHeaderComponent={(
               <View style={styles.summary}>
+                <WarehouseFilter
+                  warehouses={warehouses}
+                  value={warehouseId}
+                  onChange={setWarehouseId}
+                />
                 <View style={styles.summaryCard}>
                   <Text style={styles.summaryLabel}>Total value</Text>
                   <Text style={styles.summaryValue}>{report.total_value}</Text>

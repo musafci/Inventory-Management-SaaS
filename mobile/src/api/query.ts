@@ -2,6 +2,7 @@ export type ListQueryParams = {
   page?: number;
   perPage?: number;
   search?: string;
+  sort?: string;
   updatedAfter?: string | null;
 };
 
@@ -18,6 +19,10 @@ export function buildListQuery(params: ListQueryParams = {}): string {
 
   if (params.search?.trim()) {
     query.set('search', params.search.trim());
+  }
+
+  if (params.sort) {
+    query.set('sort', params.sort);
   }
 
   if (params.updatedAfter) {

@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 
 import { ApiError } from '@/src/api/client';
-import type { SalesOrderPayload } from '@/src/api/types';
+import type { SalesOrder, SalesOrderPayload } from '@/src/api/types';
+import { EmptyWarehousesPrompt } from '@/components/EmptyWarehousesPrompt';
 import { useCachedProductsForPicker, useWarehouses } from '@/src/hooks/useInventory';
-import { useCreateSalesOrder } from '@/src/hooks/useOrders';
+import { useCreateSalesOrder, useUpdateSalesOrder } from '@/src/hooks/useOrders';
 import { useCustomersList } from '@/src/hooks/usePartners';
 
 type SalesOrderFormProps = {
+  order?: SalesOrder;
   onSuccess: (orderId: number) => void;
 };
 
@@ -24,42 +26,58 @@ function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function SalesOrderForm({ onSuccess }: SalesOrderFormProps) {
-  const mutation = useCreateSalesOrder();
+export function SalesOrderForm({ order, onSuccess }: SalesOrderFormProps) {
+  const isEditing = order !== undefined;
+  const createMutation = useCreateSalesOrder();
+  const updateMutation = useUpdateSalesOrder(order?.id ?? 0);
+  const mutation = isEditing ? updateMutation : createMutation;
   const warehousesQuery = useWarehouses();
   const customers = useCustomersList('');
   const [productSearch, setProductSearch] = useState('');
   const productsQuery = useCachedProductsForPicker(productSearch);
-  const [customerId, setCustomerId] = useState(0);
-  const [warehouseId, setWarehouseId] = useState(0);
-  const [productId, setProductId] = useState(0);
-  const [quantity, setQuantity] = useState('1');
-  const [unitPrice, setUnitPrice] = useState('');
-  const [orderDate, setOrderDate] = useState(todayIsoDate());
+  const firstItem = order?.items?.[0];
+  const [customerId, setCustomerId] = useState(order?.customer_id ?? 0);
+  const [warehouseId, setWarehouseId] = useState(order?.warehouse_id ?? 0);
+  const [productId, setProductId] = useState(firstItem?.product_id ?? 0);
+  const [quantity, setQuantity] = useState(String(firstItem?.quantity ?? 1));
+  const [unitPrice, setUnitPrice] = useState(firstItem?.unit_price ?? '');
+  const [orderDate, setOrderDate] = useState(order?.order_date ?? todayIsoDate());
 
   const warehouses = warehousesQuery.data ?? [];
   const products = productsQuery.data ?? [];
 
   useEffect(() => {
+    if (isEditing) {
+      return;
+    }
+
     if (customerId === 0 && customers[0]) {
       setCustomerId(customers[0].id);
     }
-  }, [customerId, customers]);
+  }, [isEditing, customerId, customers]);
 
   useEffect(() => {
+    if (isEditing) {
+      return;
+    }
+
     if (warehouseId === 0 && warehouses[0]) {
       setWarehouseId(warehouses[0].id);
     }
-  }, [warehouseId, warehouses]);
+  }, [isEditing, warehouseId, warehouses]);
 
   useEffect(() => {
+    if (isEditing) {
+      return;
+    }
+
     if (productId === 0 && products[0]) {
       setProductId(products[0].id);
       if (!unitPrice) {
         setUnitPrice(products[0].selling_price);
       }
     }
-  }, [productId, products, unitPrice]);
+  }, [isEditing, productId, products, unitPrice]);
 
   if (warehousesQuery.isLoading) {
     return (
@@ -71,9 +89,7 @@ export function SalesOrderForm({ onSuccess }: SalesOrderFormProps) {
 
   if (warehouses.length === 0) {
     return (
-      <View style={styles.loading}>
-        <Text style={styles.helper}>Create a warehouse on the web app before creating sales orders.</Text>
-      </View>
+      <EmptyWarehousesPrompt message="Add a warehouse before creating sales orders." />
     );
   }
 
@@ -128,20 +144,24 @@ export function SalesOrderForm({ onSuccess }: SalesOrderFormProps) {
     };
 
     try {
-      const order = await mutation.mutateAsync(payload);
+      const orderResult = await mutation.mutateAsync(payload);
 
-      if (order) {
-        onSuccess(order.id);
-      } else {
+      if (orderResult) {
+        onSuccess(orderResult.id);
+      } else if (!isEditing) {
         Alert.alert(
           'Queued offline',
           'Sales order will be created when you reconnect.',
         );
         onSuccess(0);
+      } else {
+        onSuccess(order?.id ?? 0);
       }
     } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Could not create sales order.';
-      Alert.alert('Create failed', message);
+      const message = error instanceof ApiError
+        ? error.message
+        : `Could not ${isEditing ? 'update' : 'create'} sales order.`;
+      Alert.alert(isEditing ? 'Update failed' : 'Create failed', message);
     }
   };
 
@@ -250,7 +270,13 @@ export function SalesOrderForm({ onSuccess }: SalesOrderFormProps) {
           void handleSubmit();
         }}
         style={[styles.button, mutation.isPending ? styles.buttonDisabled : null]}>
-        <Text style={styles.buttonText}>{mutation.isPending ? 'Saving…' : 'Create sales order'}</Text>
+        <Text style={styles.buttonText}>
+          {mutation.isPending
+            ? 'Saving…'
+            : isEditing
+              ? 'Save changes'
+              : 'Create sales order'}
+        </Text>
       </Pressable>
     </ScrollView>
   );

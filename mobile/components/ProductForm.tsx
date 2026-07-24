@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import type { ProductPayload } from '@/src/api/types';
+import { EmptyCatalogPrompt } from '@/components/EmptyCatalogPrompt';
 import { useCategories, useUnits } from '@/src/hooks/useProducts';
 
 type ProductFormProps = {
@@ -73,11 +74,10 @@ export function ProductForm({
 
   if (categories.length === 0 || units.length === 0) {
     return (
-      <View style={styles.loading}>
-        <Text style={styles.helper}>
-          Add at least one category and unit on the web app before creating products.
-        </Text>
-      </View>
+      <EmptyCatalogPrompt
+        missingCategories={categories.length === 0}
+        missingUnits={units.length === 0}
+      />
     );
   }
 

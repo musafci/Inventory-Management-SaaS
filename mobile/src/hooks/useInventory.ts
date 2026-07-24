@@ -2,9 +2,11 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { useMemo } from 'react';
 
 import * as inventoryApi from '@/src/api/inventory';
+import type { WarehousePayload } from '@/src/api/inventory';
 import type { StockMovementPayload } from '@/src/api/types';
 import { useAuth } from '@/src/auth/AuthContext';
 import {
+  deleteCachedWarehouse,
   listCachedStockMovements,
   listCachedStocks,
   listCachedWarehouses,
@@ -227,6 +229,80 @@ export function useInventoryLabels() {
         products: new Map(products.map((product) => [product.id, product.name])),
         warehouses: new Map(warehouses.map((warehouse) => [warehouse.id, warehouse.name])),
       };
+    },
+  });
+}
+
+export function useWarehousesList() {
+  const query = useWarehouses();
+  return query.data ?? [];
+}
+
+export function useCreateWarehouse() {
+  const queryClient = useQueryClient();
+  const { organizationId } = useAuth();
+
+  return useMutation({
+    mutationFn: (payload: WarehousePayload) => {
+      if (organizationId === null) {
+        throw new Error('No active organization.');
+      }
+
+      return inventoryApi.createWarehouse(payload, organizationId);
+    },
+    onSuccess: async (warehouse) => {
+      if (organizationId !== null) {
+        await upsertWarehouses(organizationId, [warehouse]);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+      await queryClient.invalidateQueries({ queryKey: ['inventory-labels'] });
+    },
+  });
+}
+
+export function useUpdateWarehouse(warehouseId: number) {
+  const queryClient = useQueryClient();
+  const { organizationId } = useAuth();
+
+  return useMutation({
+    mutationFn: (payload: Partial<WarehousePayload>) => {
+      if (organizationId === null) {
+        throw new Error('No active organization.');
+      }
+
+      return inventoryApi.updateWarehouse(warehouseId, payload, organizationId);
+    },
+    onSuccess: async (warehouse) => {
+      if (organizationId !== null) {
+        await upsertWarehouses(organizationId, [warehouse]);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+      await queryClient.invalidateQueries({ queryKey: ['inventory-labels'] });
+    },
+  });
+}
+
+export function useDeleteWarehouse() {
+  const queryClient = useQueryClient();
+  const { organizationId } = useAuth();
+
+  return useMutation({
+    mutationFn: (warehouseId: number) => {
+      if (organizationId === null) {
+        throw new Error('No active organization.');
+      }
+
+      return inventoryApi.deleteWarehouse(warehouseId, organizationId);
+    },
+    onSuccess: async (_result, warehouseId) => {
+      if (organizationId !== null) {
+        await deleteCachedWarehouse(organizationId, warehouseId);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+      await queryClient.invalidateQueries({ queryKey: ['inventory-labels'] });
     },
   });
 }

@@ -2,13 +2,14 @@ import { Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   RefreshControl,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 
 import { useInventoryLabels, useStocks, useStocksList } from '@/src/hooks/useInventory';
 
@@ -47,7 +48,7 @@ export default function StocksScreen() {
             <ActivityIndicator size="large" />
           </View>
         ) : (
-          <FlatList
+          <OptimizedFlatList
             data={stocks}
             keyExtractor={(item) => String(item.id)}
             refreshControl={(

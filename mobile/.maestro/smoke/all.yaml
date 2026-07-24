@@ -1,0 +1,7 @@
+appId: com.oneapp.inventory
+---
+- runFlow: smoke/login.yaml
+- runFlow: smoke/inventory.yaml
+- runFlow: smoke/purchasing.yaml
+- runFlow: smoke/sales.yaml
+- runFlow: smoke/settings.yaml

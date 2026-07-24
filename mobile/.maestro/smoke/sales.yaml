@@ -1,0 +1,12 @@
+appId: com.oneapp.inventory
+---
+- runFlow: smoke/login.yaml
+- tapOn: "Sales"
+- assertVisible: "Sales"
+- tapOn:
+    id: hub-customers
+- assertVisible: "Customers"
+- back
+- tapOn:
+    id: hub-sales-orders
+- assertVisible: "Sales orders"

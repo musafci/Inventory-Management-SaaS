@@ -3,7 +3,6 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
   RefreshControl,
   Share,
@@ -11,6 +10,8 @@ import {
   Text,
   View,
 } from 'react-native';
+
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 
 import { ApiError } from '@/src/api/client';
 import type { ReportExportType } from '@/src/api/types';
@@ -112,7 +113,7 @@ export default function ReportExportsScreen() {
             <Text style={styles.error}>Could not load exports.</Text>
           </View>
         ) : (
-          <FlatList
+          <OptimizedFlatList
             data={exports}
             keyExtractor={(item) => String(item.id)}
             refreshControl={(

@@ -25,12 +25,12 @@ export default function BillingSettingsScreen() {
   const subscription = billing?.subscription;
   const currentPlan = subscription?.plan;
 
-  const openCheckout = (planSlug: string) => {
+  const openCheckout = (planSlug: string, interval: 'monthly' | 'annual') => {
     void (async () => {
       try {
         const session = await checkoutMutation.mutateAsync({
           planSlug,
-          interval: 'monthly',
+          interval,
         });
         await WebBrowser.openBrowserAsync(session.url);
         void query.refetch();
@@ -109,18 +109,28 @@ export default function BillingSettingsScreen() {
               <View key={plan.id} style={styles.planCard}>
                 <Text style={styles.planName}>{plan.name}</Text>
                 <Text style={styles.planPrice}>
-                  {plan.price_monthly}/mo
+                  {plan.price_monthly}/mo · {plan.price_annual}/yr
                   {plan.is_custom ? ' · Custom' : ''}
                 </Text>
                 {billing.stripe_configured && !plan.is_custom ? (
-                  <Pressable
-                    disabled={checkoutMutation.isPending}
-                    onPress={() => openCheckout(plan.slug)}
-                    style={styles.upgradeButton}>
-                    <Text style={styles.upgradeButtonText}>
-                      {currentPlan?.slug === plan.slug ? 'Current plan' : 'Upgrade (monthly)'}
-                    </Text>
-                  </Pressable>
+                  <View style={styles.planActions}>
+                    <Pressable
+                      disabled={checkoutMutation.isPending}
+                      onPress={() => openCheckout(plan.slug, 'monthly')}
+                      style={styles.upgradeButton}>
+                      <Text style={styles.upgradeButtonText}>
+                        {currentPlan?.slug === plan.slug ? 'Current (monthly)' : 'Monthly'}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      disabled={checkoutMutation.isPending}
+                      onPress={() => openCheckout(plan.slug, 'annual')}
+                      style={[styles.upgradeButton, styles.upgradeButtonSecondary]}>
+                      <Text style={[styles.upgradeButtonText, styles.upgradeButtonTextSecondary]}>
+                        {currentPlan?.slug === plan.slug ? 'Current (yearly)' : 'Yearly'}
+                      </Text>
+                    </Pressable>
+                  </View>
                 ) : null}
               </View>
             ))}
@@ -196,6 +206,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 6,
   },
+  planActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  upgradeButton: {
+    alignItems: 'center',
+    backgroundColor: '#2563eb',
+    borderRadius: 8,
+    flex: 1,
+    paddingVertical: 10,
+  },
+  upgradeButtonSecondary: {
+    backgroundColor: '#fff',
+    borderColor: '#2563eb',
+    borderWidth: 1,
+  },
+  upgradeButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  upgradeButtonTextSecondary: {
+    color: '#2563eb',
+  },
   button: {
     alignItems: 'center',
     borderRadius: 10,
@@ -210,18 +245,6 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: '#2563eb',
     fontSize: 16,
-    fontWeight: '700',
-  },
-  upgradeButton: {
-    alignItems: 'center',
-    backgroundColor: '#2563eb',
-    borderRadius: 8,
-    marginTop: 12,
-    paddingVertical: 10,
-  },
-  upgradeButtonText: {
-    color: '#fff',
-    fontSize: 14,
     fontWeight: '700',
   },
 });

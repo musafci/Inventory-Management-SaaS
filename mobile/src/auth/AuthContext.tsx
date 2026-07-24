@@ -10,7 +10,7 @@ import {
 
 import * as authApi from '@/src/api/auth';
 import { ApiError } from '@/src/api/client';
-import type { ImpersonationSession, MeResponse, Organization, User } from '@/src/api/types';
+import type { ImpersonationSession, MeResponse, Organization, RegisterPayload, User } from '@/src/api/types';
 import * as authStorage from '@/src/auth/storage';
 import {
   registerDevicePushToken,
@@ -26,7 +26,9 @@ type AuthContextValue = {
   permissions: string[];
   impersonation: ImpersonationSession;
   login: (email: string, password: string) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
+  exitImpersonation: () => Promise<void>;
   switchOrganization: (organizationId: number) => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -226,6 +228,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void registerDevicePushToken(applied.organizationId);
   }, []);
 
+  const register = useCallback(async (payload: RegisterPayload) => {
+    const result = await authApi.register(payload);
+
+    await authStorage.saveTokens(
+      result.token.access_token,
+      result.token.refresh_token,
+    );
+
+    const preferredOrganizationId = await resolveOrganizationId(
+      result.organizations,
+      result.user.default_organization_id,
+    );
+
+    if (preferredOrganizationId !== null) {
+      await authStorage.saveOrganizationId(preferredOrganizationId);
+    }
+
+    setUser(result.user);
+    setOrganizations(result.organizations);
+
+    const me = await authApi.fetchMe(preferredOrganizationId);
+    const applied = applyMeState(me, preferredOrganizationId);
+    setOrganizationId(applied.organizationId);
+    setPermissions(applied.permissions);
+    setImpersonation(applied.impersonation);
+
+    void registerDevicePushToken(applied.organizationId);
+  }, []);
+
   const logout = useCallback(async () => {
     const accessToken = await authStorage.getAccessToken();
 
@@ -245,6 +276,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPermissions([]);
     setImpersonation(null);
   }, []);
+
+  const exitImpersonation = useCallback(async () => {
+    try {
+      await authApi.exitImpersonation();
+    } catch {
+      // Continue to clear local session even if API fails.
+    }
+
+    await logout();
+  }, [logout]);
 
   const switchOrganization = useCallback(async (nextOrganizationId: number) => {
     await authStorage.saveOrganizationId(nextOrganizationId);
@@ -271,7 +312,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       permissions,
       impersonation,
       login,
+      register,
       logout,
+      exitImpersonation,
       switchOrganization,
       refreshProfile,
     }),
@@ -279,7 +322,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       impersonation,
       isLoading,
       login,
+      register,
       logout,
+      exitImpersonation,
       organizationId,
       organizations,
       permissions,

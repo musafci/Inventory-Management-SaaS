@@ -1,0 +1,16 @@
+appId: com.oneapp.inventory
+---
+- runFlow: smoke/login.yaml
+- tapOn: "Reports"
+- assertVisible: "Reports"
+- tapOn:
+    id: hub-report-low-stock
+- assertVisible: "Low stock"
+- back
+- tapOn: "More"
+- tapOn:
+    id: hub-settings
+- assertVisible: "Settings"
+- tapOn:
+    id: hub-settings-sessions
+- assertVisible: "Active sessions"

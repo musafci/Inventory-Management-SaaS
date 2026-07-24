@@ -30,11 +30,15 @@ class ReportController extends ApiController
         return $this->success($this->reportService->stockValuation($warehouseId));
     }
 
-    public function lowStock(): JsonResponse
+    public function lowStock(Request $request): JsonResponse
     {
         $this->authorize('viewInventoryReports');
 
-        return $this->success($this->reportService->lowStock());
+        $warehouseId = $request->filled('warehouse_id')
+            ? $request->integer('warehouse_id')
+            : null;
+
+        return $this->success($this->reportService->lowStock($warehouseId));
     }
 
     public function salesSummary(Request $request): JsonResponse

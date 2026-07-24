@@ -41,6 +41,9 @@ export default function AppLayout() {
         <Stack.Screen name="units/index" options={{ title: 'Units' }} />
         <Stack.Screen name="units/new" options={{ title: 'New unit' }} />
         <Stack.Screen name="units/[id]/edit" options={{ title: 'Edit unit' }} />
+        <Stack.Screen name="warehouses/index" options={{ title: 'Warehouses' }} />
+        <Stack.Screen name="warehouses/new" options={{ title: 'New warehouse' }} />
+        <Stack.Screen name="warehouses/[id]/edit" options={{ title: 'Edit warehouse' }} />
         <Stack.Screen name="suppliers/index" options={{ title: 'Suppliers' }} />
         <Stack.Screen name="suppliers/new" options={{ title: 'New supplier' }} />
         <Stack.Screen name="suppliers/[id]/edit" options={{ title: 'Edit supplier' }} />
@@ -50,9 +53,11 @@ export default function AppLayout() {
         <Stack.Screen name="purchase-orders/index" options={{ title: 'Purchase orders' }} />
         <Stack.Screen name="purchase-orders/new" options={{ title: 'New purchase order' }} />
         <Stack.Screen name="purchase-orders/[id]" options={{ title: 'Purchase order' }} />
+        <Stack.Screen name="purchase-orders/[id]/edit" options={{ title: 'Edit purchase order' }} />
         <Stack.Screen name="sales-orders/index" options={{ title: 'Sales orders' }} />
         <Stack.Screen name="sales-orders/new" options={{ title: 'New sales order' }} />
         <Stack.Screen name="sales-orders/[id]" options={{ title: 'Sales order' }} />
+        <Stack.Screen name="sales-orders/[id]/edit" options={{ title: 'Edit sales order' }} />
         <Stack.Screen name="payments/index" options={{ title: 'Payments' }} />
         <Stack.Screen name="payments/[id]" options={{ title: 'Payment' }} />
         <Stack.Screen name="imports/products" options={{ title: 'Import products' }} />
@@ -68,12 +73,14 @@ export default function AppLayout() {
         <Stack.Screen name="settings/billing" options={{ title: 'Billing' }} />
         <Stack.Screen name="settings/team/index" options={{ title: 'Team' }} />
         <Stack.Screen name="settings/team/new" options={{ title: 'Add team member' }} />
+        <Stack.Screen name="settings/team/[id]/edit" options={{ title: 'Edit team member' }} />
         <Stack.Screen name="settings/roles/index" options={{ title: 'Roles' }} />
         <Stack.Screen name="settings/roles/new" options={{ title: 'New role' }} />
         <Stack.Screen name="settings/roles/[id]/edit" options={{ title: 'Edit role' }} />
         <Stack.Screen name="settings/privacy" options={{ title: 'Privacy & data' }} />
         <Stack.Screen name="settings/notifications" options={{ title: 'Notifications' }} />
         <Stack.Screen name="settings/sync" options={{ title: 'Sync status' }} />
+        <Stack.Screen name="settings/sessions" options={{ title: 'Active sessions' }} />
       </Stack>
     </>
   );

@@ -27,12 +27,21 @@ Configure `EXPO_PUBLIC_API_URL` in `.env`:
 
 ## Features (Phases 0–5)
 
-- Auth, org switcher, permission-gated tabs, impersonation banner
-- Products, stock, categories, units, offline sync + outbox
-- Suppliers, customers, purchase/sales orders, payments
+- Auth (login, register, forgot/reset password, sessions), org switcher, permission-gated tabs
+- Products, categories, units, warehouses, stock, offline sync + outbox
+- Suppliers, customers, purchase/sales orders (full lifecycle + draft edit), payments
 - Reports, dashboard, settings, billing, CSV import
 - Push notifications, notification preferences, order print/share
-- Maestro E2E smoke tests, Jest unit tests, EAS build profiles
+- Maestro E2E smoke suite, Jest unit tests, EAS build profiles
+
+## Documentation
+
+| Doc | Purpose |
+|-----|---------|
+| [MOBILE-PLANNING.md](../docs/MOBILE-PLANNING.md) | Architecture & roadmap |
+| [MOBILE-REQUIREMENTS.md](../docs/MOBILE-REQUIREMENTS.md) | Requirements & sign-off |
+| [MOBILE-TEST-PLAN.md](../docs/MOBILE-TEST-PLAN.md) | Full QA test matrix |
+| [MOBILE-RELEASE.md](../docs/MOBILE-RELEASE.md) | EAS build & store submission |
 
 ## Demo login
 
@@ -56,9 +65,10 @@ npx tsc --noEmit   # Typecheck
 ## E2E (Maestro)
 
 ```bash
-maestro test .maestro/smoke/login.yaml
-maestro test .maestro/smoke/inventory.yaml
+maestro test .maestro/smoke/all.yaml
 ```
+
+Individual flows: `login`, `inventory`, `purchasing`, `sales`, `settings`.
 
 ## Store release
 

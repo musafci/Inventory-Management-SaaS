@@ -2,13 +2,14 @@ import { Link, Stack } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 
 import { ApiError } from '@/src/api/client';
 import { useDeleteRole, useRoles } from '@/src/hooks/useTeam';
@@ -61,7 +62,7 @@ export default function RolesSettingsScreen() {
             <Text style={styles.error}>Could not load roles.</Text>
           </View>
         ) : (
-          <FlatList
+          <OptimizedFlatList
             data={roles}
             keyExtractor={(item) => String(item.id)}
             refreshControl={(

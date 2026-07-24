@@ -2,13 +2,14 @@ import { Link, Stack } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 
 import { useAuth } from '@/src/auth/AuthContext';
 import { useDeleteSupplier, useSuppliers, useSuppliersList } from '@/src/hooks/usePartners';
@@ -54,7 +55,7 @@ export default function SuppliersScreen() {
             <ActivityIndicator size="large" />
           </View>
         ) : (
-          <FlatList
+          <OptimizedFlatList
             data={suppliers}
             keyExtractor={(item) => String(item.id)}
             refreshControl={(

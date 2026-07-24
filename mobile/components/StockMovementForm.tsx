@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { EmptyWarehousesPrompt } from '@/components/EmptyWarehousesPrompt';
 import type { StockMovementPayload, StockMovementType } from '@/src/api/types';
 import {
   useCachedProductsForPicker,
@@ -64,9 +65,7 @@ export function StockMovementForm({ onSuccess }: StockMovementFormProps) {
 
   if (warehouses.length === 0) {
     return (
-      <View style={styles.loading}>
-        <Text style={styles.helper}>Create a warehouse on the web app before recording movements.</Text>
-      </View>
+      <EmptyWarehousesPrompt message="Add a warehouse before recording stock movements." />
     );
   }
 

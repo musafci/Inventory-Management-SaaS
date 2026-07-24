@@ -2,13 +2,14 @@ import { Link, Stack } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 
 import { useAuth } from '@/src/auth/AuthContext';
 import { useCategoriesList, useDeleteCategory } from '@/src/hooks/useCatalog';
@@ -53,7 +54,7 @@ export default function CategoriesScreen() {
             <ActivityIndicator size="large" />
           </View>
         ) : (
-          <FlatList
+          <OptimizedFlatList
             data={query.data ?? []}
             keyExtractor={(item) => String(item.id)}
             refreshControl={(

@@ -55,6 +55,12 @@ export async function fetchStockMovements(params: ListParams = {}): Promise<{
   };
 }
 
+export type WarehousePayload = {
+  name: string;
+  address?: string | null;
+  is_default?: boolean;
+};
+
 export async function fetchWarehouses(params: ListParams = {}): Promise<Warehouse[]> {
   const response = await apiRequestPaginated<Warehouse[]>(
     `/v1/warehouses${buildQuery({ ...params, perPage: params.perPage ?? 200 })}`,
@@ -62,6 +68,46 @@ export async function fetchWarehouses(params: ListParams = {}): Promise<Warehous
   );
 
   return response.data;
+}
+
+export async function fetchWarehouse(
+  warehouseId: number,
+  organizationId?: number | null,
+): Promise<Warehouse> {
+  return apiRequest<Warehouse>(`/v1/warehouses/${warehouseId}`, { organizationId });
+}
+
+export async function createWarehouse(
+  payload: WarehousePayload,
+  organizationId?: number | null,
+): Promise<Warehouse> {
+  return apiRequest<Warehouse>('/v1/warehouses', {
+    method: 'POST',
+    body: payload,
+    organizationId,
+  });
+}
+
+export async function updateWarehouse(
+  warehouseId: number,
+  payload: Partial<WarehousePayload>,
+  organizationId?: number | null,
+): Promise<Warehouse> {
+  return apiRequest<Warehouse>(`/v1/warehouses/${warehouseId}`, {
+    method: 'PUT',
+    body: payload,
+    organizationId,
+  });
+}
+
+export async function deleteWarehouse(
+  warehouseId: number,
+  organizationId?: number | null,
+): Promise<void> {
+  await apiRequest<void>(`/v1/warehouses/${warehouseId}`, {
+    method: 'DELETE',
+    organizationId,
+  });
 }
 
 export async function createStockMovement(

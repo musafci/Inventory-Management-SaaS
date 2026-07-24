@@ -41,6 +41,23 @@ export type LoginResponse = {
   token: AuthToken;
 };
 
+export type RegisterPayload = {
+  organization_name: string;
+  name: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+  phone?: string | null;
+};
+
+export type AuthSession = {
+  id: string;
+  name: string | null;
+  created_at: string | null;
+  expires_at: string | null;
+  is_current: boolean;
+};
+
 export type MeResponse = {
   user: User;
   organizations: Organization[];
@@ -345,6 +362,10 @@ export type RefundPayload = {
   reference?: string | null;
   note?: string | null;
   paid_at?: string | null;
+  return_items?: Array<{
+    sales_order_item_id: number;
+    quantity: number;
+  }>;
 };
 
 export type DashboardStats = {

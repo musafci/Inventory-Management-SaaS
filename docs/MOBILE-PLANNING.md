@@ -705,57 +705,57 @@ Full parity + offline + push is large — phases keep releases testable.
 
 ### Phase 0 — Foundation (4–6 weeks)
 
-- [ ] Expo project, EAS, iOS + Android dev clients
-- [ ] Auth (login, register, refresh, logout)
-- [ ] API client + org header + SecureStore
-- [ ] Backend: `/auth/me` permissions
-- [ ] Permission-gated tab shell
-- [ ] Org switcher
-- [ ] Impersonation banner
+- [x] Expo project, EAS, iOS + Android dev clients
+- [x] Auth (login, register, refresh, logout)
+- [x] API client + org header + SecureStore
+- [x] Backend: `/auth/me` permissions
+- [x] Permission-gated tab shell
+- [x] Org switcher
+- [x] Impersonation banner
 
 ### Phase 1 — Core inventory & sync scaffold (5–7 weeks)
 
-- [ ] SQLite + Drizzle schema
-- [ ] Pull sync products, categories, units, warehouses
-- [ ] Products CRUD screens (online + cache)
-- [ ] Stock list + stock movements (queue adjustments offline)
-- [ ] Offline banner + outbox processor (basic)
-- [ ] Backend: sync cursors / `updated_after`
+- [x] SQLite + Drizzle schema
+- [x] Pull sync products, categories, units, warehouses
+- [x] Products CRUD screens (online + cache)
+- [x] Stock list + stock movements (queue adjustments offline)
+- [x] Offline banner + outbox processor (basic)
+- [x] Backend: sync cursors / `updated_after`
 
 ### Phase 2 — Purchasing & sales (6–8 weeks)
 
-- [ ] Suppliers, customers CRUD
-- [ ] Purchase orders full lifecycle
-- [ ] Sales orders full lifecycle
-- [ ] Payments list/detail
-- [ ] Idempotency in outbox for SO/PO create
-- [ ] Push: register token endpoint + low-stock notification
+- [x] Suppliers, customers CRUD
+- [x] Purchase orders full lifecycle
+- [x] Sales orders full lifecycle
+- [x] Payments list/detail
+- [x] Idempotency in outbox for SO/PO create
+- [x] Push: register token endpoint + low-stock notification
 
 ### Phase 3 — Reports, settings, billing (4–5 weeks)
 
-- [ ] Dashboard + all report screens
-- [ ] Report export download + share
-- [ ] Organization settings, team, roles
-- [ ] Billing in-app browser
-- [ ] GDPR export / deletion request
-- [ ] CSV import (document picker)
+- [x] Dashboard + all report screens
+- [x] Report export download + share
+- [x] Organization settings, team, roles
+- [x] Billing in-app browser
+- [x] GDPR export / deletion request
+- [x] CSV import (document picker)
 
 ### Phase 4 — Offline hardening + push complete (4–6 weeks)
 
-- [ ] Full outbox dependency ordering (SO pipeline)
-- [ ] Conflict UI
-- [ ] Background fetch sync
-- [ ] All v1 push event types
-- [ ] Notification preferences
-- [ ] API print/share for orders
+- [x] Full outbox dependency ordering (SO pipeline)
+- [x] Conflict UI
+- [x] Background fetch sync
+- [x] All v1 push event types
+- [x] Notification preferences
+- [x] API print/share for orders
 
 ### Phase 5 — Polish & store release (3–4 weeks)
 
-- [ ] Maestro E2E suite
-- [ ] App Store / Play Store assets, privacy policy
-- [ ] Performance (FlatList tuning, image lazy load)
-- [ ] Accessibility
-- [ ] Beta → production rollout
+- [x] Maestro E2E suite
+- [ ] App Store / Play Store assets, privacy policy *(assets in repo; production URLs/IDs pending)*
+- [x] Performance (FlatList tuning, image lazy load)
+- [x] Accessibility
+- [ ] Beta → production rollout *(operational — post-QA)*
 
 **Total:** ~26–36 weeks depending on team size and parallel backend capacity.
 

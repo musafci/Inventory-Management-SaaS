@@ -48,6 +48,12 @@ export default function InventoryScreen() {
       testID: 'hub-units',
     },
     {
+      href: '/(app)/warehouses',
+      title: 'Warehouses',
+      body: 'Manage storage locations for stock and orders.',
+      testID: 'hub-warehouses',
+    },
+    {
       href: '/(app)/imports/products' as Href,
       title: 'Import products (CSV)',
       body: 'Bulk upload products from a CSV file.',

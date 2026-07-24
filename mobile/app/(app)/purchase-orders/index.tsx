@@ -2,6 +2,7 @@ import { Link, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -12,9 +13,10 @@ import {
 
 import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 
+import { ApiError } from '@/src/api/client';
 import { useAuth } from '@/src/auth/AuthContext';
-import { usePurchaseOrders, usePurchaseOrdersList } from '@/src/hooks/useOrders';
-import { canCreatePurchaseOrder } from '@/src/permissions';
+import { useDeletePurchaseOrder, usePurchaseOrders, usePurchaseOrdersList } from '@/src/hooks/useOrders';
+import { canCreatePurchaseOrder, canDeletePurchaseOrder } from '@/src/permissions';
 
 function formatStatus(status: string): string {
   return status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
@@ -25,6 +27,27 @@ export default function PurchaseOrdersScreen() {
   const [search, setSearch] = useState('');
   const query = usePurchaseOrders(search);
   const orders = usePurchaseOrdersList(search);
+  const deleteMutation = useDeletePurchaseOrder();
+
+  const handleDelete = (orderId: number, poNumber: string) => {
+    Alert.alert('Delete purchase order', `Delete ${poNumber}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            try {
+              await deleteMutation.mutateAsync(orderId);
+            } catch (error) {
+              const message = error instanceof ApiError ? error.message : 'Could not delete order.';
+              Alert.alert('Delete failed', message);
+            }
+          })();
+        },
+      },
+    ]);
+  };
 
   const emptyMessage = useMemo(() => {
     if (query.isLoading) {
@@ -96,18 +119,25 @@ export default function PurchaseOrdersScreen() {
               ) : null
             }
             renderItem={({ item }) => (
-              <Link href={`/(app)/purchase-orders/${item.id}`} asChild>
-                <Pressable style={styles.row}>
-                  <View style={styles.rowBody}>
-                    <Text style={styles.name}>{item.po_number}</Text>
-                    <Text style={styles.meta}>
-                      {formatStatus(item.status)}
-                      {item.supplier?.name ? ` · ${item.supplier.name}` : ''}
-                    </Text>
-                  </View>
-                  <Text style={styles.amount}>{item.total_amount}</Text>
-                </Pressable>
-              </Link>
+              <View style={styles.row}>
+                <Link href={`/(app)/purchase-orders/${item.id}`} asChild>
+                  <Pressable style={styles.rowBodyPressable}>
+                    <View style={styles.rowBody}>
+                      <Text style={styles.name}>{item.po_number}</Text>
+                      <Text style={styles.meta}>
+                        {formatStatus(item.status)}
+                        {item.supplier?.name ? ` · ${item.supplier.name}` : ''}
+                      </Text>
+                    </View>
+                    <Text style={styles.amount}>{item.total_amount}</Text>
+                  </Pressable>
+                </Link>
+                {canDeletePurchaseOrder(permissions) ? (
+                  <Pressable onPress={() => handleDelete(item.id, item.po_number)}>
+                    <Text style={styles.deleteLink}>Delete</Text>
+                  </Pressable>
+                ) : null}
+              </View>
             )}
           />
         )}
@@ -153,6 +183,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e2e8f0',
     borderBottomWidth: 1,
     flexDirection: 'row',
+    paddingRight: 16,
+  },
+  rowBodyPressable: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
@@ -174,6 +210,11 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     fontSize: 15,
     fontWeight: '700',
+  },
+  deleteLink: {
+    color: '#b91c1c',
+    fontSize: 14,
+    fontWeight: '600',
   },
   footerLoader: {
     marginVertical: 16,

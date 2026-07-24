@@ -164,12 +164,14 @@ class ReportService
      *     reorder_point: int,
      * }>
      */
-    public function lowStock(): array
+    public function lowStock(?int $warehouseId = null): array
     {
+        $suffix = 'low-stock'.($warehouseId !== null ? ":{$warehouseId}" : '');
+
         return Cache::remember(
-            $this->cacheKey('low-stock'),
+            $this->cacheKey($suffix),
             $this->cacheTtlSeconds,
-            fn (): array => $this->lowStockUncached(),
+            fn (): array => $this->lowStockUncached($warehouseId),
         );
     }
 
@@ -187,10 +189,11 @@ class ReportService
      *     reorder_point: int,
      * }>
      */
-    public function lowStockUncached(): array
+    public function lowStockUncached(?int $warehouseId = null): array
     {
         return Stock::query()
             ->with(['warehouse', 'product'])
+            ->when($warehouseId !== null, fn ($query) => $query->where('warehouse_id', $warehouseId))
             ->whereHas('product', function ($query): void {
                 $query->whereNotNull('reorder_point')
                     ->whereColumn('products.reorder_point', '>=', DB::raw('(stocks.quantity_on_hand - stocks.quantity_reserved)'));

@@ -1,6 +1,7 @@
-import { Link, type Href } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { type Href } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { HubCard } from '@/components/HubCard';
 import { useAuth } from '@/src/auth/AuthContext';
 import {
   canExportReports,
@@ -13,6 +14,7 @@ type ReportLink = {
   href: Href;
   title: string;
   body: string;
+  testID: string;
   visible: boolean;
 };
 
@@ -24,30 +26,35 @@ export default function ReportsScreen() {
       href: '/(app)/reports/stock-valuation',
       title: 'Stock valuation',
       body: 'Total inventory value and breakdown by warehouse.',
+      testID: 'hub-report-stock-valuation',
       visible: canViewInventoryReports(permissions),
     },
     {
       href: '/(app)/reports/low-stock',
       title: 'Low stock',
       body: 'Products at or below their reorder point.',
+      testID: 'hub-report-low-stock',
       visible: canViewInventoryReports(permissions),
     },
     {
       href: '/(app)/reports/sales-summary',
       title: 'Sales summary',
       body: 'Order counts and totals grouped by status.',
+      testID: 'hub-report-sales-summary',
       visible: canViewSalesReports(permissions),
     },
     {
       href: '/(app)/reports/purchase-summary',
       title: 'Purchase summary',
       body: 'Purchase order totals and status breakdown.',
+      testID: 'hub-report-purchase-summary',
       visible: canViewPurchaseReports(permissions),
     },
     {
       href: '/(app)/reports/exports',
       title: 'Report exports',
       body: 'Queue CSV exports and download when ready.',
+      testID: 'hub-report-exports',
       visible: canExportReports(permissions),
     },
   ];
@@ -56,23 +63,24 @@ export default function ReportsScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Reports</Text>
+      <Text accessibilityRole="header" style={styles.title}>Reports</Text>
       <Text style={styles.description}>
         View inventory, sales, and purchase reports for your organization.
       </Text>
 
       {visibleLinks.length === 0 ? (
-        <View style={styles.card}>
-          <Text style={styles.cardBody}>You do not have permission to view any reports.</Text>
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyBody}>You do not have permission to view any reports.</Text>
         </View>
       ) : (
         visibleLinks.map((link) => (
-          <Link key={link.href.toString()} href={link.href} asChild>
-            <Pressable style={styles.card}>
-              <Text style={styles.cardTitle}>{link.title}</Text>
-              <Text style={styles.cardBody}>{link.body}</Text>
-            </Pressable>
-          </Link>
+          <HubCard
+            key={link.testID}
+            href={link.href}
+            title={link.title}
+            body={link.body}
+            testID={link.testID}
+          />
         ))
       )}
     </View>
@@ -97,23 +105,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     marginTop: 10,
   },
-  card: {
+  emptyCard: {
     backgroundColor: '#fff',
     borderColor: '#e2e8f0',
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 12,
     padding: 16,
   },
-  cardTitle: {
-    color: '#0f172a',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  cardBody: {
+  emptyBody: {
     color: '#64748b',
     fontSize: 14,
     lineHeight: 20,
-    marginTop: 6,
   },
 });

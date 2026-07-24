@@ -142,6 +142,18 @@ export async function listCachedWarehouses(organizationId: number): Promise<Ware
   }));
 }
 
+export async function deleteCachedWarehouse(
+  organizationId: number,
+  warehouseId: number,
+): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    'DELETE FROM warehouses WHERE organization_id = ? AND id = ?',
+    organizationId,
+    warehouseId,
+  );
+}
+
 export async function listCachedStocks(organizationId: number, search?: string): Promise<Stock[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<Stock>(

@@ -1,5 +1,5 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
+import { Link, Stack, useLocalSearchParams } from 'expo-router';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,8 +11,11 @@ import {
   View,
 } from 'react-native';
 
+import { LineItemsActionModal, type LineItemRow } from '@/components/LineItemsActionModal';
+import { PaymentActionModal } from '@/components/PaymentActionModal';
+import { RefundActionModal } from '@/components/RefundActionModal';
 import { ApiError } from '@/src/api/client';
-import type { SalesOrder, SalesOrderItem } from '@/src/api/types';
+import type { PaymentMethod, SalesOrder, SalesOrderItem } from '@/src/api/types';
 import { useAuth } from '@/src/auth/AuthContext';
 import { shareOrderPrintHtml } from '@/src/utils/shareOrderPrint';
 import { useInventoryLabels } from '@/src/hooks/useInventory';
@@ -25,7 +28,7 @@ import {
   useRefundSalesOrder,
   useSalesOrder,
 } from '@/src/hooks/useOrders';
-import { canCreatePayment } from '@/src/permissions';
+import { canCreatePayment, canUpdateSalesOrder } from '@/src/permissions';
 
 function formatStatus(status: string): string {
   return status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
@@ -61,6 +64,21 @@ export default function SalesOrderDetailScreen() {
   const deliverMutation = useDeliverSalesOrder();
   const payMutation = usePaySalesOrder();
   const refundMutation = useRefundSalesOrder();
+
+  const [fulfillVisible, setFulfillVisible] = useState(false);
+  const [fulfillItems, setFulfillItems] = useState<LineItemRow[]>([]);
+  const [fulfillNote, setFulfillNote] = useState('');
+  const [payVisible, setPayVisible] = useState(false);
+  const [payAmount, setPayAmount] = useState('');
+  const [payMethod, setPayMethod] = useState<PaymentMethod>('bank_transfer');
+  const [payReference, setPayReference] = useState('');
+  const [payNote, setPayNote] = useState('');
+  const [refundVisible, setRefundVisible] = useState(false);
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundMethod, setRefundMethod] = useState<PaymentMethod>('bank_transfer');
+  const [refundReference, setRefundReference] = useState('');
+  const [refundNote, setRefundNote] = useState('');
+  const [returnItems, setReturnItems] = useState<LineItemRow[]>([]);
 
   const productLabels = useMemo(
     () => labelsQuery.data?.products ?? new Map<number, string>(),
@@ -104,8 +122,6 @@ export default function SalesOrderDetailScreen() {
   }
 
   const order = query.data;
-  const firstItem = order.items?.[0];
-  const remainingQty = firstItem ? firstItem.quantity - firstItem.quantity_fulfilled : 0;
   const isPending =
     confirmMutation.isPending ||
     cancelMutation.isPending ||
@@ -140,32 +156,49 @@ export default function SalesOrderDetailScreen() {
   };
 
   const handleFulfill = () => {
-    if (!firstItem || remainingQty < 1) {
+    const items = (order.items ?? [])
+      .map((item) => ({
+        id: item.id,
+        label: productName(item, productLabels),
+        maxQuantity: item.quantity - item.quantity_fulfilled,
+        quantity: String(item.quantity - item.quantity_fulfilled),
+      }))
+      .filter((item) => item.maxQuantity > 0);
+
+    if (items.length === 0) {
       Alert.alert('Fulfill', 'No remaining quantity to fulfill.');
       return;
     }
 
-    Alert.alert('Fulfill order', `Fulfill ${remainingQty} units?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Fulfill',
-        onPress: () => {
-          void runAction('Fulfill', () =>
-            fulfillMutation.mutateAsync({
-              orderId: order.id,
-              payload: {
-                items: [
-                  {
-                    sales_order_item_id: firstItem.id,
-                    quantity: remainingQty,
-                  },
-                ],
-              },
-            }),
-          );
+    setFulfillItems(items);
+    setFulfillNote('');
+    setFulfillVisible(true);
+  };
+
+  const submitFulfill = () => {
+    const payloadItems = fulfillItems
+      .map((item) => ({
+        sales_order_item_id: item.id,
+        quantity: Number.parseInt(item.quantity, 10),
+      }))
+      .filter((item) => Number.isFinite(item.quantity) && item.quantity > 0);
+
+    if (payloadItems.length === 0) {
+      Alert.alert('Validation', 'Enter at least one valid quantity.');
+      return;
+    }
+
+    void runAction('Fulfill', async () => {
+      const result = await fulfillMutation.mutateAsync({
+        orderId: order.id,
+        payload: {
+          items: payloadItems,
+          note: fulfillNote.trim() || null,
         },
-      },
-    ]);
+      });
+      setFulfillVisible(false);
+      return result;
+    });
   };
 
   const handleDeliver = () => {
@@ -181,48 +214,84 @@ export default function SalesOrderDetailScreen() {
   };
 
   const handlePay = () => {
-    const amountDue = order.amount_due ?? '0';
+    setPayAmount(order.amount_due ?? '0');
+    setPayMethod('bank_transfer');
+    setPayReference('');
+    setPayNote('');
+    setPayVisible(true);
+  };
 
-    Alert.alert('Record payment', `Pay ${amountDue} in cash?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Pay',
-        onPress: () => {
-          void runAction('Payment', () =>
-            payMutation.mutateAsync({
-              orderId: order.id,
-              payload: {
-                amount: amountDue,
-                method: 'cash',
-              },
-            }),
-          );
+  const submitPay = () => {
+    const parsedAmount = Number.parseFloat(payAmount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      Alert.alert('Validation', 'Enter a valid payment amount.');
+      return;
+    }
+
+    void runAction('Payment', async () => {
+      const result = await payMutation.mutateAsync({
+        orderId: order.id,
+        payload: {
+          amount: payAmount.trim(),
+          method: payMethod,
+          reference: payReference.trim() || null,
+          note: payNote.trim() || null,
         },
-      },
-    ]);
+      });
+      setPayVisible(false);
+      return result;
+    });
   };
 
   const handleRefund = () => {
-    const refundAmount = order.amount_paid ?? order.total_amount;
+    const items = (order.items ?? [])
+      .map((item) => {
+        const canReturn = item.quantity_fulfilled - item.quantity_returned;
+        return {
+          id: item.id,
+          label: productName(item, productLabels),
+          maxQuantity: canReturn,
+          quantity: String(canReturn),
+        };
+      })
+      .filter((item) => item.maxQuantity > 0);
 
-    Alert.alert('Refund payment', `Refund ${refundAmount} in cash?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Refund',
-        style: 'destructive',
-        onPress: () => {
-          void runAction('Refund', () =>
-            refundMutation.mutateAsync({
-              orderId: order.id,
-              payload: {
-                amount: refundAmount,
-                method: 'cash',
-              },
-            }),
-          );
+    setRefundAmount(order.amount_paid ?? order.total_amount);
+    setRefundMethod('bank_transfer');
+    setRefundReference('');
+    setRefundNote('');
+    setReturnItems(items);
+    setRefundVisible(true);
+  };
+
+  const submitRefund = () => {
+    const parsedAmount = Number.parseFloat(refundAmount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      Alert.alert('Validation', 'Enter a valid refund amount.');
+      return;
+    }
+
+    const payloadReturnItems = returnItems
+      .map((item) => ({
+        sales_order_item_id: item.id,
+        quantity: Number.parseInt(item.quantity, 10),
+      }))
+      .filter((item) => Number.isFinite(item.quantity) && item.quantity > 0);
+
+    void runAction('Refund', async () => {
+      const result = await refundMutation.mutateAsync({
+        orderId: order.id,
+        payload: {
+          amount: refundAmount.trim(),
+          method: refundMethod,
+          reference: refundReference.trim() || null,
+          note: refundNote.trim() || null,
+          return_items: payloadReturnItems.length > 0 ? payloadReturnItems : undefined,
         },
-      },
-    ]);
+      });
+      setRefundVisible(false);
+      return result;
+    });
   };
 
   return (
@@ -285,6 +354,12 @@ export default function SalesOrderDetailScreen() {
         ) : null}
 
         <View style={styles.actions}>
+          {order.status === 'draft' && canUpdateSalesOrder(permissions) ? (
+            <Link href={`/(app)/sales-orders/${order.id}/edit`} style={styles.editLink}>
+              Edit draft
+            </Link>
+          ) : null}
+
           {order.status === 'draft' ? (
             <>
               <ActionButton
@@ -328,7 +403,7 @@ export default function SalesOrderDetailScreen() {
           {isSalesOrderPayable(order) && canCreatePayment(permissions) ? (
             <ActionButton
               disabled={isPending}
-              label={payMutation.isPending ? 'Processing…' : 'Pay (cash)'}
+              label={payMutation.isPending ? 'Processing…' : 'Record payment'}
               onPress={handlePay}
             />
           ) : null}
@@ -336,13 +411,68 @@ export default function SalesOrderDetailScreen() {
           {isSalesOrderRefundable(order) && canCreatePayment(permissions) ? (
             <ActionButton
               disabled={isPending}
-              label={refundMutation.isPending ? 'Processing…' : 'Refund (cash)'}
+              label={refundMutation.isPending ? 'Processing…' : 'Process refund'}
               onPress={handleRefund}
               variant="danger"
             />
           ) : null}
         </View>
       </ScrollView>
+
+      <LineItemsActionModal
+        visible={fulfillVisible}
+        title="Fulfill order"
+        items={fulfillItems}
+        note={fulfillNote}
+        submitting={fulfillMutation.isPending}
+        submitLabel="Fulfill order"
+        onChangeQuantity={(id, quantity) => {
+          setFulfillItems((current) =>
+            current.map((item) => (item.id === id ? { ...item, quantity } : item)),
+          );
+        }}
+        onChangeNote={setFulfillNote}
+        onClose={() => setFulfillVisible(false)}
+        onSubmit={submitFulfill}
+      />
+
+      <PaymentActionModal
+        visible={payVisible}
+        title="Record payment"
+        amount={payAmount}
+        method={payMethod}
+        reference={payReference}
+        note={payNote}
+        submitting={payMutation.isPending}
+        onChangeAmount={setPayAmount}
+        onChangeMethod={setPayMethod}
+        onChangeReference={setPayReference}
+        onChangeNote={setPayNote}
+        onClose={() => setPayVisible(false)}
+        onSubmit={submitPay}
+      />
+
+      <RefundActionModal
+        visible={refundVisible}
+        title="Process refund"
+        amount={refundAmount}
+        method={refundMethod}
+        reference={refundReference}
+        note={refundNote}
+        returnItems={returnItems}
+        submitting={refundMutation.isPending}
+        onChangeAmount={setRefundAmount}
+        onChangeMethod={setRefundMethod}
+        onChangeReference={setRefundReference}
+        onChangeNote={setRefundNote}
+        onChangeReturnQuantity={(id, quantity) => {
+          setReturnItems((current) =>
+            current.map((item) => (item.id === id ? { ...item, quantity } : item)),
+          );
+        }}
+        onClose={() => setRefundVisible(false)}
+        onSubmit={submitRefund}
+      />
     </>
   );
 }
@@ -484,6 +614,13 @@ const styles = StyleSheet.create({
   actions: {
     gap: 10,
     marginTop: 20,
+  },
+  editLink: {
+    color: '#2563eb',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+    textAlign: 'center',
   },
   actionButton: {
     alignItems: 'center',
