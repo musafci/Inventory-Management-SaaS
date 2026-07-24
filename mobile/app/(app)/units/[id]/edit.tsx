@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 import { Button, FormScreen, Input, LoadingState } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { useUnitsList, useUpdateUnit } from '@/src/hooks/useCatalog';
+import { useToast } from '@/src/toast/ToastContext';
 
 export default function EditUnitScreen() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function EditUnitScreen() {
   const unitId = Number(id);
   const query = useUnitsList();
   const mutation = useUpdateUnit(unitId);
+  const toast = useToast();
   const unit = query.data?.find((item) => item.id === unitId);
   const [name, setName] = useState('');
   const [symbol, setSymbol] = useState('');
@@ -27,6 +29,7 @@ export default function EditUnitScreen() {
     void (async () => {
       try {
         await mutation.mutateAsync({ name: name.trim(), symbol: symbol.trim() });
+        toast.show('Unit updated');
         router.back();
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Could not update unit.';

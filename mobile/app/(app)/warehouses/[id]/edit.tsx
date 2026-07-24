@@ -5,6 +5,7 @@ import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { Button, FormScreen, Input, LoadingState } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { useUpdateWarehouse, useWarehouses } from '@/src/hooks/useInventory';
+import { useToast } from '@/src/toast/ToastContext';
 import { theme } from '@/src/theme';
 
 export default function EditWarehouseScreen() {
@@ -13,6 +14,7 @@ export default function EditWarehouseScreen() {
   const warehouseId = Number(id);
   const query = useWarehouses();
   const mutation = useUpdateWarehouse(warehouseId);
+  const toast = useToast();
   const warehouse = query.data?.find((item) => item.id === warehouseId);
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
@@ -34,6 +36,7 @@ export default function EditWarehouseScreen() {
           address: address.trim() || null,
           is_default: isDefault,
         });
+        toast.show('Warehouse updated');
         router.back();
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Could not update warehouse.';

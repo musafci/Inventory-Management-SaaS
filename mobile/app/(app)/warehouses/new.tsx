@@ -5,11 +5,13 @@ import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { Button, FormScreen, Input } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { useCreateWarehouse } from '@/src/hooks/useInventory';
+import { useToast } from '@/src/toast/ToastContext';
 import { theme } from '@/src/theme';
 
 export default function NewWarehouseScreen() {
   const router = useRouter();
   const mutation = useCreateWarehouse();
+  const toast = useToast();
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [isDefault, setIsDefault] = useState(false);
@@ -22,6 +24,7 @@ export default function NewWarehouseScreen() {
           address: address.trim() || null,
           is_default: isDefault,
         });
+        toast.show('Warehouse created');
         router.back();
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Could not create warehouse.';

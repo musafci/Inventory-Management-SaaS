@@ -1,3 +1,4 @@
+export { AnimatedCounter } from './AnimatedCounter';
 export { AnimatedPressable } from './AnimatedPressable';
 export { NavPressable } from './NavPressable';
 export { Button } from './Button';
@@ -22,5 +23,6 @@ export { ScreenHeader } from './ScreenHeader';
 export { ScreenScrollView } from './ScreenScrollView';
 export { SearchBar } from './SearchBar';
 export { SectionHeader } from './SectionHeader';
+export { Skeleton, SkeletonCard, SkeletonMetricRow, SkeletonRow } from './Skeleton';
 export { StatusBadge } from './StatusBadge';
 export { TextAction } from './TextAction';

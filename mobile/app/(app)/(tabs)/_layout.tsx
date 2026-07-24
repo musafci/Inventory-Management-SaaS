@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
-import { Tabs } from 'expo-router';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Tabs, useRouter } from 'expo-router';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { OrgSwitcher } from '@/components/OrgSwitcher';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
@@ -13,6 +13,36 @@ import {
   canViewSales,
 } from '@/src/permissions';
 import { theme } from '@/src/theme';
+import { appIcon } from '@/src/theme/icons';
+
+function SearchButton() {
+  const router = useRouter();
+  return (
+    <Pressable
+      accessibilityLabel="Search"
+      onPress={() => router.push('/(app)/search')}
+      style={styles.searchBtn}>
+      <SymbolView
+        name={appIcon({ ios: 'magnifyingglass', android: 'search', web: 'search' })}
+        size={20}
+        tintColor={theme.colors.textSecondary}
+      />
+    </Pressable>
+  );
+}
+
+function TabIcon({ name, color, focused }: { name: { ios: string; android: string; web: string }; color: string; focused: boolean }) {
+  return (
+    <View style={styles.tabIconWrap}>
+      <SymbolView
+        name={focused ? appIcon({ ...name, ios: `${name.ios}.fill` }) : appIcon(name)}
+        tintColor={color}
+        size={24}
+      />
+      {focused ? <View style={styles.activeIndicator} /> : null}
+    </View>
+  );
+}
 
 export default function TabLayout() {
   const { permissions, user } = useAuth();
@@ -31,6 +61,7 @@ export default function TabLayout() {
         headerShadowVisible: false,
         headerRight: () => (
           <View style={styles.headerRight}>
+            <SearchButton />
             <OrgSwitcher />
           </View>
         ),
@@ -42,11 +73,7 @@ export default function TabLayout() {
           href: canViewDashboard(permissions) ? undefined : null,
           tabBarAccessibilityLabel: 'Home tab',
           tabBarIcon: ({ color, focused }) => (
-            <SymbolView
-              name={{ ios: focused ? 'house.fill' : 'house', android: 'home', web: 'home' }}
-              tintColor={color}
-              size={24}
-            />
+            <TabIcon name={{ ios: 'house', android: 'home', web: 'home' }} color={color as string} focused={focused} />
           ),
         }}
       />
@@ -57,11 +84,7 @@ export default function TabLayout() {
           href: canViewInventory(permissions) ? undefined : null,
           tabBarAccessibilityLabel: 'Inventory tab',
           tabBarIcon: ({ color, focused }) => (
-            <SymbolView
-              name={{ ios: focused ? 'shippingbox.fill' : 'shippingbox', android: 'inventory', web: 'inventory' }}
-              tintColor={color}
-              size={24}
-            />
+            <TabIcon name={{ ios: 'shippingbox', android: 'inventory', web: 'inventory' }} color={color as string} focused={focused} />
           ),
         }}
       />
@@ -71,11 +94,7 @@ export default function TabLayout() {
           title: 'Sales',
           href: canViewSales(permissions) ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
-            <SymbolView
-              name={{ ios: focused ? 'cart.fill' : 'cart', android: 'shopping_cart', web: 'shopping_cart' }}
-              tintColor={color}
-              size={24}
-            />
+            <TabIcon name={{ ios: 'cart', android: 'shopping_cart', web: 'shopping_cart' }} color={color as string} focused={focused} />
           ),
         }}
       />
@@ -85,11 +104,7 @@ export default function TabLayout() {
           title: 'Purchasing',
           href: canViewPurchasing(permissions) ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
-            <SymbolView
-              name={{ ios: focused ? 'truck.box.fill' : 'truck.box', android: 'local_shipping', web: 'local_shipping' }}
-              tintColor={color}
-              size={24}
-            />
+            <TabIcon name={{ ios: 'truck.box', android: 'local_shipping', web: 'local_shipping' }} color={color as string} focused={focused} />
           ),
         }}
       />
@@ -99,11 +114,7 @@ export default function TabLayout() {
           title: 'Reports',
           href: canViewReports(permissions) ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
-            <SymbolView
-              name={{ ios: focused ? 'chart.bar.fill' : 'chart.bar', android: 'bar_chart', web: 'bar_chart' }}
-              tintColor={color}
-              size={24}
-            />
+            <TabIcon name={{ ios: 'chart.bar', android: 'bar_chart', web: 'bar_chart' }} color={color as string} focused={focused} />
           ),
         }}
       />
@@ -113,11 +124,7 @@ export default function TabLayout() {
           title: 'More',
           tabBarAccessibilityLabel: 'More tab',
           tabBarIcon: ({ color, focused }) => (
-            <SymbolView
-              name={{ ios: focused ? 'person.crop.circle.fill' : 'person.crop.circle', android: 'account_circle', web: 'account_circle' }}
-              tintColor={color}
-              size={24}
-            />
+            <TabIcon name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} color={color as string} focused={focused} />
           ),
           headerTitle: user?.name ?? 'Account',
         }}
@@ -142,6 +149,16 @@ const styles = StyleSheet.create({
   tabBarItem: {
     paddingTop: 2,
   },
+  tabIconWrap: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  activeIndicator: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 2,
+    height: 3,
+    width: 20,
+  },
   header: {
     backgroundColor: theme.colors.background,
   },
@@ -151,6 +168,19 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   headerRight: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
     marginRight: theme.spacing.md,
+  },
+  searchBtn: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.surfaceMuted,
+    borderColor: `${theme.colors.text}0D`,
+    borderRadius: theme.radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
 });

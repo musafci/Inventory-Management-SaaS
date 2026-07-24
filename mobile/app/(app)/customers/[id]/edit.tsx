@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 import { Button, FormScreen, Input, LoadingState } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { useCustomers, useCustomersList, useUpdateCustomer } from '@/src/hooks/usePartners';
+import { useToast } from '@/src/toast/ToastContext';
 
 export default function EditCustomerScreen() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function EditCustomerScreen() {
   const customerId = Number(id);
   const query = useCustomers('');
   const mutation = useUpdateCustomer(customerId);
+  const toast = useToast();
   const customer = useCustomersList('').find((item) => item.id === customerId);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -36,6 +38,7 @@ export default function EditCustomerScreen() {
           phone: phone.trim() || null,
           address: address.trim() || null,
         });
+        toast.show('Customer updated');
         router.back();
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Could not update customer.';

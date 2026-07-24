@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, View } from 'react-native';
 import { ProductForm } from '@/components/ProductForm';
 import { ApiError } from '@/src/api/client';
 import { useProduct, useUpdateProduct } from '@/src/hooks/useProducts';
+import { useToast } from '@/src/toast/ToastContext';
 
 export default function EditProductScreen() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function EditProductScreen() {
   const productId = Number(id);
   const query = useProduct(Number.isFinite(productId) ? productId : null);
   const mutation = useUpdateProduct(productId);
+  const toast = useToast();
 
   if (query.isLoading) {
     return (
@@ -47,6 +49,7 @@ export default function EditProductScreen() {
         onSubmit={async (payload) => {
           try {
             await mutation.mutateAsync(payload);
+            toast.show('Product updated');
             router.back();
           } catch (error) {
             const message = error instanceof ApiError

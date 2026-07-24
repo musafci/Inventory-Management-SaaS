@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SymbolView } from 'expo-symbols';
 
 import {
+  AnimatedCounter,
   Card,
   MetricTile,
   QuickAction,

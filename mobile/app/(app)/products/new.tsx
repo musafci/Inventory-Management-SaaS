@@ -4,10 +4,12 @@ import { Alert } from 'react-native';
 import { ProductForm } from '@/components/ProductForm';
 import { ApiError } from '@/src/api/client';
 import { useCreateProduct } from '@/src/hooks/useProducts';
+import { useToast } from '@/src/toast/ToastContext';
 
 export default function NewProductScreen() {
   const router = useRouter();
   const mutation = useCreateProduct();
+  const toast = useToast();
 
   return (
     <>
@@ -18,6 +20,7 @@ export default function NewProductScreen() {
         onSubmit={async (payload) => {
           try {
             const product = await mutation.mutateAsync(payload);
+            toast.show('Product created');
             router.replace(`/(app)/products/${product.id}`);
           } catch (error) {
             const message = error instanceof ApiError

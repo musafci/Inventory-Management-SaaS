@@ -9,6 +9,7 @@ import {
 import { EmptyState } from './EmptyState';
 import { ScreenContainer } from './ScreenContainer';
 import { SearchBar } from './SearchBar';
+import { SkeletonRow } from './Skeleton';
 import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 import { theme } from '@/src/theme';
 
@@ -62,8 +63,10 @@ export function PaginatedListScreen<T>({
       ) : null}
 
       {isLoading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator color={theme.colors.primary} size="large" />
+        <View style={styles.skeletonList}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonRow key={i} lines={1} />
+          ))}
         </View>
       ) : (
         <OptimizedFlatList
@@ -98,11 +101,8 @@ export function PaginatedListScreen<T>({
 }
 
 const styles = StyleSheet.create({
-  centered: {
-    alignItems: 'center',
+  skeletonList: {
     flex: 1,
-    justifyContent: 'center',
-    padding: theme.spacing.xxxl,
   },
   listContent: {
     paddingBottom: theme.spacing.xl,

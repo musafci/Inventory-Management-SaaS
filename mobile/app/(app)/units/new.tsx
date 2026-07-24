@@ -5,10 +5,12 @@ import { Alert } from 'react-native';
 import { Button, FormScreen, Input } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { useCreateUnit } from '@/src/hooks/useCatalog';
+import { useToast } from '@/src/toast/ToastContext';
 
 export default function NewUnitScreen() {
   const router = useRouter();
   const mutation = useCreateUnit();
+  const toast = useToast();
   const [name, setName] = useState('');
   const [symbol, setSymbol] = useState('');
 
@@ -16,6 +18,7 @@ export default function NewUnitScreen() {
     void (async () => {
       try {
         await mutation.mutateAsync({ name: name.trim(), symbol: symbol.trim() });
+        toast.show('Unit created');
         router.back();
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Could not create unit.';

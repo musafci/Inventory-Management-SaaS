@@ -5,10 +5,12 @@ import { Alert } from 'react-native';
 import { Button, FormScreen, Input } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { useCreateCustomer } from '@/src/hooks/usePartners';
+import { useToast } from '@/src/toast/ToastContext';
 
 export default function NewCustomerScreen() {
   const router = useRouter();
   const mutation = useCreateCustomer();
+  const toast = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -23,6 +25,7 @@ export default function NewCustomerScreen() {
           phone: phone.trim() || null,
           address: address.trim() || null,
         });
+        toast.show('Customer created');
         router.back();
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Could not create customer.';

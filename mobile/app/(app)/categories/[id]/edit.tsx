@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 import { Button, FormScreen, Input, LoadingState } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { useCategoriesList, useUpdateCategory } from '@/src/hooks/useCatalog';
+import { useToast } from '@/src/toast/ToastContext';
 
 export default function EditCategoryScreen() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function EditCategoryScreen() {
   const categoryId = Number(id);
   const query = useCategoriesList();
   const mutation = useUpdateCategory(categoryId);
+  const toast = useToast();
   const category = query.data?.find((item) => item.id === categoryId);
   const [name, setName] = useState('');
 
@@ -25,6 +27,7 @@ export default function EditCategoryScreen() {
     void (async () => {
       try {
         await mutation.mutateAsync({ name: name.trim() });
+        toast.show('Category updated');
         router.back();
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Could not update category.';

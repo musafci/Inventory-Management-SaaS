@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 import { Button, FormScreen, Input, LoadingState } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { useSuppliers, useSuppliersList, useUpdateSupplier } from '@/src/hooks/usePartners';
+import { useToast } from '@/src/toast/ToastContext';
 
 export default function EditSupplierScreen() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function EditSupplierScreen() {
   const supplierId = Number(id);
   const query = useSuppliers('');
   const mutation = useUpdateSupplier(supplierId);
+  const toast = useToast();
   const supplier = useSuppliersList('').find((item) => item.id === supplierId);
   const [name, setName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
@@ -39,6 +41,7 @@ export default function EditSupplierScreen() {
           phone: phone.trim() || null,
           address: address.trim() || null,
         });
+        toast.show('Supplier updated');
         router.back();
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Could not update supplier.';

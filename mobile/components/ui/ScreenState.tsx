@@ -1,4 +1,5 @@
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
 import { EmptyState } from './EmptyState';
 import { theme } from '@/src/theme';
@@ -19,7 +20,15 @@ export function LoadingState({ message }: ScreenStateProps) {
 export function ErrorState({ message = 'Something went wrong.' }: ScreenStateProps) {
   return (
     <View style={styles.centered}>
-      <EmptyState body="Pull to refresh or try again later." title={message} />
+      <View style={styles.errorIcon}>
+        <SymbolView
+          name={{ ios: 'exclamationmark.triangle.fill', android: 'error', web: 'error' }}
+          size={28}
+          tintColor={theme.colors.danger}
+        />
+      </View>
+      <Text style={styles.errorTitle}>{message}</Text>
+      <Text style={styles.errorBody}>Pull to refresh or try again later.</Text>
     </View>
   );
 }
@@ -35,5 +44,25 @@ const styles = StyleSheet.create({
     ...theme.typography.caption,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.md,
+  },
+  errorIcon: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.dangerSoft,
+    borderRadius: theme.radius.xl,
+    height: 56,
+    justifyContent: 'center',
+    marginBottom: theme.spacing.lg,
+    width: 56,
+  },
+  errorTitle: {
+    ...theme.typography.heading,
+    color: theme.colors.text,
+    textAlign: 'center',
+  },
+  errorBody: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
+    textAlign: 'center',
   },
 });

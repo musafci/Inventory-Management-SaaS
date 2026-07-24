@@ -1,7 +1,9 @@
+import { type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SymbolView } from 'expo-symbols';
 
+import { AnimatedPressable } from './AnimatedPressable';
 import { shadow, theme, palette, accentFor, resolveAccentTone, type LegacyAccentTone, type AccentTone } from '@/src/theme';
 import { appIcon, type AppIcon } from '@/src/theme/icons';
 
@@ -25,10 +27,11 @@ const accentCircleColors: Record<AccentTone, string> = {
 
 type MetricTileProps = {
   label: string;
-  value: string;
+  value: string | ReactNode;
   meta?: string;
   tone?: LegacyAccentTone;
   icon?: AppIcon;
+  onPress?: () => void;
 };
 
 export function MetricTile({
@@ -37,12 +40,16 @@ export function MetricTile({
   meta,
   tone = 'sky',
   icon,
+  onPress,
 }: MetricTileProps) {
   const accent = accentFor(tone);
   const resolvedTone = resolveAccentTone(tone);
 
   return (
-    <View style={[styles.tile, shadow('md')]}>
+    <AnimatedPressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={[styles.tile, shadow('md')]}>
       <LinearGradient
         colors={[...accentBarColors[resolvedTone]]}
         end={{ x: 1, y: 0 }}
@@ -58,9 +65,13 @@ export function MetricTile({
         </View>
         <Text style={styles.label}>{label}</Text>
       </View>
-      <Text style={styles.value}>{value}</Text>
+      {typeof value === 'string' ? (
+        <Text style={styles.value}>{value}</Text>
+      ) : (
+        <View style={styles.value}>{value}</View>
+      )}
       {meta ? <Text style={styles.meta}>{meta}</Text> : null}
-    </View>
+    </AnimatedPressable>
   );
 }
 

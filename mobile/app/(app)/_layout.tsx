@@ -41,6 +41,7 @@ export default function AppLayout() {
       <OfflineBanner />
       <Stack screenOptions={stackScreenOptions}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="search" options={{ title: 'Search' }} />
         <Stack.Screen name="products/index" options={{ title: 'Products' }} />
         <Stack.Screen name="products/new" options={{ title: 'New product' }} />
         <Stack.Screen name="products/[id]" options={{ title: 'Product' }} />

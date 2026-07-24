@@ -5,16 +5,19 @@ import { Alert } from 'react-native';
 import { Button, FormScreen, Input } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { useCreateCategory } from '@/src/hooks/useCatalog';
+import { useToast } from '@/src/toast/ToastContext';
 
 export default function NewCategoryScreen() {
   const router = useRouter();
   const mutation = useCreateCategory();
+  const toast = useToast();
   const [name, setName] = useState('');
 
   const handleSubmit = () => {
     void (async () => {
       try {
         await mutation.mutateAsync({ name: name.trim() });
+        toast.show('Category created');
         router.back();
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Could not create category.';

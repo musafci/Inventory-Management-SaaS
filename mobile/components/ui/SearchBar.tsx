@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { Platform, StyleSheet, TextInput, View, type TextStyle, type TextInputProps } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { theme } from '@/src/theme';
+import { appIcon } from '@/src/theme/icons';
 
 type SearchBarProps = TextInputProps;
 
@@ -12,13 +13,13 @@ export function SearchBar(props: SearchBarProps) {
   return (
     <View style={[styles.wrap, focused ? styles.wrapFocused : null]}>
       <SymbolView
-        name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
+        name={appIcon({ ios: 'magnifyingglass', android: 'search', web: 'search' })}
         size={18}
         tintColor={focused ? theme.colors.primary : theme.colors.textMuted}
       />
       <TextInput
         placeholderTextColor={theme.colors.textMuted}
-        style={styles.input}
+        style={styles.input as TextStyle}
         clearButtonMode="while-editing"
         onFocus={(e) => {
           setFocused(true);
@@ -56,9 +57,12 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   input: {
+    borderColor: 'transparent',
+    borderWidth: 0,
     color: theme.colors.text,
     flex: 1,
     fontSize: 16,
     padding: 0,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
 });

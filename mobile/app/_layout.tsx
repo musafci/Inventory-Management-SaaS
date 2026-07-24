@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 import { AuthProvider } from '@/src/auth/AuthContext';
 import { NetworkProvider } from '@/src/network/NetworkContext';
 import { SyncProvider } from '@/src/sync/SyncContext';
+import { ToastProvider } from '@/src/toast/ToastContext';
 
 export {
   ErrorBoundary,
@@ -51,11 +52,13 @@ export default function RootLayout() {
       <NetworkProvider>
         <AuthProvider>
           <SyncProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(app)" />
-            </Stack>
+            <ToastProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(app)" />
+              </Stack>
+            </ToastProvider>
           </SyncProvider>
         </AuthProvider>
       </NetworkProvider>

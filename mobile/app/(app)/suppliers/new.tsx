@@ -5,10 +5,12 @@ import { Alert } from 'react-native';
 import { Button, FormScreen, Input } from '@/components/ui';
 import { ApiError } from '@/src/api/client';
 import { useCreateSupplier } from '@/src/hooks/usePartners';
+import { useToast } from '@/src/toast/ToastContext';
 
 export default function NewSupplierScreen() {
   const router = useRouter();
   const mutation = useCreateSupplier();
+  const toast = useToast();
   const [name, setName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [email, setEmail] = useState('');
@@ -25,6 +27,7 @@ export default function NewSupplierScreen() {
           phone: phone.trim() || null,
           address: address.trim() || null,
         });
+        toast.show('Supplier created');
         router.back();
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Could not create supplier.';
