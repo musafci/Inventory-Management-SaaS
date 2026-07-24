@@ -1,7 +1,12 @@
-import { Link } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useAuth } from '@/src/auth/AuthContext';
+import { canCreateCustomer } from '@/src/permissions';
+
 export default function SalesScreen() {
+  const { permissions } = useAuth();
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Sales</Text>
@@ -29,6 +34,15 @@ export default function SalesScreen() {
           <Text style={styles.cardBody}>Review payment history and transaction details.</Text>
         </Pressable>
       </Link>
+
+      {canCreateCustomer(permissions) ? (
+        <Link href={'/(app)/imports/customers' as Href} asChild>
+          <Pressable style={styles.card}>
+            <Text style={styles.cardTitle}>Import customers (CSV)</Text>
+            <Text style={styles.cardBody}>Bulk upload customers from a CSV file.</Text>
+          </Pressable>
+        </Link>
+      ) : null}
     </View>
   );
 }

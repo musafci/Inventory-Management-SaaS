@@ -7,6 +7,7 @@ export type OutboxMutation = {
   path: string;
   body: string | null;
   idempotency_key: string | null;
+  depends_on_id: number | null;
   status: OutboxStatus;
   error_message: string | null;
   created_at: string;

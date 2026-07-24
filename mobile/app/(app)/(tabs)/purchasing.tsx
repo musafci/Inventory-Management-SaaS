@@ -1,7 +1,12 @@
-import { Link } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useAuth } from '@/src/auth/AuthContext';
+import { canCreateSupplier } from '@/src/permissions';
+
 export default function PurchasingScreen() {
+  const { permissions } = useAuth();
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Purchasing</Text>
@@ -22,6 +27,15 @@ export default function PurchasingScreen() {
           <Text style={styles.cardBody}>Create orders, receive stock, and record payments.</Text>
         </Pressable>
       </Link>
+
+      {canCreateSupplier(permissions) ? (
+        <Link href={'/(app)/imports/suppliers' as Href} asChild>
+          <Pressable style={styles.card}>
+            <Text style={styles.cardTitle}>Import suppliers (CSV)</Text>
+            <Text style={styles.cardBody}>Bulk upload suppliers from a CSV file.</Text>
+          </Pressable>
+        </Link>
+      ) : null}
     </View>
   );
 }

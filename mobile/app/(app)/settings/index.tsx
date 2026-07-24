@@ -50,6 +50,12 @@ export default function SettingsHubScreen() {
       visible: canViewOrganization(permissions),
     },
     {
+      href: '/(app)/settings/notifications' as Href,
+      title: 'Notifications',
+      body: 'Push notification preferences.',
+      visible: canViewOrganization(permissions),
+    },
+    {
       href: '/(app)/settings/sync',
       title: 'Sync status',
       body: 'Pending changes and manual sync.',

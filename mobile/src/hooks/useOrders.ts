@@ -23,6 +23,7 @@ import {
 import { upsertPayments } from '@/src/db/paymentsCache';
 import { enqueueMutation } from '@/src/db/outbox';
 import { useNetwork } from '@/src/network/NetworkContext';
+import { enqueueOrExecute } from '@/src/sync/enqueueOrExecute';
 import { generateIdempotencyKey } from '@/src/utils/idempotency';
 
 export function usePurchaseOrders(search: string) {
@@ -354,17 +355,24 @@ export function useDeleteSalesOrder() {
 export function useSendPurchaseOrder() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
+  const { isConnected } = useNetwork();
 
   return useMutation({
-    mutationFn: (orderId: number) => {
+    mutationFn: async (orderId: number) => {
       if (organizationId === null) {
         throw new Error('No active organization.');
       }
 
-      return ordersApi.sendPurchaseOrder(orderId, organizationId);
+      return enqueueOrExecute({
+        organizationId,
+        isConnected,
+        method: 'POST',
+        path: `/v1/purchase-orders/${orderId}/send`,
+        onlineFn: () => ordersApi.sendPurchaseOrder(orderId, organizationId),
+      });
     },
     onSuccess: async (order) => {
-      if (organizationId !== null) {
+      if (organizationId !== null && order) {
         await upsertPurchaseOrders(organizationId, [order]);
       }
 
@@ -377,17 +385,24 @@ export function useSendPurchaseOrder() {
 export function useCancelPurchaseOrder() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
+  const { isConnected } = useNetwork();
 
   return useMutation({
-    mutationFn: (orderId: number) => {
+    mutationFn: async (orderId: number) => {
       if (organizationId === null) {
         throw new Error('No active organization.');
       }
 
-      return ordersApi.cancelPurchaseOrder(orderId, organizationId);
+      return enqueueOrExecute({
+        organizationId,
+        isConnected,
+        method: 'POST',
+        path: `/v1/purchase-orders/${orderId}/cancel`,
+        onlineFn: () => ordersApi.cancelPurchaseOrder(orderId, organizationId),
+      });
     },
     onSuccess: async (order) => {
-      if (organizationId !== null) {
+      if (organizationId !== null && order) {
         await upsertPurchaseOrders(organizationId, [order]);
       }
 
@@ -400,14 +415,22 @@ export function useCancelPurchaseOrder() {
 export function useReceivePurchaseOrder() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
+  const { isConnected } = useNetwork();
 
   return useMutation({
-    mutationFn: ({ orderId, payload }: { orderId: number; payload: ReceivePurchaseOrderPayload }) => {
+    mutationFn: async ({ orderId, payload }: { orderId: number; payload: ReceivePurchaseOrderPayload }) => {
       if (organizationId === null) {
         throw new Error('No active organization.');
       }
 
-      return ordersApi.receivePurchaseOrder(orderId, payload, organizationId);
+      return enqueueOrExecute({
+        organizationId,
+        isConnected,
+        method: 'POST',
+        path: `/v1/purchase-orders/${orderId}/receive`,
+        body: payload,
+        onlineFn: () => ordersApi.receivePurchaseOrder(orderId, payload, organizationId),
+      });
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
@@ -421,17 +444,25 @@ export function useReceivePurchaseOrder() {
 export function usePayPurchaseOrder() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
+  const { isConnected } = useNetwork();
 
   return useMutation({
-    mutationFn: ({ orderId, payload }: { orderId: number; payload: PaymentPayload }) => {
+    mutationFn: async ({ orderId, payload }: { orderId: number; payload: PaymentPayload }) => {
       if (organizationId === null) {
         throw new Error('No active organization.');
       }
 
-      return ordersApi.payPurchaseOrder(orderId, payload, organizationId);
+      return enqueueOrExecute({
+        organizationId,
+        isConnected,
+        method: 'POST',
+        path: `/v1/purchase-orders/${orderId}/pay`,
+        body: payload,
+        onlineFn: () => ordersApi.payPurchaseOrder(orderId, payload, organizationId),
+      });
     },
     onSuccess: async (payment) => {
-      if (organizationId !== null) {
+      if (organizationId !== null && payment) {
         await upsertPayments(organizationId, [payment]);
       }
 
@@ -445,17 +476,24 @@ export function usePayPurchaseOrder() {
 export function useConfirmSalesOrder() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
+  const { isConnected } = useNetwork();
 
   return useMutation({
-    mutationFn: (orderId: number) => {
+    mutationFn: async (orderId: number) => {
       if (organizationId === null) {
         throw new Error('No active organization.');
       }
 
-      return ordersApi.confirmSalesOrder(orderId, organizationId);
+      return enqueueOrExecute({
+        organizationId,
+        isConnected,
+        method: 'POST',
+        path: `/v1/sales-orders/${orderId}/confirm`,
+        onlineFn: () => ordersApi.confirmSalesOrder(orderId, organizationId),
+      });
     },
     onSuccess: async (order) => {
-      if (organizationId !== null) {
+      if (organizationId !== null && order) {
         await upsertSalesOrders(organizationId, [order]);
       }
 
@@ -468,17 +506,24 @@ export function useConfirmSalesOrder() {
 export function useCancelSalesOrder() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
+  const { isConnected } = useNetwork();
 
   return useMutation({
-    mutationFn: (orderId: number) => {
+    mutationFn: async (orderId: number) => {
       if (organizationId === null) {
         throw new Error('No active organization.');
       }
 
-      return ordersApi.cancelSalesOrder(orderId, organizationId);
+      return enqueueOrExecute({
+        organizationId,
+        isConnected,
+        method: 'POST',
+        path: `/v1/sales-orders/${orderId}/cancel`,
+        onlineFn: () => ordersApi.cancelSalesOrder(orderId, organizationId),
+      });
     },
     onSuccess: async (order) => {
-      if (organizationId !== null) {
+      if (organizationId !== null && order) {
         await upsertSalesOrders(organizationId, [order]);
       }
 
@@ -491,14 +536,22 @@ export function useCancelSalesOrder() {
 export function useFulfillSalesOrder() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
+  const { isConnected } = useNetwork();
 
   return useMutation({
-    mutationFn: ({ orderId, payload }: { orderId: number; payload: FulfillSalesOrderPayload }) => {
+    mutationFn: async ({ orderId, payload }: { orderId: number; payload: FulfillSalesOrderPayload }) => {
       if (organizationId === null) {
         throw new Error('No active organization.');
       }
 
-      return ordersApi.fulfillSalesOrder(orderId, payload, organizationId);
+      return enqueueOrExecute({
+        organizationId,
+        isConnected,
+        method: 'POST',
+        path: `/v1/sales-orders/${orderId}/fulfill`,
+        body: payload,
+        onlineFn: () => ordersApi.fulfillSalesOrder(orderId, payload, organizationId),
+      });
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
@@ -512,17 +565,24 @@ export function useFulfillSalesOrder() {
 export function useDeliverSalesOrder() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
+  const { isConnected } = useNetwork();
 
   return useMutation({
-    mutationFn: (orderId: number) => {
+    mutationFn: async (orderId: number) => {
       if (organizationId === null) {
         throw new Error('No active organization.');
       }
 
-      return ordersApi.deliverSalesOrder(orderId, organizationId);
+      return enqueueOrExecute({
+        organizationId,
+        isConnected,
+        method: 'POST',
+        path: `/v1/sales-orders/${orderId}/deliver`,
+        onlineFn: () => ordersApi.deliverSalesOrder(orderId, organizationId),
+      });
     },
     onSuccess: async (order) => {
-      if (organizationId !== null) {
+      if (organizationId !== null && order) {
         await upsertSalesOrders(organizationId, [order]);
       }
 
@@ -535,17 +595,25 @@ export function useDeliverSalesOrder() {
 export function usePaySalesOrder() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
+  const { isConnected } = useNetwork();
 
   return useMutation({
-    mutationFn: ({ orderId, payload }: { orderId: number; payload: PaymentPayload }) => {
+    mutationFn: async ({ orderId, payload }: { orderId: number; payload: PaymentPayload }) => {
       if (organizationId === null) {
         throw new Error('No active organization.');
       }
 
-      return ordersApi.paySalesOrder(orderId, payload, organizationId);
+      return enqueueOrExecute({
+        organizationId,
+        isConnected,
+        method: 'POST',
+        path: `/v1/sales-orders/${orderId}/pay`,
+        body: payload,
+        onlineFn: () => ordersApi.paySalesOrder(orderId, payload, organizationId),
+      });
     },
     onSuccess: async (payment) => {
-      if (organizationId !== null) {
+      if (organizationId !== null && payment) {
         await upsertPayments(organizationId, [payment]);
       }
 
@@ -559,17 +627,25 @@ export function usePaySalesOrder() {
 export function useRefundSalesOrder() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
+  const { isConnected } = useNetwork();
 
   return useMutation({
-    mutationFn: ({ orderId, payload }: { orderId: number; payload: RefundPayload }) => {
+    mutationFn: async ({ orderId, payload }: { orderId: number; payload: RefundPayload }) => {
       if (organizationId === null) {
         throw new Error('No active organization.');
       }
 
-      return ordersApi.refundSalesOrder(orderId, payload, organizationId);
+      return enqueueOrExecute({
+        organizationId,
+        isConnected,
+        method: 'POST',
+        path: `/v1/sales-orders/${orderId}/refund`,
+        body: payload,
+        onlineFn: () => ordersApi.refundSalesOrder(orderId, payload, organizationId),
+      });
     },
     onSuccess: async (payment) => {
-      if (organizationId !== null) {
+      if (organizationId !== null && payment) {
         await upsertPayments(organizationId, [payment]);
       }
 

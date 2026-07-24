@@ -1,7 +1,12 @@
-import { Link } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useAuth } from '@/src/auth/AuthContext';
+import { canCreateInventory } from '@/src/permissions';
+
 export default function InventoryScreen() {
+  const { permissions } = useAuth();
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Inventory</Text>
@@ -43,6 +48,15 @@ export default function InventoryScreen() {
           <Text style={styles.cardBody}>Manage measurement units for products.</Text>
         </Pressable>
       </Link>
+
+      {canCreateInventory(permissions) ? (
+        <Link href={'/(app)/imports/products' as Href} asChild>
+          <Pressable style={styles.card}>
+            <Text style={styles.cardTitle}>Import products (CSV)</Text>
+            <Text style={styles.cardBody}>Bulk upload products from a CSV file.</Text>
+          </Pressable>
+        </Link>
+      ) : null}
     </View>
   );
 }

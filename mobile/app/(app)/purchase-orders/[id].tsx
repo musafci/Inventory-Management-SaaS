@@ -14,6 +14,7 @@ import {
 import { ApiError } from '@/src/api/client';
 import type { PurchaseOrder, PurchaseOrderItem } from '@/src/api/types';
 import { useAuth } from '@/src/auth/AuthContext';
+import { shareOrderPrintHtml } from '@/src/utils/shareOrderPrint';
 import { useInventoryLabels } from '@/src/hooks/useInventory';
 import {
   useCancelPurchaseOrder,
@@ -46,7 +47,7 @@ function productName(
 }
 
 export default function PurchaseOrderDetailScreen() {
-  const { permissions } = useAuth();
+  const { permissions, organizationId } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const orderId = Number(id);
   const query = usePurchaseOrder(Number.isFinite(orderId) ? orderId : null);
@@ -67,7 +68,13 @@ export default function PurchaseOrderDetailScreen() {
 
   const runAction = async (label: string, action: () => Promise<unknown>) => {
     try {
-      await action();
+      const result = await action();
+
+      if (result === null) {
+        Alert.alert('Queued offline', `${label} will run when you reconnect.`);
+        return;
+      }
+
       await query.refetch();
     } catch (error) {
       const message = error instanceof ApiError ? error.message : `${label} failed.`;
@@ -193,6 +200,22 @@ export default function PurchaseOrderDetailScreen() {
           <Text style={styles.statusBadge}>{formatStatus(order.status)}</Text>
           <Text style={styles.metaText}>Order date: {order.order_date}</Text>
         </View>
+
+        {organizationId !== null ? (
+          <Pressable
+            onPress={() => {
+              void shareOrderPrintHtml(
+                `/v1/purchase-orders/${order.id}/print`,
+                `purchase-order-${order.id}.html`,
+                organizationId,
+              ).catch((error: Error) => {
+                Alert.alert('Print failed', error.message);
+              });
+            }}
+            style={styles.printButton}>
+            <Text style={styles.printButtonText}>Share / print</Text>
+          </Pressable>
+        ) : null}
 
         <DetailRow label="Supplier" value={order.supplier?.name ?? `#${order.supplier_id}`} />
         <DetailRow label="Warehouse" value={warehouseLabels.get(order.warehouse_id) ?? `#${order.warehouse_id}`} />
@@ -327,6 +350,19 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
     marginBottom: 16,
+  },
+  printButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#e2e8f0',
+    borderRadius: 8,
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  printButtonText: {
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '600',
   },
   statusBadge: {
     backgroundColor: '#dbeafe',

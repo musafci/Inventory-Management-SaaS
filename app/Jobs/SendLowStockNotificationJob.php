@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\User;
 use App\Notifications\LowStockNotification;
 use App\Services\ExpoPushService;
+use App\Services\NotificationPreferenceService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +28,7 @@ class SendLowStockNotificationJob implements ShouldQueue
         public int $reorderPoint,
     ) {}
 
-    public function handle(ExpoPushService $expoPushService): void
+    public function handle(ExpoPushService $expoPushService, NotificationPreferenceService $preferenceService): void
     {
         if ($this->recentAlertExists()) {
             return;
@@ -41,6 +42,16 @@ class SendLowStockNotificationJob implements ShouldQueue
             })
             ->role(self::MANAGER_PLUS_ROLES)
             ->get();
+
+        $recipients = $preferenceService->filterEnabledRecipients(
+            $recipients,
+            $this->organizationId,
+            'low_stock',
+        );
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
 
         $notification = new LowStockNotification(
             organizationId: $this->organizationId,

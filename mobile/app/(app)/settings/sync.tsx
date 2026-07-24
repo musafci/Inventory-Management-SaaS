@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useSync } from '@/src/sync/SyncContext';
 
@@ -12,7 +12,16 @@ function formatSyncedAt(value: string | null): string {
 }
 
 export default function SyncSettingsScreen() {
-  const { isReady, isSyncing, pendingOutboxCount, lastSyncedAt, syncNow } = useSync();
+  const {
+    isReady,
+    isSyncing,
+    pendingOutboxCount,
+    failedMutations,
+    lastSyncedAt,
+    syncNow,
+    retryMutation,
+    dismissMutation,
+  } = useSync();
 
   return (
     <>
@@ -44,6 +53,51 @@ export default function SyncSettingsScreen() {
             {isSyncing ? 'Syncing…' : 'Sync now'}
           </Text>
         </Pressable>
+
+        {failedMutations.length > 0 ? (
+          <View style={styles.failedSection}>
+            <Text style={styles.failedTitle}>Failed changes</Text>
+            <Text style={styles.failedDescription}>
+              These queued actions could not be applied. Retry after fixing the issue, or dismiss to remove them.
+            </Text>
+            <FlatList
+              data={failedMutations}
+              keyExtractor={(item) => String(item.id)}
+              scrollEnabled={false}
+              renderItem={({ item }) => (
+                <View style={styles.failedCard}>
+                  <Text style={styles.failedMethod}>{item.method} {item.path}</Text>
+                  <Text style={styles.failedError}>{item.error_message ?? 'Unknown error'}</Text>
+                  <View style={styles.failedActions}>
+                    <Pressable
+                      onPress={() => {
+                        void retryMutation(item.id);
+                      }}
+                      style={styles.retryButton}>
+                      <Text style={styles.retryText}>Retry</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        Alert.alert('Dismiss change', 'Remove this failed mutation from the queue?', [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Dismiss',
+                            style: 'destructive',
+                            onPress: () => {
+                              void dismissMutation(item.id);
+                            },
+                          },
+                        ]);
+                      }}
+                      style={styles.dismissButton}>
+                      <Text style={styles.dismissText}>Dismiss</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+            />
+          </View>
+        ) : null}
       </View>
     </>
   );
@@ -94,5 +148,66 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  failedSection: {
+    marginTop: 20,
+  },
+  failedTitle: {
+    color: '#0f172a',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  failedDescription: {
+    color: '#64748b',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+    marginTop: 6,
+  },
+  failedCard: {
+    backgroundColor: '#fff',
+    borderColor: '#fecaca',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 10,
+    padding: 14,
+  },
+  failedMethod: {
+    color: '#0f172a',
+    fontFamily: 'SpaceMono',
+    fontSize: 12,
+  },
+  failedError: {
+    color: '#b91c1c',
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 8,
+  },
+  failedActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+  },
+  retryButton: {
+    backgroundColor: '#dbeafe',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  retryText: {
+    color: '#1d4ed8',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  dismissButton: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  dismissText: {
+    color: '#b91c1c',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

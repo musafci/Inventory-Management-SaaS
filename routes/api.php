@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\V1\OrganizationMemberController;
 use App\Http\Controllers\Api\V1\ReportExportController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\DevicePushTokenController;
+use App\Http\Controllers\Api\V1\NotificationPreferenceController;
+use App\Http\Controllers\Api\V1\OrderPrintController;
 use App\Http\Controllers\Api\V1\ProductAuthorizationProbeController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\StockController;
@@ -72,6 +74,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('purchase-orders/{purchaseOrderId}/cancel', [PurchaseOrderController::class, 'cancel']);
         Route::post('purchase-orders/{purchaseOrderId}/receive', [PurchaseOrderController::class, 'receive']);
         Route::post('purchase-orders/{purchaseOrderId}/pay', [PurchaseOrderController::class, 'pay']);
+        Route::get('purchase-orders/{purchaseOrderId}/print', [OrderPrintController::class, 'purchaseOrder']);
 
         Route::get('payments', [PaymentController::class, 'index']);
         Route::get('payments/{paymentId}', [PaymentController::class, 'show']);
@@ -113,6 +116,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('sales-orders/{salesOrderId}/deliver', [SalesOrderController::class, 'deliver']);
         Route::post('sales-orders/{salesOrderId}/pay', [SalesOrderController::class, 'pay']);
         Route::post('sales-orders/{salesOrderId}/refund', [SalesOrderController::class, 'refund']);
+        Route::get('sales-orders/{salesOrderId}/print', [OrderPrintController::class, 'salesOrder']);
 
         Route::post('products/authorization-probe', [ProductAuthorizationProbeController::class, 'store'])
             ->middleware('permission:inventory.create,api');
@@ -146,5 +150,8 @@ Route::prefix('v1')->group(function (): void {
             Route::get('exports/{exportId}', [ReportExportController::class, 'show']);
             Route::get('exports/{exportId}/download', [ReportExportController::class, 'download']);
         });
+
+        Route::get('notifications/preferences', [NotificationPreferenceController::class, 'show']);
+        Route::patch('notifications/preferences', [NotificationPreferenceController::class, 'update']);
     });
 });

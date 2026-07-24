@@ -55,6 +55,9 @@ export default function AppLayout() {
         <Stack.Screen name="sales-orders/[id]" options={{ title: 'Sales order' }} />
         <Stack.Screen name="payments/index" options={{ title: 'Payments' }} />
         <Stack.Screen name="payments/[id]" options={{ title: 'Payment' }} />
+        <Stack.Screen name="imports/products" options={{ title: 'Import products' }} />
+        <Stack.Screen name="imports/customers" options={{ title: 'Import customers' }} />
+        <Stack.Screen name="imports/suppliers" options={{ title: 'Import suppliers' }} />
         <Stack.Screen name="reports/stock-valuation" options={{ title: 'Stock valuation' }} />
         <Stack.Screen name="reports/low-stock" options={{ title: 'Low stock' }} />
         <Stack.Screen name="reports/sales-summary" options={{ title: 'Sales summary' }} />
@@ -69,6 +72,7 @@ export default function AppLayout() {
         <Stack.Screen name="settings/roles/new" options={{ title: 'New role' }} />
         <Stack.Screen name="settings/roles/[id]/edit" options={{ title: 'Edit role' }} />
         <Stack.Screen name="settings/privacy" options={{ title: 'Privacy & data' }} />
+        <Stack.Screen name="settings/notifications" options={{ title: 'Notifications' }} />
         <Stack.Screen name="settings/sync" options={{ title: 'Sync status' }} />
       </Stack>
     </>

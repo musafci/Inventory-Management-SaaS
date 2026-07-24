@@ -16,6 +16,20 @@ async function migrate(db: SQLiteDatabase): Promise<void> {
 
   if (!row) {
     await db.runAsync('INSERT INTO schema_version (version) VALUES (?)', SCHEMA_VERSION);
+    return;
+  }
+
+  if (row.version < 4) {
+    const columns = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(outbox_mutations)',
+    );
+    const hasDependsOn = columns.some((column) => column.name === 'depends_on_id');
+
+    if (!hasDependsOn) {
+      await db.execAsync('ALTER TABLE outbox_mutations ADD COLUMN depends_on_id INTEGER');
+    }
+
+    await db.runAsync('UPDATE schema_version SET version = ?', SCHEMA_VERSION);
   }
 }
 

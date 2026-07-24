@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export const MIGRATION_SQL = `
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS outbox_mutations (
   path TEXT NOT NULL,
   body TEXT,
   idempotency_key TEXT,
+  depends_on_id INTEGER,
   status TEXT NOT NULL DEFAULT 'pending',
   error_message TEXT,
   created_at TEXT NOT NULL,
