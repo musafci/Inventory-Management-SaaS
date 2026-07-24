@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Unit;
 use App\Support\ListSearch;
+use App\Support\SyncFilters;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -19,7 +20,10 @@ class UnitService
         ListSearch::applyToColumns($query, ['name', 'symbol']);
 
         return QueryBuilder::for($query)
-            ->allowedFilters(AllowedFilter::partial('name'))
+            ->allowedFilters(
+                AllowedFilter::partial('name'),
+                SyncFilters::updatedAfter(),
+            )
             ->allowedSorts('name')
             ->defaultSort('name')
             ->paginate(request()->integer('per_page', 15));

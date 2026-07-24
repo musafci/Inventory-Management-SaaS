@@ -129,7 +129,16 @@ export function SalesOrderForm({ onSuccess }: SalesOrderFormProps) {
 
     try {
       const order = await mutation.mutateAsync(payload);
-      onSuccess(order.id);
+
+      if (order) {
+        onSuccess(order.id);
+      } else {
+        Alert.alert(
+          'Queued offline',
+          'Sales order will be created when you reconnect.',
+        );
+        onSuccess(0);
+      }
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Could not create sales order.';
       Alert.alert('Create failed', message);

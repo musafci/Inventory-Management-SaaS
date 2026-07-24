@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\OrganizationController;
 use App\Http\Controllers\Api\V1\OrganizationMemberController;
 use App\Http\Controllers\Api\V1\ReportExportController;
 use App\Http\Controllers\Api\V1\RoleController;
+use App\Http\Controllers\Api\V1\DevicePushTokenController;
 use App\Http\Controllers\Api\V1\ProductAuthorizationProbeController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\StockController;
@@ -49,6 +50,11 @@ Route::prefix('v1')->group(function (): void {
             Route::get('sessions', [AuthController::class, 'sessions']);
             Route::delete('sessions/{tokenId}', [AuthController::class, 'revokeSession']);
         });
+    });
+
+    Route::middleware('auth:api')->group(function (): void {
+        Route::post('devices/push-token', [DevicePushTokenController::class, 'store']);
+        Route::delete('devices/push-token', [DevicePushTokenController::class, 'destroy']);
     });
 
     Route::middleware(['auth:api', 'tenant', 'throttle:api-tenant'])->group(function (): void {

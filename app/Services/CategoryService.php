@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Support\ListSearch;
+use App\Support\SyncFilters;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -21,7 +22,10 @@ class CategoryService
         ListSearch::applyToColumns($query, ['name', 'slug']);
 
         return QueryBuilder::for($query)
-            ->allowedFilters(AllowedFilter::partial('name'))
+            ->allowedFilters(
+                AllowedFilter::partial('name'),
+                SyncFilters::updatedAfter(),
+            )
             ->allowedSorts('name')
             ->defaultSort('name')
             ->paginate(request()->integer('per_page', 15));

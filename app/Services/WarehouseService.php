@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Warehouse;
 use App\Services\PlanLimitService;
 use App\Support\ListSearch;
+use App\Support\SyncFilters;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -25,7 +26,10 @@ class WarehouseService
         ListSearch::applyToColumns($query, ['name', 'address']);
 
         return QueryBuilder::for($query)
-            ->allowedFilters(AllowedFilter::partial('name'))
+            ->allowedFilters(
+                AllowedFilter::partial('name'),
+                SyncFilters::updatedAfter(),
+            )
             ->allowedSorts('name')
             ->defaultSort('name')
             ->paginate(request()->integer('per_page', 15));

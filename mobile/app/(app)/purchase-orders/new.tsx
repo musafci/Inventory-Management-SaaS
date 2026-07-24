@@ -10,7 +10,11 @@ export default function NewPurchaseOrderScreen() {
       <Stack.Screen options={{ title: 'New purchase order' }} />
       <PurchaseOrderForm
         onSuccess={(orderId) => {
-          router.replace(`/(app)/purchase-orders/${orderId}`);
+          if (orderId > 0) {
+            router.replace(`/(app)/purchase-orders/${orderId}`);
+          } else {
+            router.back();
+          }
         }}
       />
     </>

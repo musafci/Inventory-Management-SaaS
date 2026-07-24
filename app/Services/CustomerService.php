@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Support\ListSearch;
+use App\Support\SyncFilters;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -20,7 +21,11 @@ class CustomerService
         ListSearch::applyToColumns($query, ['name', 'email', 'phone', 'address']);
 
         return QueryBuilder::for($query)
-            ->allowedFilters(AllowedFilter::partial('name'), AllowedFilter::partial('email'))
+            ->allowedFilters(
+                AllowedFilter::partial('name'),
+                AllowedFilter::partial('email'),
+                SyncFilters::updatedAfter(),
+            )
             ->allowedSorts('name')
             ->defaultSort('name')
             ->paginate(request()->integer('per_page', 15));

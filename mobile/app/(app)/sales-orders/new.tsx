@@ -10,7 +10,11 @@ export default function NewSalesOrderScreen() {
       <Stack.Screen options={{ title: 'New sales order' }} />
       <SalesOrderForm
         onSuccess={(orderId) => {
-          router.replace(`/(app)/sales-orders/${orderId}`);
+          if (orderId > 0) {
+            router.replace(`/(app)/sales-orders/${orderId}`);
+          } else {
+            router.back();
+          }
         }}
       />
     </>

@@ -115,3 +115,35 @@ export function canUpdatePayment(permissions: string[]): boolean {
 export function canDeletePayment(permissions: string[]): boolean {
   return can(permissions, 'orders.sales.refund');
 }
+
+export function canViewInventoryReports(permissions: string[]): boolean {
+  return can(permissions, 'reports.view_inventory');
+}
+
+export function canViewSalesReports(permissions: string[]): boolean {
+  return can(permissions, 'reports.view_sales');
+}
+
+export function canViewPurchaseReports(permissions: string[]): boolean {
+  return can(permissions, 'reports.view_purchases');
+}
+
+export function canExportReports(permissions: string[]): boolean {
+  return can(permissions, 'reports.export');
+}
+
+export function canViewOrganization(permissions: string[]): boolean {
+  return can(permissions, 'settings.view');
+}
+
+export function canUpdateOrganization(permissions: string[]): boolean {
+  return can(permissions, 'settings.update');
+}
+
+export function canManageUsers(permissions: string[]): boolean {
+  return can(permissions, 'settings.manage_users');
+}
+
+export function canManageRoles(permissions: string[]): boolean {
+  return can(permissions, 'settings.manage_roles');
+}

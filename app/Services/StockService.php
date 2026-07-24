@@ -8,6 +8,7 @@ use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
 use App\Support\ListSearch;
+use App\Support\SyncFilters;
 use App\Support\UniqueConstraintViolation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -134,6 +135,7 @@ class StockService
             ->allowedFilters(
                 AllowedFilter::exact('warehouse_id'),
                 AllowedFilter::exact('product_id'),
+                SyncFilters::updatedAfter(),
                 AllowedFilter::callback('low_stock', function (Builder $query, mixed $value): void {
                     if (! filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
                         return;
@@ -172,6 +174,7 @@ class StockService
                 AllowedFilter::exact('warehouse_id'),
                 AllowedFilter::exact('product_id'),
                 AllowedFilter::exact('type'),
+                SyncFilters::updatedAfter(),
                 AllowedFilter::callback('created_from', function (Builder $query, mixed $value): void {
                     if (is_string($value) && $value !== '') {
                         $query->whereDate('created_at', '>=', $value);

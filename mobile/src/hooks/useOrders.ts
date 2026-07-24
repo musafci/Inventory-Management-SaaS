@@ -21,6 +21,7 @@ import {
   upsertSalesOrders,
 } from '@/src/db/ordersCache';
 import { upsertPayments } from '@/src/db/paymentsCache';
+import { enqueueMutation } from '@/src/db/outbox';
 import { useNetwork } from '@/src/network/NetworkContext';
 import { generateIdempotencyKey } from '@/src/utils/idempotency';
 
@@ -189,17 +190,32 @@ export function useSalesOrder(orderId: number | null) {
 export function useCreatePurchaseOrder() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
+  const { isConnected } = useNetwork();
 
   return useMutation({
-    mutationFn: (payload: PurchaseOrderPayload) => {
+    mutationFn: async (payload: PurchaseOrderPayload) => {
       if (organizationId === null) {
         throw new Error('No active organization.');
       }
 
-      return ordersApi.createPurchaseOrder(payload, organizationId, generateIdempotencyKey());
+      const idempotencyKey = generateIdempotencyKey();
+
+      if (!isConnected) {
+        await enqueueMutation({
+          organizationId,
+          method: 'POST',
+          path: '/v1/purchase-orders',
+          body: payload,
+          idempotencyKey,
+        });
+
+        return null;
+      }
+
+      return ordersApi.createPurchaseOrder(payload, organizationId, idempotencyKey);
     },
     onSuccess: async (order) => {
-      if (organizationId !== null) {
+      if (organizationId !== null && order) {
         await upsertPurchaseOrders(organizationId, [order]);
       }
 
@@ -211,17 +227,32 @@ export function useCreatePurchaseOrder() {
 export function useCreateSalesOrder() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
+  const { isConnected } = useNetwork();
 
   return useMutation({
-    mutationFn: (payload: SalesOrderPayload) => {
+    mutationFn: async (payload: SalesOrderPayload) => {
       if (organizationId === null) {
         throw new Error('No active organization.');
       }
 
-      return ordersApi.createSalesOrder(payload, organizationId, generateIdempotencyKey());
+      const idempotencyKey = generateIdempotencyKey();
+
+      if (!isConnected) {
+        await enqueueMutation({
+          organizationId,
+          method: 'POST',
+          path: '/v1/sales-orders',
+          body: payload,
+          idempotencyKey,
+        });
+
+        return null;
+      }
+
+      return ordersApi.createSalesOrder(payload, organizationId, idempotencyKey);
     },
     onSuccess: async (order) => {
-      if (organizationId !== null) {
+      if (organizationId !== null && order) {
         await upsertSalesOrders(organizationId, [order]);
       }
 

@@ -346,3 +346,165 @@ export type RefundPayload = {
   note?: string | null;
   paid_at?: string | null;
 };
+
+export type DashboardStats = {
+  total_products: number;
+  total_stock_items: number;
+  stock_value: string;
+  low_stock_count: number;
+  pending_purchase_orders: number;
+  pending_sales_orders: number;
+};
+
+export type StockValuationReport = {
+  total_value: string;
+  total_units: number;
+  by_warehouse: Array<{
+    warehouse_id: number;
+    warehouse_name: string;
+    total_value: string;
+    total_units: number;
+  }>;
+};
+
+export type LowStockItem = {
+  stock_id: number;
+  warehouse_id: number;
+  warehouse_name: string;
+  product_id: number;
+  product_name: string;
+  sku: string;
+  quantity_on_hand: number;
+  quantity_reserved: number;
+  quantity_available: number;
+  reorder_point: number;
+};
+
+export type OrderSummaryReport = {
+  filters: {
+    order_date: { from: string | null; to: string | null };
+    payment_date: { from: string | null; to: string | null };
+  };
+  order_count: number;
+  total_amount: string;
+  by_status: Array<{
+    status: string;
+    order_count: number;
+    total_amount: string;
+  }>;
+  payments_received: string;
+};
+
+export type ReportExportType =
+  | 'stock_valuation'
+  | 'low_stock'
+  | 'sales_summary'
+  | 'purchase_summary';
+
+export type ReportExport = {
+  id: number;
+  type: string;
+  status: string;
+  file_path: string | null;
+  error_message: string | null;
+  completed_at: string | null;
+  created_at: string | null;
+};
+
+export type OrganizationDetail = {
+  id: number;
+  name: string;
+  slug: string;
+  email: string;
+  phone: string | null;
+  plan: string;
+  status: string;
+  trial_ends_at: string | null;
+  deletion_requested_at: string | null;
+  deletion_scheduled_for: string | null;
+  users_count?: number;
+  role?: string;
+};
+
+export type OrganizationPayload = {
+  name?: string;
+  email?: string;
+  phone?: string | null;
+};
+
+export type OrganizationMember = {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  status: string;
+  role: string | null;
+  last_login_at: string | null;
+};
+
+export type OrganizationMemberPayload = {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string | null;
+  role: string;
+};
+
+export type Role = {
+  id: number;
+  name: string;
+  description: string | null;
+  is_protected: boolean;
+  is_system: boolean;
+  users_count?: number;
+  permissions?: string[];
+};
+
+export type RolePayload = {
+  name: string;
+  description?: string | null;
+  permissions: string[];
+};
+
+export type PermissionGroups = Record<string, string[]>;
+
+export type Plan = {
+  id: number;
+  slug: string;
+  name: string;
+  price_monthly: string;
+  price_annual: string;
+  limits: Record<string, unknown>;
+  is_custom: boolean;
+  grace_buffer_percent: number;
+  sort_order: number;
+  is_active: boolean;
+};
+
+export type OrganizationSubscription = {
+  id: number;
+  organization_id: number;
+  plan_id: number;
+  status: string;
+  trial_ends_at: string | null;
+  current_period_ends_at: string | null;
+  billing_interval: string | null;
+  plan?: Plan;
+};
+
+export type BillingOverview = {
+  subscription: OrganizationSubscription | null;
+  available_plans: Plan[];
+  stripe_configured: boolean;
+};
+
+export type CheckoutSession = {
+  url: string;
+};
+
+export type OrganizationDataExport = {
+  id: number;
+  status: string;
+  completed_at: string | null;
+  error_message: string | null;
+};

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Product;
 use App\Services\PlanLimitService;
 use App\Support\ListSearch;
+use App\Support\SyncFilters;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -27,6 +28,7 @@ class ProductService
             ->allowedFilters(
                 AllowedFilter::exact('category_id'),
                 AllowedFilter::partial('sku'),
+                SyncFilters::updatedAfter(),
             )
             ->allowedSorts('name')
             ->defaultSort('name')

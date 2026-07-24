@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\User;
 use App\Notifications\LowStockNotification;
+use App\Services\ExpoPushService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,7 @@ class SendLowStockNotificationJob implements ShouldQueue
         public int $reorderPoint,
     ) {}
 
-    public function handle(): void
+    public function handle(ExpoPushService $expoPushService): void
     {
         if ($this->recentAlertExists()) {
             return;
@@ -53,6 +54,19 @@ class SendLowStockNotificationJob implements ShouldQueue
         foreach ($recipients as $recipient) {
             $recipient->notify($notification);
         }
+
+        $expoPushService->sendToUsers(
+            $recipients,
+            $this->organizationId,
+            'Low stock alert',
+            "Quantity on hand: {$this->quantityOnHand} (reorder at {$this->reorderPoint})",
+            [
+                'organization_id' => $this->organizationId,
+                'stock_id' => $this->stockId,
+                'product_id' => $this->productId,
+                'warehouse_id' => $this->warehouseId,
+            ],
+        );
     }
 
     private function recentAlertExists(): bool

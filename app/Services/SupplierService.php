@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Supplier;
 use App\Support\ListSearch;
+use App\Support\SyncFilters;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -21,7 +22,10 @@ class SupplierService
         ListSearch::applyToColumns($query, ['name', 'contact_person', 'email', 'phone']);
 
         return QueryBuilder::for($query)
-            ->allowedFilters(AllowedFilter::partial('name'))
+            ->allowedFilters(
+                AllowedFilter::partial('name'),
+                SyncFilters::updatedAfter(),
+            )
             ->allowedSorts('name')
             ->defaultSort('name')
             ->paginate(request()->integer('per_page', 15));

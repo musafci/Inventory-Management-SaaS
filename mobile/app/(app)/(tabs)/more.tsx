@@ -1,3 +1,4 @@
+import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/src/auth/AuthContext';
@@ -14,11 +15,20 @@ export default function MoreScreen() {
       </View>
 
       {canAccessSettings(permissions) ? (
-        <View style={styles.card}>
-          <Text style={styles.label}>Settings</Text>
-          <Text style={styles.meta}>Organization, billing, team, and roles arrive in Phase 3.</Text>
-        </View>
+        <Link href="/(app)/settings" asChild>
+          <Pressable style={styles.linkCard}>
+            <Text style={styles.linkTitle}>Settings</Text>
+            <Text style={styles.meta}>Organization, billing, team, and roles.</Text>
+          </Pressable>
+        </Link>
       ) : null}
+
+      <Link href="/(app)/settings/sync" asChild>
+        <Pressable style={styles.linkCard}>
+          <Text style={styles.linkTitle}>Sync status</Text>
+          <Text style={styles.meta}>View pending changes and sync now.</Text>
+        </Pressable>
+      </Link>
 
       <Pressable onPress={() => logout()} style={styles.logoutButton}>
         <Text style={styles.logoutText}>Sign out</Text>
@@ -53,10 +63,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 8,
   },
+  linkCard: {
+    backgroundColor: '#fff',
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+    padding: 16,
+  },
+  linkTitle: {
+    color: '#0f172a',
+    fontSize: 17,
+    fontWeight: '700',
+  },
   meta: {
     color: '#64748b',
     fontSize: 14,
-    marginTop: 8,
+    marginTop: 6,
   },
   logoutButton: {
     alignItems: 'center',
