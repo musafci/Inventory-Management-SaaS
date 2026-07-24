@@ -9,35 +9,35 @@
 
     <div class="card overflow-hidden" wire:loading.class="wire-loading-dim" wire:target="items">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="min-w-full divide-y divide-slate-100">
+                <thead class="bg-slate-50/80">
                     <tr>
-                        <th wire:click="sortBy('name')" class="cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:text-gray-700">
+                        <th wire:click="sortBy('name')" class="cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 hover:text-slate-700">
                             <div class="flex items-center gap-1">Name @if($sortField === 'name')<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $sortDirection === 'asc' ? 'M4.5 15.75l7.5-7.5 7.5 7.5' : 'M19.5 8.25l-7.5 7.5-7.5-7.5' }}" /></svg>@endif</div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Address</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Default</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Address</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Default</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 bg-white" wire:transition.opacity.duration.300ms>
+                <tbody class="divide-y divide-slate-100 bg-white" wire:transition.opacity.duration.300ms>
                     @forelse($items as $item)
                         <tr class="table-row-hover">
-                            <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{{ $item['name'] }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{{ $item['address'] ?? '-' }}</td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">{{ $item['name'] }}</td>
+                            <td class="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">{{ $item['address'] ?? '-' }}</td>
                             <td class="whitespace-nowrap px-6 py-4">
                                 @if($item['is_default'] ?? false)
                                     <span class="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-800">Default</span>
                                 @else
-                                    <span class="text-sm text-gray-400">-</span>
+                                    <span class="text-sm text-slate-400">-</span>
                                 @endif
                             </td>
                             <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
                                 <div class="flex items-center justify-end gap-2">
-                                    <button wire:click="editItem({{ $item['id'] }})" class="text-gray-400 hover:text-primary-600 transition-colors" title="Edit">
+                                    <button wire:click="editItem({{ $item['id'] }})" class="action-btn action-btn-primary" title="Edit">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
                                     </button>
-                                    <button @click="$store.confirm.open('Delete Warehouse', 'Are you sure you want to delete this warehouse? This action cannot be undone.', 'danger', () => $wire.destroy({{ $item['id'] }}), 'Delete')" class="text-gray-400 hover:text-red-600 transition-colors" title="Delete">
+                                    <button @click="$store.confirm.open('Delete Warehouse', 'Are you sure you want to delete this warehouse? This action cannot be undone.', 'danger', () => $wire.destroy({{ $item['id'] }}), 'Delete')" class="action-btn action-btn-danger" title="Delete">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                                     </button>
                                 </div>
@@ -45,10 +45,16 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-12 text-center">
-                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" /></svg>
-                                <p class="mt-2 text-sm text-gray-500">No warehouses found.</p>
-                                <button wire:click="openModal()" class="mt-3 btn-primary text-sm">Add Warehouse</button>
+                            <td colspan="5" class="px-6 py-16 text-center">
+                                <div class="empty-state-icon sky">
+                                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21m-3.75 3H21" /></svg>
+                                </div>
+                                <p class="empty-state-title">No warehouses yet</p>
+                                <p class="empty-state-desc">Add your first warehouse to start tracking.</p>
+                                <button wire:click="openModal()" class="mt-4 btn-primary text-sm">
+                                    <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                                    Add Warehouse
+                                </button>
                             </td>
                         </tr>
                     @endforelse
@@ -57,14 +63,14 @@
         </div>
 
         @if(!empty($pagination['last_page']) && $pagination['last_page'] > 1)
-            <div class="border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+            <div class="border-t border-slate-100 bg-slate-50/50 px-4 py-3 sm:px-6">
                 <div class="flex items-center justify-between">
-                    <div class="text-sm text-gray-700">
+                    <div class="text-sm text-slate-500">
                         Showing {{ ($pagination['current_page'] - 1) * $perPage + 1 }} to {{ min($pagination['current_page'] * $perPage, $pagination['total'] ?? 0) }} of {{ $pagination['total'] ?? 0 }} results
                     </div>
                     <div class="flex items-center gap-1">
                         @foreach(range(1, $pagination['last_page'] ?? 1) as $page)
-                            <button wire:click="goToPage({{ $page }})" class="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {{ $page === ($pagination['current_page'] ?? 1) ? 'bg-primary-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                            <button wire:click="goToPage({{ $page }})" class="pagination-btn {{ $page === ($pagination['current_page'] ?? 1) ? 'pagination-btn-active' : '' }}">
                                 {{ $page }}
                             </button>
                         @endforeach
@@ -77,7 +83,7 @@
     @if($showModal)
         <div class="fixed inset-0 z-50 overflow-y-auto" x-data x-cloak>
             <div class="flex min-h-full items-end justify-center px-4 pb-4 pt-4 sm:items-center sm:p-0">
-                <div class="fixed inset-0 bg-gray-900/50 transition-opacity" wire:click="closeModal()"></div>
+                <div class="fixed inset-0 bg-slate-900/50 transition-opacity" wire:click="closeModal()"></div>
                 <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md"
                      x-transition:enter="transition ease-out duration-200"
                      x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
@@ -86,8 +92,8 @@
                      x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                      x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
                     <form wire:submit.prevent="{{ $editingId ? 'update' : 'store' }}">
-                        <div class="border-b border-gray-100 px-6 py-4">
-                            <h3 class="text-lg font-semibold text-gray-900">{{ $editingId ? 'Edit Warehouse' : 'Add Warehouse' }}</h3>
+                        <div class="border-b border-slate-100 px-6 py-4">
+                            <h3 class="text-lg font-semibold text-slate-900">{{ $editingId ? 'Edit Warehouse' : 'Add Warehouse' }}</h3>
                         </div>
                         <div class="px-6 py-4 space-y-4">
                             <div>
@@ -101,11 +107,11 @@
                                 @error('form.address') <p class="form-error">{{ $message }}</p> @enderror
                             </div>
                             <div class="flex items-center gap-3">
-                                <input type="checkbox" wire:model="form.is_default" id="is_default" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
-                                <label for="is_default" class="text-sm font-medium text-gray-700">Set as default warehouse</label>
+                                <input type="checkbox" wire:model="form.is_default" id="is_default" class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
+                                <label for="is_default" class="text-sm font-medium text-slate-700">Set as default warehouse</label>
                             </div>
                         </div>
-                        <div class="border-t border-gray-100 bg-gray-50 px-6 py-4 flex justify-end gap-3">
+                        <div class="border-t border-slate-100 bg-slate-50/80 px-6 py-4 flex justify-end gap-3">
                             <button type="button" wire:click="closeModal()" class="btn-secondary">Cancel</button>
                             <button type="submit" class="btn-primary" wire:loading.attr="disabled">
                                 <span wire:loading.remove wire:target="store, update">{{ $editingId ? 'Update' : 'Create' }}</span>

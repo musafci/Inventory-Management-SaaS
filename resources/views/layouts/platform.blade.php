@@ -27,7 +27,7 @@
         </aside>
 
         {{-- Mobile overlay --}}
-        <div class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm lg:hidden" x-show="mobileMenu" x-cloak
+        <div class="fixed inset-0 z-40 bg-slate-900/50 lg:hidden" x-show="mobileMenu" x-cloak
              x-transition:enter="transition-opacity ease-linear duration-300"
              x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
              x-transition:leave="transition-opacity ease-linear duration-300"
@@ -121,7 +121,7 @@
     <div x-data x-show="$store.confirm.show" x-cloak class="fixed inset-0 z-[200] flex items-center justify-center p-4"
          x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
          x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="$store.confirm.deny()"></div>
+        <div class="fixed inset-0 bg-slate-900/50" @click="$store.confirm.deny()"></div>
         <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/5"
              x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
              x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"

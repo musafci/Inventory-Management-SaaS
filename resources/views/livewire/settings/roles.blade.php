@@ -94,7 +94,7 @@
     @if($showModal)
         <div class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
             <div class="flex min-h-full items-end justify-center px-4 pb-4 pt-4 sm:items-center sm:p-0">
-                <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" wire:click="closeModal"></div>
+                <div class="fixed inset-0 bg-slate-900/50" wire:click="closeModal"></div>
                 <div class="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/5">
                     <div class="border-b border-slate-100 px-6 py-4">
                         <h3 class="text-lg font-semibold text-slate-900">{{ $editingId ? 'Edit Role' : 'Create Role' }}</h3>

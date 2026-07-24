@@ -9,19 +9,19 @@
 
     <div class="card overflow-hidden" wire:loading.class="wire-loading-dim" wire:target="items">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="min-w-full divide-y divide-slate-100">
+                <thead class="bg-slate-50/80">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Product</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Warehouse</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Quantity</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Reference</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Note</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Product</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Warehouse</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Quantity</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Reference</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Note</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 bg-white" wire:transition.opacity.duration.300ms>
+                <tbody class="divide-y divide-slate-100 bg-white" wire:transition.opacity.duration.300ms>
                     @forelse($items as $item)
                         @php
                             $typeColors = [
@@ -35,26 +35,32 @@
                             $type = $item['type'] ?? '';
                         @endphp
                         <tr class="table-row-hover">
-                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{{ $item['created_at'] ?? $item['date'] ?? '-' }}</td>
-                            <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{{ $item['product']['name'] ?? '-' }}</td>
-                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{{ $item['warehouse']['name'] ?? '-' }}</td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm text-slate-500">{{ $item['created_at'] ?? $item['date'] ?? '-' }}</td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">{{ $item['product']['name'] ?? '-' }}</td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm text-slate-500">{{ $item['warehouse']['name'] ?? '-' }}</td>
                             <td class="whitespace-nowrap px-6 py-4">
-                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $typeColors[$type] ?? 'bg-gray-100 text-gray-700' }}">
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $typeColors[$type] ?? 'bg-slate-100 text-slate-700' }}">
                                     {{ str_replace('_', ' ', ucfirst($type)) }}
                                 </span>
                             </td>
                             <td class="whitespace-nowrap px-6 py-4 text-sm font-medium {{ in_array($type, ['sale_out', 'adjustment_out', 'transfer_out']) ? 'text-red-600' : 'text-emerald-600' }}">
                                 {{ in_array($type, ['sale_out', 'adjustment_out', 'transfer_out']) ? '-' : '+' }}{{ $item['quantity'] ?? 0 }}
                             </td>
-                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{{ $item['reference'] ?? '-' }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{{ $item['note'] ?? '-' }}</td>
+                            <td class="whitespace-nowrap px-6 py-4 text-sm text-slate-500">{{ $item['reference'] ?? '-' }}</td>
+                            <td class="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">{{ $item['note'] ?? '-' }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
-                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>
-                                <p class="mt-2 text-sm text-gray-500">No stock movements found.</p>
-                                <button wire:click="openModal()" class="mt-3 btn-primary text-sm">New Adjustment</button>
+                            <td colspan="6" class="px-6 py-16 text-center">
+                                <div class="empty-state-icon amber">
+                                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>
+                                </div>
+                                <p class="empty-state-title">No stock movements yet</p>
+                                <p class="empty-state-desc">Add your first stock movement to start tracking.</p>
+                                <button wire:click="openModal()" class="mt-4 btn-primary text-sm">
+                                    <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                                    Add Stock Movement
+                                </button>
                             </td>
                         </tr>
                     @endforelse
@@ -63,14 +69,14 @@
         </div>
 
         @if(!empty($pagination['last_page']) && $pagination['last_page'] > 1)
-            <div class="border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+            <div class="border-t border-slate-200 bg-white px-4 py-3 sm:px-6">
                 <div class="flex items-center justify-between">
-                    <div class="text-sm text-gray-700">
+                    <div class="text-sm text-slate-700">
                         Showing {{ ($pagination['current_page'] - 1) * $perPage + 1 }} to {{ min($pagination['current_page'] * $perPage, $pagination['total'] ?? 0) }} of {{ $pagination['total'] ?? 0 }} results
                     </div>
                     <div class="flex items-center gap-1">
                         @foreach(range(1, $pagination['last_page'] ?? 1) as $page)
-                            <button wire:click="goToPage({{ $page }})" class="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {{ $page === ($pagination['current_page'] ?? 1) ? 'bg-primary-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                            <button wire:click="goToPage({{ $page }})" class="pagination-btn {{ $page === ($pagination['current_page'] ?? 1) ? 'pagination-btn-active' : '' }}">
                                 {{ $page }}
                             </button>
                         @endforeach
@@ -84,7 +90,7 @@
     @if($showModal)
         <div class="fixed inset-0 z-50 overflow-y-auto" x-data x-cloak>
             <div class="flex min-h-full items-end justify-center px-4 pb-4 pt-4 sm:items-center sm:p-0">
-                <div class="fixed inset-0 bg-gray-900/50 transition-opacity" wire:click="closeModal()"></div>
+                <div class="fixed inset-0 bg-slate-900/50 transition-opacity" wire:click="closeModal()"></div>
                 <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg"
                      x-transition:enter="transition ease-out duration-200"
                      x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
@@ -93,8 +99,8 @@
                      x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                      x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
                     <form wire:submit.prevent="store">
-                        <div class="border-b border-gray-100 px-6 py-4">
-                            <h3 class="text-lg font-semibold text-gray-900">New Stock Adjustment</h3>
+                        <div class="border-b border-slate-100 px-6 py-4">
+                            <h3 class="text-lg font-semibold text-slate-900">New Stock Adjustment</h3>
                         </div>
                         <div class="px-6 py-4 space-y-4">
                             <div class="grid grid-cols-2 gap-4">
@@ -142,7 +148,7 @@
                                 @error('form.note') <p class="form-error">{{ $message }}</p> @enderror
                             </div>
                         </div>
-                        <div class="border-t border-gray-100 bg-gray-50 px-6 py-4 flex justify-end gap-3">
+                        <div class="border-t border-slate-100 bg-slate-50/80 px-6 py-4 flex justify-end gap-3">
                             <button type="button" wire:click="closeModal()" class="btn-secondary">Cancel</button>
                             <button type="submit" class="btn-primary" wire:loading.attr="disabled">
                                 <span wire:loading.remove wire:target="store">Record Adjustment</span>

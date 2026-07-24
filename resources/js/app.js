@@ -53,6 +53,13 @@ document.addEventListener('alpine:init', () => {
             localStorage.setItem('sidebar-open', this.open);
         },
     });
+
+    Alpine.store('commandPalette', {
+        show: false,
+        open() { this.show = true; },
+        close() { this.show = false; },
+        toggle() { this.show = !this.show; },
+    });
 });
 
 document.addEventListener('livewire:load', () => {
