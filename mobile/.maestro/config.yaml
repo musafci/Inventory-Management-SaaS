@@ -1,0 +1,6 @@
+appId: com.oneapp.inventory
+name: Oneapp Inventory
+
+env:
+  LOGIN_EMAIL: owner@demo.test
+  LOGIN_PASSWORD: password123

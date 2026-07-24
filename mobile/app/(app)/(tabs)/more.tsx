@@ -16,7 +16,11 @@ export default function MoreScreen() {
 
       {canAccessSettings(permissions) ? (
         <Link href="/(app)/settings" asChild>
-          <Pressable style={styles.linkCard}>
+          <Pressable
+            accessibilityLabel="Settings"
+            accessibilityRole="button"
+            style={styles.linkCard}
+            testID="hub-settings">
             <Text style={styles.linkTitle}>Settings</Text>
             <Text style={styles.meta}>Organization, billing, team, and roles.</Text>
           </Pressable>
@@ -24,13 +28,21 @@ export default function MoreScreen() {
       ) : null}
 
       <Link href="/(app)/settings/sync" asChild>
-        <Pressable style={styles.linkCard}>
+        <Pressable
+          accessibilityLabel="Sync status"
+          accessibilityRole="button"
+          style={styles.linkCard}
+          testID="hub-sync-status">
           <Text style={styles.linkTitle}>Sync status</Text>
           <Text style={styles.meta}>View pending changes and sync now.</Text>
         </Pressable>
       </Link>
 
-      <Pressable onPress={() => logout()} style={styles.logoutButton}>
+      <Pressable
+        accessibilityLabel="Sign out"
+        accessibilityRole="button"
+        onPress={() => logout()}
+        style={styles.logoutButton}>
         <Text style={styles.logoutText}>Sign out</Text>
       </Pressable>
     </View>

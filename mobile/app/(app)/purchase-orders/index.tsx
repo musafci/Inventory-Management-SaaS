@@ -2,7 +2,6 @@ import { Link, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -10,6 +9,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 
 import { useAuth } from '@/src/auth/AuthContext';
 import { usePurchaseOrders, usePurchaseOrdersList } from '@/src/hooks/useOrders';
@@ -67,7 +68,7 @@ export default function PurchaseOrdersScreen() {
             <ActivityIndicator size="large" />
           </View>
         ) : (
-          <FlatList
+          <OptimizedFlatList
             data={orders}
             keyExtractor={(item) => String(item.id)}
             refreshControl={(

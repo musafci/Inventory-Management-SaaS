@@ -1,0 +1,14 @@
+appId: com.oneapp.inventory
+---
+- launchApp
+- assertVisible: "Oneapp Inventory"
+- tapOn:
+    id: login-email
+- inputText: ${LOGIN_EMAIL}
+- tapOn:
+    id: login-password
+- inputText: ${LOGIN_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: login-submit
+- assertVisible: "Dashboard"

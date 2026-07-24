@@ -35,6 +35,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           href: canViewDashboard(permissions) ? undefined : null,
+          tabBarAccessibilityLabel: 'Home tab',
           tabBarIcon: ({ color }) => (
             <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={color} size={24} />
           ),
@@ -45,6 +46,7 @@ export default function TabLayout() {
         options={{
           title: 'Inventory',
           href: canViewInventory(permissions) ? undefined : null,
+          tabBarAccessibilityLabel: 'Inventory tab',
           tabBarIcon: ({ color }) => (
             <SymbolView name={{ ios: 'shippingbox.fill', android: 'inventory', web: 'inventory' }} tintColor={color} size={24} />
           ),
@@ -84,6 +86,7 @@ export default function TabLayout() {
         name="more"
         options={{
           title: 'More',
+          tabBarAccessibilityLabel: 'More tab',
           tabBarIcon: ({ color }) => (
             <SymbolView name={{ ios: 'ellipsis.circle.fill', android: 'more_horiz', web: 'more_horiz' }} tintColor={color} size={24} />
           ),

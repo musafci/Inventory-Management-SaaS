@@ -52,30 +52,37 @@ export default function LoginScreen() {
         <Text style={styles.subtitle}>Sign in to your organization</Text>
 
         <TextInput
+          accessibilityLabel="Email address"
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
           placeholder="Email"
           style={styles.input}
+          testID="login-email"
           value={email}
           onChangeText={setEmail}
         />
 
         <TextInput
+          accessibilityLabel="Password"
           autoCapitalize="none"
           placeholder="Password"
           secureTextEntry
           style={styles.input}
+          testID="login-password"
           value={password}
           onChangeText={setPassword}
         />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? <Text accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
 
         <Pressable
+          accessibilityLabel="Sign in"
+          accessibilityRole="button"
           disabled={submitting || email.trim() === '' || password === ''}
           onPress={handleSubmit}
-          style={[styles.button, submitting && styles.buttonDisabled]}>
+          style={[styles.button, submitting && styles.buttonDisabled]}
+          testID="login-submit">
           {submitting ? (
             <ActivityIndicator color="#fff" />
           ) : (

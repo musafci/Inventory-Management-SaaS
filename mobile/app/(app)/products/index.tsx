@@ -2,7 +2,6 @@ import { Link, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -10,6 +9,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
+import { OptimizedFlatList } from '@/components/OptimizedFlatList';
 
 import { useAuth } from '@/src/auth/AuthContext';
 import { useProductsList, useProducts } from '@/src/hooks/useProducts';
@@ -50,6 +51,7 @@ export default function ProductsScreen() {
 
       <View style={styles.container}>
         <TextInput
+          accessibilityLabel="Search products"
           value={search}
           onChangeText={setSearch}
           placeholder="Search name, SKU, or barcode"
@@ -63,7 +65,7 @@ export default function ProductsScreen() {
             <ActivityIndicator size="large" />
           </View>
         ) : (
-          <FlatList
+          <OptimizedFlatList
             data={products}
             keyExtractor={(item) => String(item.id)}
             refreshControl={(

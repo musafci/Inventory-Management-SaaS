@@ -8,9 +8,11 @@
     "scheme": "oneapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.oneapp.inventory"
     },
     "android": {
+      "package": "com.oneapp.inventory",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -40,8 +42,15 @@
           "color": "#2563eb"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-background-fetch"
     ],
+    "extra": {
+      "privacyPolicyUrl": "https://oneapp.example.com/privacy",
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+      }
+    },
     "experiments": {
       "typedRoutes": true
     }
